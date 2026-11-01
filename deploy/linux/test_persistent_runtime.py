@@ -33,7 +33,10 @@ def administrator_metadata(*, wrong_owner=None):
 
 class PersistentRuntimeTests(unittest.TestCase):
     def setUp(self):
-        temporary = tempfile.TemporaryDirectory()
+        # Production rejects world-writable ancestors. Linux defaults to /tmp,
+        # while macOS normally uses a private per-user temporary directory.
+        # Keep real permission checks by placing this fixture under the home.
+        temporary = tempfile.TemporaryDirectory(prefix='guardian-runtime-test-', dir=Path.home())
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
         self.root.chmod(0o700)
@@ -58,7 +61,7 @@ class PersistentRuntimeTests(unittest.TestCase):
             os.umask(previous)
 
     def test_existing_unsafe_directory_or_symlink_is_rejected_without_repair(self):
-        for kind in ('public-base', 'public-instance', 'symlink-base', 'symlink-instance', 'wrong-owner'):
+        for kind in ('public-parent', 'public-base', 'public-instance', 'symlink-base', 'symlink-instance', 'wrong-owner'):
             with self.subTest(kind=kind), tempfile.TemporaryDirectory(dir=self.root) as scratch:
                 parent = Path(scratch)
                 parent.chmod(0o700)
@@ -80,6 +83,8 @@ class PersistentRuntimeTests(unittest.TestCase):
                         runtime.mkdir(mode=0o700)
                         if kind == 'public-instance':
                             runtime.chmod(0o750)
+                if kind == 'public-parent':
+                    parent.chmod(0o777)
                 wrong = base if kind == 'wrong-owner' else None
                 with patch.object(maintenance, 'ADMIN_RUNTIME_BASE', base), administrator_metadata(wrong_owner=wrong):
                     with self.assertRaises(maintenance.MaintenanceError):
