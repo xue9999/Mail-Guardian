@@ -9,4 +9,3 @@ Unit=mail-guardian@%i.service
 
 [Install]
 WantedBy=timers.target
-

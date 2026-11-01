@@ -85,4 +85,3 @@ path = Path(sys.argv[1])
 path.with_suffix(path.suffix + '.sha256').write_text(hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + path.name + '\n')
 PY
 printf 'Linux deployment candidate: %s\n' "$GUARDIAN_PACKAGE_DIST/$GUARDIAN_PACKAGE_NAME.tar.gz"
-

@@ -28,4 +28,3 @@ RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 NoNewPrivileges=no
 StandardOutput=journal
 StandardError=journal
-

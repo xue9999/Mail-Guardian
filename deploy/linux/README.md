@@ -404,4 +404,3 @@ Docker bind-mounts the controller file directly read-only; the controller
 password itself and its fingerprint remain root-only. The helper checks that
 Docker does not use rootless or user-namespace remapping before creating or
 reusing the file, and regenerates an old root-only file with the correct mode.
-
