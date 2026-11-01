@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -103,7 +104,7 @@ class SecurityCheckTests(unittest.TestCase):
             expected_args = ["--host", "unix:///var/run/docker.sock", "compose", "--project-name",
                              "mail-guardian-pilot", "--project-directory", directory,
                              "--file", str(compose), "config", "--format", "json"]
-            executable.write_text("#!/usr/bin/python3\nimport json,os,sys\n"
+            executable.write_text("#!" + sys.executable + "\nimport json,os,sys\n"
                                   "assert sys.argv[1:] == " + repr(expected_args) + "\n"
                                   "assert os.environ['GUARDIAN_RUNTIME_DIR'] == '/var/lib/mail-guardian-admin/pilot'\n"
                                   "print(json.dumps(" + repr(config) + "))\n")
@@ -120,14 +121,31 @@ class SecurityCheckTests(unittest.TestCase):
                 pid_file = Path(directory) / "pids"
                 executable = Path(directory) / "docker"
                 executable.write_text(
-                    "#!/usr/bin/python3\nimport os,pathlib,subprocess,sys,time\n"
+                    "#!" + sys.executable + "\nimport os,pathlib,subprocess,sys,time\n"
                     "child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)'])\n"
                     "pathlib.Path(" + repr(str(pid_file)) + ").write_text(str(os.getpid())+' '+str(child.pid))\n"
                     + ("os.write(1,b'X'*16384)\n" if mode == "overflow" else "") +
                     "time.sleep(60)\n")
                 os.chmod(executable, 0o700)
+                real_popen = subprocess.Popen
+                def ready_plugin(*args, **kwargs):
+                    # Measure timeout/overflow cleanup only after the intended
+                    # child exists, independent of cold interpreter startup.
+                    proc = real_popen(*args, **kwargs)
+                    deadline = time.monotonic() + 10
+                    while not pid_file.exists() and proc.poll() is None and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    if not pid_file.exists():
+                        try:
+                            os.killpg(proc.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                        proc.wait()
+                        raise AssertionError("fixture did not spawn its child")
+                    return proc
                 try:
                     with mock.patch.dict(check.SAFE_ENV, {"PATH": directory}), \
+                            mock.patch.object(check.subprocess, "Popen", side_effect=ready_plugin), \
                             mock.patch.object(check, "COMPOSE_TIMEOUT", 1), \
                             mock.patch.object(check, "COMPOSE_OUTPUT_LIMIT", 4096):
                         with self.assertRaisesRegex(RuntimeError, "timed out|output limit"):
