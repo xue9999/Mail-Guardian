@@ -102,7 +102,13 @@ class RealJournalRecoveryTests(unittest.TestCase):
         # inodes and STATE entries. Journal files retain the real test UID.
         special = [item for item in [self.guardian_lock, self.updater_lock, self.marker, *self.dpkg_locks]
                    if item.exists()]
-        inodes = {(self.original_lstat(p).st_dev, self.original_lstat(p).st_ino) for p in special}
+        # Pin the ownership-model inodes. Otherwise ext4 can reuse a removed
+        # marker's inode for a newly written journal, and the fixture would
+        # falsely turn that ordinary test-UID journal into a root-owned file.
+        held = [os.open(p, os.O_RDONLY | os.O_NOFOLLOW) for p in special]
+        for fd in held:
+            self.stack.callback(os.close, fd)
+        inodes = {(self.original_fstat(fd).st_dev, self.original_fstat(fd).st_ino) for fd in held}
         def fake_fstat(fd):
             info = self.original_fstat(fd)
             return self.fake_root(info) if (info.st_dev, info.st_ino) in inodes else info

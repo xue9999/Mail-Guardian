@@ -395,8 +395,9 @@ def create_marker(transaction):
     published = False
     try:
         identity = os.fstat(fd)
-        with os.fdopen(fd, "wb") as f:
-            fd = -1
+        # Keep the original descriptor open through publication/cleanup. An
+        # unlinked inode must not be recycled as another transaction's marker.
+        with os.fdopen(os.dup(fd), "wb") as f:
             f.write(payload); f.flush(); os.fsync(f.fileno())
         # A hard link is exclusive: an existing marker is never overwritten.
         os.link(temporary, MARKER, follow_symlinks=False)
@@ -412,7 +413,8 @@ def create_marker(transaction):
         try:
             current = os.lstat(MARKER) if published else None
             if (current is not None and identity is not None and
-                    (current.st_dev, current.st_ino) == (identity.st_dev, identity.st_ino)):
+                    (current.st_dev, current.st_ino) == (identity.st_dev, identity.st_ino) and
+                    os.pread(fd, len(payload) + 1, 0) == payload):
                 os.unlink(MARKER)
                 d = os.open(INSTANCE, os.O_RDONLY | os.O_DIRECTORY)
                 try: os.fsync(d)

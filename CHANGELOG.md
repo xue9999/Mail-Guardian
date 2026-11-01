@@ -19,6 +19,9 @@
 - Potwierdzanie MOVE bez COPYUID ma do trzech prób odczytu z przerwami
   250 ms i 750 ms. Używa dokładnej treści i UIDVALIDITY, bez zbędnego ENVELOPE;
   nie ponawia samego MOVE. Niejednoznaczność nadal wymaga odzyskiwania.
+- Konserwatywne sprzątanie nieudanego utworzenia blokady aktualizacji zachowuje
+  otwarty deskryptor i sprawdza treść. Ponowne użycie inode ani zmiana pliku
+  nie upoważniają do usunięcia blokady innej transakcji.
 - Poprawiono test, którego serwer mimo braku UIDPLUS nadal wysyłał COPYUID.
   Nowe regresje faktycznie usuwają mapowanie z odpowiedzi protokołu.
 - Dokumentacja dla developerów obejmuje architekturę, testy, źródła konserwacji,

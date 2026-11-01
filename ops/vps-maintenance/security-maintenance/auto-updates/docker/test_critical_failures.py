@@ -76,6 +76,23 @@ class MarkerFilesystemTests(unittest.TestCase):
                 engine.create_marker("test-transaction")
         self.assertEqual(self.marker.read_bytes(), b"another transaction")
 
+    def test_creation_cleanup_does_not_remove_modified_marker(self):
+        calls = 0
+        real_fsync = os.fsync
+        def modify_then_fail(fd):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                # In-place replacement preserves the inode. Identity alone
+                # must not authorize deleting another owner's contents.
+                self.marker.write_bytes(b"another transaction")
+                raise OSError("injected sync failure after modification")
+            return real_fsync(fd)
+        with mock.patch.object(engine.os, "fsync", side_effect=modify_then_fail):
+            with self.assertRaises(OSError):
+                engine.create_marker("test-transaction")
+        self.assertEqual(self.marker.read_bytes(), b"another transaction")
+
     def test_tampered_marker_is_never_removed(self):
         original = engine.create_marker("test-transaction")
         self.marker.write_bytes(b"replacement marker")
