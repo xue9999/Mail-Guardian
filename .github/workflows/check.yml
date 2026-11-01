@@ -14,6 +14,78 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  linux:
+    name: Linux worker and deployment package (Ubuntu ${{ matrix.ubuntu }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ubuntu: '24.04'
+            runner: ubuntu-24.04
+            image: ubuntu@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
+            sudo_package: sudo
+          - ubuntu: '26.04'
+            runner: ubuntu-26.04
+            image: ubuntu@sha256:157dc3d6e4a3e4f2c68d12df9df9ed6e808b59af6d4c3757b432b4f519916725
+            sudo_package: sudo-rs
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+      - name: Record and verify the native platform
+        env:
+          GUARDIAN_EXPECTED_UBUNTU: ${{ matrix.ubuntu }}
+        run: |
+          . /etc/os-release
+          test "$ID" = ubuntu
+          test "$VERSION_ID" = "$GUARDIAN_EXPECTED_UBUNTU"
+          test "$(uname -m)" = x86_64
+          python3 --version
+          systemctl --version
+          sudo --version
+      - name: Execute engine and Linux deployment checks
+        run: make check-linux
+      - name: Verify systemd unit definitions
+        run: |
+          sudo install -D -m 0755 /bin/true /opt/mail-guardian/current/guardian
+          sudo install -D -m 0755 /bin/true /usr/local/libexec/mail-guardian-backup
+          systemd-analyze verify deploy/linux/mail-guardian@.service deploy/linux/mail-guardian@.timer deploy/linux/mail-guardian-backup@.service deploy/linux/mail-guardian-backup@.timer deploy/linux/mail-guardian-observe@.service deploy/linux/mail-guardian-observe@.timer
+      - name: Build Linux pilot deployment candidate
+        run: make package-linux
+      - name: Exercise initial installation in a disposable Ubuntu container
+        env:
+          GUARDIAN_TEST_IMAGE: ${{ matrix.image }}
+          GUARDIAN_SUDO_PACKAGE: ${{ matrix.sudo_package }}
+        run: |
+          # No host Docker socket or writable host paths are mounted. Docker
+          # dispatch and systemd service operations are deliberately stubbed.
+          docker run --rm --platform linux/amd64 \
+            -e GUARDIAN_DISPOSABLE_CONTAINER=1 -e GUARDIAN_SUDO_PACKAGE \
+            --mount "type=bind,source=$PWD,target=/src,readonly" \
+            "$GUARDIAN_TEST_IMAGE" \
+            bash -c '
+              set -Eeuo pipefail
+              apt-get update -qq
+              DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends python3 systemd "$GUARDIAN_SUDO_PACKAGE"
+              # Minimal Ubuntu 26.04 images currently install sudoers as 0644.
+              # Normalize this disposable fixture only; the installer still
+              # requires the real visudo check to pass without repairing hosts.
+              if [ "$GUARDIAN_SUDO_PACKAGE" = sudo-rs ]; then
+                chmod 0440 /etc/sudoers
+              fi
+              tar -xzf /src/dist/*linux-amd64.tar.gz -C /tmp
+              bash /src/deploy/linux/test_install_in_container.sh /tmp/Mail-Guardian-*-linux-amd64
+            '
+      - name: Preserve Linux candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: guardian-linux-amd64-pilot-ubuntu-${{ matrix.ubuntu }}
+          path: dist/*linux-amd64*
+          if-no-files-found: error
+          retention-days: 14
   macos:
     name: macOS tests and installer
     runs-on: macos-15

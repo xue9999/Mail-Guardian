@@ -2,12 +2,13 @@
 # Build an isolated demo app. No access to real mail, Keychain or launchd.
 set -Eeuo pipefail
 PROJECT_DIR="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
+source "${PROJECT_DIR}/scripts/swift-common.sh"
 SCENARIO="${1:-healthy}"
 THEME="${2:-system}"
 case "$THEME" in system|dark) ;; *) printf 'Nieznany motyw: %s\n' "$THEME" >&2; exit 2 ;; esac
 case "$SCENARIO" in healthy|active|ready|attention|critical|manual|unconfigured|empty|offline|archive-error) ;; *) printf 'Nieznany scenariusz: %s\n' "$SCENARIO" >&2; exit 2 ;; esac
-/usr/bin/swift build --package-path "$PROJECT_DIR/macos" --product O2MailGuardianApp >&2
-BINARY_DIR="$(/usr/bin/swift build --package-path "$PROJECT_DIR/macos" --show-bin-path)"
+guardian_swift build --package-path "$PROJECT_DIR/macos" --product O2MailGuardianApp >&2
+BINARY_DIR="$(guardian_swift build --package-path "$PROJECT_DIR/macos" --show-bin-path)"
 PREVIEW_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/o2-guardian-preview.XXXXXX")"
 APP="$PREVIEW_ROOT/Mail Guardian Preview.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"

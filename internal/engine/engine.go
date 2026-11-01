@@ -68,16 +68,20 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (run *store.Run, r
 		return nil, err
 	}
 	defer func() {
+		if cause := context.Cause(ctx); cause != nil {
+			retErr = cause
+			if run.Errors == 0 {
+				run.Errors = 1
+			}
+		}
 		if finishErr := e.Store.FinishRun(context.Background(), run, retErr); finishErr != nil && retErr == nil {
 			retErr = finishErr
 		}
 	}()
 
 	if !options.DryRun {
-		if e.Config.Safety.Mode == "active" {
-			if err := e.requireActivationQuality(ctx); err != nil {
-				return run, err
-			}
+		if err := e.Store.RequireOperationalAuthorization(ctx); err != nil {
+			return run, err
 		}
 		if !e.Mail.SafeMoveSupported() {
 			return run, errors.New("serwer nie zapewnia natywnego IMAP MOVE; przenoszenie wiadomości jest zablokowane")
@@ -90,7 +94,11 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (run *store.Run, r
 		); err != nil {
 			return run, err
 		}
-		if err := e.reconcilePending(ctx); err != nil {
+		allowAutomaticReconciliation := true
+		if e.Config.Safety.Mode == "active" {
+			allowAutomaticReconciliation = e.requireActivationQuality(ctx) == nil
+		}
+		if err := e.reconcilePendingWithPolicy(ctx, allowAutomaticReconciliation); err != nil {
 			return run, err
 		}
 	}
@@ -101,6 +109,11 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (run *store.Run, r
 	}
 	if err := e.processTraining(ctx, run, e.Config.Folders.TrainHam, false, options.DryRun); err != nil {
 		return run, err
+	}
+	if !options.DryRun && e.Config.Safety.Mode == "active" {
+		if err := e.requireActivationQuality(ctx); err != nil {
+			return run, err
+		}
 	}
 
 	e.Report("info", "Sprawdzam folder SPAM o2…")
@@ -149,6 +162,9 @@ func (e *Engine) prepareStore(ctx context.Context) error {
 	if err := e.Store.IntegrityCheck(ctx); err != nil {
 		return fmt.Errorf("kontrola integralności stanu zablokowała działanie: %w", err)
 	}
+	if err := e.Store.BindConfiguration(ctx, e.Config, e.Now()); err != nil {
+		return err
+	}
 	before := e.Now().UTC().AddDate(0, 0, -technicalHistoryRetentionDays)
 	if err := e.Store.PruneTechnicalHistory(ctx, before); err != nil {
 		return fmt.Errorf("retencja technicznej historii: %w", err)
@@ -188,6 +204,16 @@ func (e *Engine) requireActivationQuality(ctx context.Context) error {
 	if err != nil || activeAt.Before(protectAt) || activeAt.After(now) {
 		return errors.New("brakuje prawidłowej daty aktywacji; automatyczne ruchy pozostają zablokowane")
 	}
+	qualified, err := e.Store.CurrentQualification(ctx, e.Config, now)
+	if err != nil {
+		return fmt.Errorf("aktualna ocena filtra: %w", err)
+	}
+	if qualified != nil {
+		return nil
+	}
+	if e.Config.Rspamd.SpamScore < 12 {
+		return errors.New("próg poniżej 12 wymaga odrębnej oceny filtra")
+	}
 	quality, err := e.Store.ActivationQualityUntil(ctx, e.Config.Account.Email, protectAt, activeAt)
 	if err != nil {
 		return fmt.Errorf("sprawdzenie jakości okresu ochronnego: %w", err)
@@ -216,14 +242,24 @@ func parseSettingTime(value string) (time.Time, error) {
 }
 
 func (e *Engine) reconcilePending(ctx context.Context) error {
+	return e.reconcilePendingWithPolicy(ctx, true)
+}
+
+// Explicit corrections remain actionable after qualification is revoked.
+// Automatic pending moves require the same quality gate as new decisions.
+func (e *Engine) reconcilePendingWithPolicy(ctx context.Context, allowAutomatic bool) error {
 	pending, err := e.Store.PendingMessages(ctx, e.Config.Account.Email)
 	if err != nil {
 		return fmt.Errorf("odczyt nierozstrzygniętych ruchów: %w", err)
 	}
 	deadline := time.Now().Add(60 * time.Second)
 	for _, record := range pending {
-		if err := ctx.Err(); err != nil {
+		if err := context.Cause(ctx); err != nil {
 			return err
+		}
+		explicitCorrection := record.Feedback == "ham" || record.Feedback == "spam" || record.FeedbackIntent == "ham" || record.FeedbackIntent == "spam"
+		if !allowAutomatic && !explicitCorrection {
+			continue
 		}
 		if time.Now().After(deadline) {
 			e.Report("info", "Uzgadnianie przerwanych ruchów będzie kontynuowane w następnym przebiegu")
@@ -280,7 +316,7 @@ func (e *Engine) reconcilePending(ctx context.Context) error {
 			continue
 		}
 	}
-	return nil
+	return context.Cause(ctx)
 }
 
 // Unrelated server messages can fail ENVELOPE/BODY fetch permanently. Search
@@ -304,7 +340,7 @@ func (e *Engine) reconcileBySize(ctx context.Context, record store.Message, dest
 			return errors.New("uzgadnianie wymaga pełnego, ograniczonego wyniku wyszukiwania")
 		}
 		for _, uid := range uids {
-			if err := ctx.Err(); err != nil {
+			if err := context.Cause(ctx); err != nil {
 				return err
 			}
 			if time.Now().After(deadline) {
@@ -359,7 +395,7 @@ func (e *Engine) scanReconcilePage(ctx context.Context, folder string, record st
 	}
 	processedAll := true
 	for _, uid := range uids {
-		if err := ctx.Err(); err != nil {
+		if err := context.Cause(ctx); err != nil {
 			return err
 		}
 		if time.Now().After(deadline) {
@@ -458,7 +494,7 @@ func (e *Engine) reconcilePendingRestores(ctx context.Context) error {
 		return fmt.Errorf("odczyt nierozstrzygniętych przywróceń: %w", err)
 	}
 	for _, record := range pending {
-		if err := ctx.Err(); err != nil {
+		if err := context.Cause(ctx); err != nil {
 			return err
 		}
 		if err := e.Restore(ctx, record.ID); err != nil {
@@ -491,7 +527,7 @@ func (e *Engine) findMatchingMessages(ctx context.Context, folder string, record
 	}
 	var matches []imapmail.Message
 	for _, uid := range uids {
-		if err := ctx.Err(); err != nil {
+		if err := context.Cause(ctx); err != nil {
 			return nil, err
 		}
 		metadata, err := e.Mail.Fetch(folder, uid, false)
@@ -519,7 +555,7 @@ func (e *Engine) findMessagesByRawHash(ctx context.Context, folder, rawSHA256 st
 	}
 	var matches []imapmail.Message
 	for _, uid := range uids {
-		if err := ctx.Err(); err != nil {
+		if err := context.Cause(ctx); err != nil {
 			return nil, err
 		}
 		metadata, err := e.Mail.Fetch(folder, uid, false)
@@ -550,15 +586,24 @@ func messageMatchesRecord(message imapmail.Message, record store.Message) bool {
 }
 
 func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, source string, dryRun bool) error {
+	if err := context.Cause(ctx); err != nil {
+		return err
+	}
 	since := e.Now().AddDate(0, 0, -e.Config.Safety.ScanLookbackDays)
 	uids, uidValidity, err := e.Mail.SearchSince(folder, since, 0)
 	if err != nil {
 		return err
 	}
 	active := e.Config.Safety.Mode == "active"
+	// DNS results and the learned model can change after the first scan.
+	// Revisit retained mail daily, or immediately after a confirmed learn.
+	rescanBefore := e.Now().UTC().Add(-24 * time.Hour)
+	if run.LearnedSpam > 0 || run.LearnedHam > 0 {
+		rescanBefore = e.Now().UTC()
+	}
 	handled := 0
 	for _, uid := range uids {
-		if err := ctx.Err(); err != nil {
+		if err := context.Cause(ctx); err != nil {
 			return err
 		}
 		if !dryRun {
@@ -569,7 +614,7 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 			if pending {
 				continue
 			}
-			processed, err := e.Store.LocationProcessed(ctx, e.Config.Account.Email, folder, uidValidity, uid, active)
+			processed, err := e.Store.LocationProcessedSince(ctx, e.Config.Account.Email, folder, uidValidity, uid, active, rescanBefore)
 			if err != nil {
 				return err
 			}
@@ -583,6 +628,9 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 		handled++
 		run.Scanned++
 		msg, err := e.Mail.Fetch(folder, uid, false)
+		if cause := context.Cause(ctx); cause != nil {
+			return cause
+		}
 		if err != nil {
 			run.Errors++
 			e.Report("error", fmt.Sprintf("%s: nie udało się odczytać UID %d", folder, uid))
@@ -595,6 +643,9 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 			continue
 		}
 		msg, err = e.Mail.Fetch(folder, uid, true)
+		if cause := context.Cause(ctx); cause != nil {
+			return cause
+		}
 		if err != nil {
 			run.Errors++
 			e.Report("error", fmt.Sprintf("%s UID %d: nie udało się pobrać bezpiecznej kopii", folder, uid))
@@ -643,6 +694,9 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 		}
 
 		result, scanErr := e.Rspamd.Scan(ctx, msg.Raw, e.Config.Account.Email)
+		if cause := context.Cause(ctx); cause != nil {
+			return cause
+		}
 		if scanErr != nil {
 			decision := rspamd.Decision{Verdict: "error"}
 			run.Errors++
@@ -658,8 +712,11 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 			e.Report("warning", fmt.Sprintf("%s UID %d: Rspamd niedostępny — niczego nie kasuję", folder, uid))
 			continue
 		}
-		decision := rspamd.Classify(result, e.Config.Rspamd.SpamScore, e.Config.Rspamd.HamScore, e.Config.Safety.RequireAuthForRescue)
+		decision := rspamd.ClassifyDelivery(result, e.Config.Rspamd.SpamScore, e.Config.Rspamd.HamScore, e.Config.Safety.RequireAuthForRescue)
 		decision, err = e.applyFeedbackGuard(ctx, msg.Raw, decision)
+		if cause := context.Cause(ctx); cause != nil {
+			return cause
+		}
 		if err != nil {
 			run.Errors++
 			decision = rspamd.Decision{Verdict: "error"}
@@ -698,7 +755,7 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 			}
 		}
 	}
-	return nil
+	return context.Cause(ctx)
 }
 
 func (e *Engine) decide(source string, decision rspamd.Decision, active bool) (action, destination string, markUnread bool) {
@@ -723,32 +780,30 @@ func (e *Engine) decide(source string, decision rspamd.Decision, active bool) (a
 
 func (e *Engine) applyFeedbackGuard(ctx context.Context, raw []byte, decision rspamd.Decision) (rspamd.Decision, error) {
 	rawHash := archive.SHA256(raw)
-	if decision.Verdict == "spam" {
-		important, err := e.Store.HasHamFeedback(ctx, e.Config.Account.Email, rawHash)
-		if err != nil {
-			return decision, err
-		}
-		if important {
-			decision.Verdict = "uncertain"
-			decision.Symbols = append(decision.Symbols, "USER_FEEDBACK_HAM")
-		}
+	latest, err := e.Store.LatestFeedback(ctx, e.Config.Account.Email, rawHash)
+	if err != nil {
+		return decision, err
 	}
-	if decision.Verdict == "ham" {
-		knownSpam, err := e.Store.HasSpamFeedback(ctx, e.Config.Account.Email, rawHash)
-		if err != nil {
-			return decision, err
-		}
-		if knownSpam {
-			decision.Verdict = "uncertain"
-			decision.Symbols = append(decision.Symbols, "USER_FEEDBACK_SPAM")
-		}
+	if decision.Verdict == "spam" && latest == "ham" {
+		decision.Verdict = "uncertain"
+		decision.Symbols = append(decision.Symbols, "USER_FEEDBACK_HAM")
+	}
+	if decision.Verdict == "ham" && latest == "spam" {
+		decision.Verdict = "uncertain"
+		decision.Symbols = append(decision.Symbols, "USER_FEEDBACK_SPAM")
 	}
 	return decision, nil
 }
 
 func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder string, spam, dryRun bool) error {
+	if err := context.Cause(ctx); err != nil {
+		return err
+	}
 	uids, uidValidity, err := e.Mail.SearchSince(folder, time.Time{}, 0)
 	if err != nil {
+		if cause := context.Cause(ctx); cause != nil {
+			return cause
+		}
 		// During a first dry run the training folders may not exist yet.
 		if dryRun {
 			return nil
@@ -757,11 +812,11 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 	}
 	handled := 0
 	for _, uid := range uids {
-		if err := ctx.Err(); err != nil {
+		if err := context.Cause(ctx); err != nil {
 			return err
 		}
 		if !dryRun {
-			processed, err := e.Store.LocationProcessed(ctx, e.Config.Account.Email, folder, uidValidity, uid, true)
+			processed, err := e.Store.TrainingLocationProcessed(ctx, e.Config.Account.Email, folder, uidValidity, uid)
 			if err != nil {
 				return err
 			}
@@ -775,6 +830,9 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 		handled++
 		run.Scanned++
 		msg, err := e.Mail.Fetch(folder, uid, true)
+		if cause := context.Cause(ctx); cause != nil {
+			return cause
+		}
 		if err != nil {
 			run.Errors++
 			continue
@@ -784,12 +842,7 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 			e.recordMetadataError(ctx, msg, folder, "wiadomość ucząca jest pusta lub przekracza limit")
 			continue
 		}
-		if err := validateRFC822MIME(msg.Raw); err != nil {
-			run.Errors++
-			e.recordMetadataError(ctx, msg, folder, "wiadomość ucząca ma nieprawidłową strukturę RFC822/MIME")
-			e.Report("warning", "Nie uczę na uszkodzonej wiadomości; pozostała w folderze uczącym")
-			continue
-		}
+		invalidMIME := validateRFC822MIME(msg.Raw) != nil
 		verdict := "ham"
 		action := "learn_ham"
 		destination := e.Config.Folders.Inbox
@@ -802,7 +855,11 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 		}
 		decision := rspamd.Decision{Verdict: verdict}
 		if dryRun {
-			e.Report("info", fmt.Sprintf("Próba: UID %d czeka na uczenie jako %s", uid, verdict))
+			if invalidMIME {
+				e.Report("warning", "Próba: zachowam oryginał i Twoją korektę; nieprawidłowy MIME wyklucza uczenie Bayesa, ale nie przeniesienie zgodne z folderem nauki.")
+			} else {
+				e.Report("info", fmt.Sprintf("Próba: UID %d czeka na uczenie jako %s", uid, verdict))
+			}
 			continue
 		}
 		alreadyLearned, err := e.feedbackAlreadyLearned(ctx, msg.Raw, spam)
@@ -825,14 +882,23 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 			e.Report("info", "Ta sama korekta była już zapamiętana; wiadomość przeniesiono bez ponownego uczenia")
 			continue
 		}
-		if err := e.archiveLearnAndMove(ctx, msg, folder, decision, destination, status, !spam, action, spam); err != nil {
+		var learningErr error
+		if invalidMIME {
+			learningErr = e.archiveUnlearnableAndMove(ctx, msg, folder, decision, destination, status, !spam, verdict)
+		} else {
+			learningErr = e.archiveLearnAndMove(ctx, msg, folder, decision, destination, status, !spam, action, spam)
+		}
+		if cause := context.Cause(ctx); cause != nil {
+			return cause
+		}
+		if err := learningErr; err != nil {
 			if errors.Is(err, rspamd.ErrLearningSkipped) {
 				if spam {
 					run.Quarantined++
 				} else {
 					run.Rescued++
 				}
-				e.Report("warning", "Zapamiętano Twoją korektę i przeniesiono wiadomość. Rspamd pominął uczenie; przykład nie zwiększa postępu Bayesa.")
+				e.Report("warning", "Zapamiętano Twoją korektę i przeniesiono oryginalną wiadomość. Uczenie Bayesa pominięte; przykład nie zwiększa postępu filtra.")
 				continue
 			}
 			run.Errors++
@@ -848,7 +914,35 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 		}
 		e.Report("success", "Rspamd zapamiętał korektę")
 	}
-	return nil
+	return context.Cause(ctx)
+}
+
+func (e *Engine) archiveUnlearnableAndMove(ctx context.Context, msg imapmail.Message, source string, decision rspamd.Decision, destination, finalStatus string, markUnread bool, feedback string) error {
+	id, record, err := e.preparePending(ctx, msg, source, decision, finalStatus, "pending_learn", "invalid_mime: uczenie pominięte")
+	if err != nil {
+		return err
+	}
+	if err := e.Store.MarkFeedbackIntent(ctx, id, feedback); err != nil {
+		return err
+	}
+	record.FeedbackIntent = feedback
+	return e.finishUnlearnedCorrection(ctx, id, record, msg, destination, finalStatus, markUnread, "invalid_mime: zachowano oryginał i jawną korektę bez wysyłania wadliwej treści do uczenia")
+}
+
+func (e *Engine) finishUnlearnedCorrection(ctx context.Context, id int64, record store.Message, msg imapmail.Message, destination, finalStatus string, markUnread bool, detail string) error {
+	if err := e.Store.UpdateLocation(ctx, id, msg.Folder, msg.UIDValidity, msg.UID, "pending_move"); err != nil {
+		return err
+	}
+	if err := e.Store.AddEvent(ctx, id, "learn_skipped", detail); err != nil {
+		return err
+	}
+	if err := e.Store.SupersedeOtherCopies(ctx, record.Account, record.RawSHA256, id); err != nil {
+		return err
+	}
+	if err := e.movePending(ctx, id, msg, destination, finalStatus, markUnread); err != nil {
+		return err
+	}
+	return rspamd.ErrLearningSkipped
 }
 
 func (e *Engine) feedbackAlreadyLearned(ctx context.Context, raw []byte, spam bool) (bool, error) {
@@ -871,6 +965,9 @@ func (e *Engine) archiveKnownTrainingAndMove(
 	id, record, err := e.preparePending(ctx, msg, source, decision, finalStatus, "pending_move", "")
 	if err != nil {
 		return err
+	}
+	if err := e.Store.MarkFeedbackIntent(ctx, id, decision.Verdict); err != nil {
+		return fmt.Errorf("nie zapisano ponowionej korekty: %w", err)
 	}
 	if err := e.Store.SupersedeOtherCopies(ctx, record.Account, record.RawSHA256, id); err != nil {
 		return fmt.Errorf("nie uzgodniono poprzedniej kopii tej samej korekty: %w", err)
@@ -928,19 +1025,7 @@ func (e *Engine) archiveLearnAndMove(
 		if errors.Is(err, rspamd.ErrLearningSkipped) {
 			// Preserve the exact-content correction without pretending Bayes
 			// learned it. The intent already guards classification and ham purge.
-			if err := e.Store.UpdateLocation(ctx, id, msg.Folder, msg.UIDValidity, msg.UID, "pending_move"); err != nil {
-				return err
-			}
-			if err := e.Store.AddEvent(ctx, id, "learn_skipped", "HTTP 204: zachowano korektę użytkownika bez potwierdzenia uczenia Bayesa"); err != nil {
-				return err
-			}
-			if err := e.Store.SupersedeOtherCopies(ctx, record.Account, record.RawSHA256, id); err != nil {
-				return err
-			}
-			if err := e.movePending(ctx, id, msg, destination, finalStatus, markUnread); err != nil {
-				return err
-			}
-			return rspamd.ErrLearningSkipped
+			return e.finishUnlearnedCorrection(ctx, id, record, msg, destination, finalStatus, markUnread, "HTTP 204: zachowano korektę użytkownika bez potwierdzenia uczenia Bayesa")
 		}
 		record.Status = "error"
 		record.LastError = err.Error()
@@ -1084,6 +1169,11 @@ func (e *Engine) Purge(ctx context.Context, dryRun bool) (run *store.Run, retErr
 	defer func() {
 		_ = e.Store.FinishRun(context.Background(), run, retErr)
 	}()
+	if !dryRun {
+		if err := e.Store.RequireOperationalAuthorization(ctx); err != nil {
+			return run, err
+		}
+	}
 	if !dryRun && !e.Config.Safety.PurgeEnabled {
 		return run, errors.New("trwałe usuwanie jest wyłączone; włącz je świadomie w menu po okresie próbnym")
 	}
@@ -1165,7 +1255,7 @@ func (e *Engine) Purge(ctx context.Context, dryRun bool) (run *store.Run, retErr
 			run.Errors++
 			continue
 		}
-		decision := rspamd.Classify(result, e.Config.Rspamd.SpamScore, e.Config.Rspamd.HamScore, e.Config.Safety.RequireAuthForRescue)
+		decision := rspamd.ClassifyPermanent(result, e.Config.Rspamd.SpamScore, e.Config.Rspamd.HamScore, e.Config.Safety.RequireAuthForRescue)
 		if decision.Verdict != "spam" {
 			run.Errors++
 			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "ponowny skan nie potwierdził spamu")
@@ -1252,6 +1342,9 @@ func importantFlags(flags []string) bool {
 func (e *Engine) Restore(ctx context.Context, id int64) error {
 	e.setDefaults()
 	if err := e.prepareStore(ctx); err != nil {
+		return err
+	}
+	if err := e.Store.RequireOperationalAuthorization(ctx); err != nil {
 		return err
 	}
 	record, err := e.Store.MessageByID(ctx, id)

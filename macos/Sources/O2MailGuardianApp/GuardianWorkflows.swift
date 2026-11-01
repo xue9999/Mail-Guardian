@@ -315,6 +315,8 @@ struct SettingsView: View {
                         Button("Przejdź do nauki") { model.section = .learning }
                     }
                 }
+                Button("Sprawdź ponownie jakość filtra") { Task { await model.qualifyFilter() } }.disabled(model.busy || model.snapshotIsStale)
+                Text("Ponowna ocena uczy osobny model i sprawdza go na innych wiadomościach. Zachowuje historię, a wynik nie włącza porządkowania bez Twojego potwierdzenia.").font(.caption).foregroundStyle(.secondary)
             }
             GuardianCard {
                 Label("Aplikacja i konto", systemImage: "person.crop.circle").font(.headline)

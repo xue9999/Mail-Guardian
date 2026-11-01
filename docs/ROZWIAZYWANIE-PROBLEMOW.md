@@ -44,6 +44,28 @@ Uruchamia lokalny silnik, czeka na jego gotowość, wykonuje `doctor`, a po
 powodzeniu odświeża usługę działającą co 2 godziny. Polecenia mają ograniczony
 czas; naprawa nie będzie czekać bez końca na Colimę lub Dockera.
 
+## Poczta pozostaje niesprawdzona po uśpieniu Maca
+
+Guardian działa lokalnie, więc nie sprawdza nowych wiadomości podczas snu
+lub wyłączenia Maca. Od wersji 0.6.1 automat po wybudzeniu nadrabia jeden
+pominięty przebieg. Poza tym sprawdza pocztę o parzystych godzinach lokalnych.
+Jeśli Mac był krótko otwarty, wcześniejsza wersja mogła całkiem pominąć
+sprawdzenie. Zaktualizuj program przez `Install.command`, aby odświeżyć także
+harmonogram.
+
+Pulpit i Pełna kontrola pokazują ostrzeżenie po ponad 4 godzinach bez udanego
+automatycznego sprawdzenia. Wybierz **Sprawdź i napraw**, jeśli przerwa trwa
+mimo wybudzonego Maca i dostępnego internetu.
+
+## Korekty po potwierdzonej pomyłce filtra
+
+Przenieś błędnie zatrzymaną ważną wiadomość do `AI-Naucz-wazne`, a spam
+pozostawiony w Odebranych do `AI-Naucz-spam`. Guardian obsłuży te jawne
+korekty również wtedy, gdy wcześniejsza pomyłka odebrała filtrowi ocenę
+jakości. Automatyczne porządkowanie pozostaje wtedy wstrzymane. Po korektach
+wybierz w Ustawieniach **Sprawdź ponownie jakość filtra**; udany test na
+oddzielonych przykładach pozwoli wznowić porządkowanie.
+
 ## „Nie znaleziono polecenia guardian”
 
 Najpierw zamknij Terminal i otwórz go ponownie. Jeśli problem pozostał,

@@ -19,6 +19,10 @@ func validateRFC822MIME(raw []byte) error {
 	return validateRFC822AtDepth(raw, 0)
 }
 
+// ValidateMessageMIME uses the same validation as classification and training.
+// Diagnostic callers must not log raw messages or parser errors containing headers.
+func ValidateMessageMIME(raw []byte) error { return validateRFC822MIME(raw) }
+
 func validateRFC822AtDepth(raw []byte, depth int) error {
 	if depth > maxMIMEDepth {
 		return fmt.Errorf("zbyt głęboko zagnieżdżona struktura MIME")

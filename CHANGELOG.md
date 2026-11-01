@@ -1,5 +1,145 @@
 # Zmiany w Mail Guardian
 
+## 0.6.1 — 2026-11-01
+
+### Linux, odzyskiwanie i utrzymanie
+
+- Publiczne źródła obejmują worker Linux, systemd, prywatne poświadczenia,
+  ograniczony pomocnik administracyjny, wiązanie konfiguracji i tożsamości
+  wdrożenia, migrację, szyfrowane kopie oraz porównywanie modelu Redis.
+- Nowy instalator pozostawia harmonogram wyłączony. Przejęcie istniejącej
+  polityki wymaga sprawdzonej historii oraz świeżego dry-run; skopiowanie bazy
+  nie przenosi zgody na inną konfigurację lub host.
+- Opcjonalny obserwator porównuje rzeczywisty przebieg, heartbeat i nierozstrzygnięte
+  operacje. Status procesu lub kontenera nie zastępuje udanego sprawdzenia poczty.
+- Opublikowano codzienne koordynatory aktualizacji Ubuntu, Dockera, obrazów
+  i zależności/kompilatora Guardiana wraz z testami. Zachowują spójny punkt
+  odzyskiwania z modelem, blokady, dziennik i kontrolę po zmianie. Nowe linie
+  major/minor pozostają do ręcznego przeglądu.
+- Potwierdzanie MOVE bez COPYUID ma do trzech prób odczytu z przerwami
+  250 ms i 750 ms. Używa dokładnej treści i UIDVALIDITY, bez zbędnego ENVELOPE;
+  nie ponawia samego MOVE. Niejednoznaczność nadal wymaga odzyskiwania.
+- Konserwatywne sprzątanie nieudanego utworzenia blokady aktualizacji zachowuje
+  otwarty deskryptor i sprawdza treść. Ponowne użycie inode ani zmiana pliku
+  nie upoważniają do usunięcia blokady innej transakcji.
+- Poprawiono test, którego serwer mimo braku UIDPLUS nadal wysyłał COPYUID.
+  Nowe regresje faktycznie usuwają mapowanie z odpowiedzi protokołu.
+- Dokumentacja dla developerów obejmuje architekturę, testy, źródła konserwacji,
+  wydania i postępowanie po awarii. Stare plany pilota oznaczono historycznie.
+- CI obejmuje macOS i Linux, testy operacyjne, linki dokumentacji i skan sekretów.
+  Codzienne propozycje zależności i kontrola podatności nie wdrażają kodu na VPS.
+
+### Konfiguracja i sekrety
+
+- Konfiguracja v2 rozdziela konto, nazwę logowania i dostawcę. Wczytanie v1
+  zachowuje dotychczasową instalację o2, jej foldery, ścieżki i wpisy Keychain.
+- Dziennik skrzynki jest przypisany do instancji i połączenia. Zmiana serwera
+  lub loginu nie może wykorzystać starych UID i oczekujących operacji. Zmiana
+  folderów wymaga nowej próby oraz obserwacji; historia jakości pozostaje.
+- Wspólny interfejs sekretów obsługuje Keychain i odczyt prywatnych poświadczeń
+  Linux. Błąd odczytu lub uszkodzony klucz archiwum nie powoduje jego wymiany.
+- API konfiguracji zachowuje dotychczasowe żądania i przyjmuje dodatkowe pola
+  połączenia custom IMAP. Wspólne pola konfiguracyjne nie oznaczają ukończonej
+  obsługi OAuth ani akceptacji każdego dostawcy IMAP.
+
+### Naprawy macOS i wspólnego silnika
+
+- Automat nadrabia po wybudzeniu Maca jeden przebieg pominięty podczas snu.
+  Wcześniejszy harmonogram mógł pominąć sprawdzanie nawet wtedy, gdy Mac
+  został później na krótko otwarty. Nowy harmonogram działa o parzystych
+  godzinach lokalnych i przy załadowaniu usługi.
+- Pełna kontrola i pulpit jednakowo ostrzegają, gdy brak udanego przebiegu
+  albo ostatni sukces jest starszy niż 4 godziny; ponad 48 godzin to stan
+  krytyczny. Dawniej pełna kontrola mogła potwierdzać aktualność mimo dobowej
+  przerwy widocznej na pulpicie.
+- Ostatnia jawna korekta wiadomości określa jej bieżącą klasę. Zmiana decyzji
+  spam → ważne → spam ponownie wywołuje uczenie zamiast korzystać ze starego
+  potwierdzenia. Każde historyczne wskazanie „ważne” nadal blokuje trwałe
+  usunięcie tej samej treści.
+- Utrata oceny jakości nie blokuje przetwarzania kolejnych jawnych korekt.
+  Automatyczne porządkowanie nadal wymaga prawidłowej oceny, sprawdzanej
+  po przetworzeniu folderów nauki.
+- Długi, poprawnie działający przegląd skrzynki nie traci połączenia IMAP
+  po 10 minutach. Limit dotyczy pojedynczej komendy; zawieszona operacja
+  przerywa przebieg zamiast wywoływać serię błędów odczytu kolejnych wiadomości.
+- Przejściowy błąd eksportu kopii modelu może być ponowiony jeden raz.
+  Każda próba ma własny limit czasu, a zapis kopii wymaga prawidłowego
+  zakończenia eksportu i zgodnej sumy kontrolnej.
+- Kontrole trwałego zapisu Redis mają osobne limity czasu i jedną ponowną
+  próbę po błędzie procesu. Poprawna kontrola statusu zapisu nie skraca czasu
+  dostępnego na następną kontrolę ustawień synchronizacji.
+
+## 0.6.0
+
+- Kończenie obserwacji może korzystać z aktualnej, zapisanej oceny filtra.
+  Osobny, pusty model otrzymuje około 70% oznaczonych wiadomości, 10% służy
+  do wyboru progu, a pozostałe 20% do niezależnego sprawdzenia. Wiadomości
+  o tak samo znormalizowanym temacie pozostają w jednej części.
+- Kwalifikacja wymaga minimum 40 przykładów spamu i 30 ważnych w teście,
+  co najmniej 90% wykrytego spamu, zera błędnie zatrzymanych ważnych i zera
+  błędnie ratowanego spamu. Wynik jest związany z konfiguracją skrzynki,
+  wersją reguł i wybranym progiem. Nowa potwierdzona pomyłka w przenoszeniu
+  odbiera tę kwalifikację do czasu ponownego sprawdzenia.
+- Bayes klasyfikuje od 100 statystycznych przykładów każdej klasy. Odrębna
+  ocena pozwala dobrać próg kwarantanny od 6; bez niej aktywacja nadal wymaga
+  dotychczasowego progu co najmniej 12 i dawnych kontroli.
+- Niepełny pomocniczy test DNS nie unieważnia silnych dodatnich dowodów
+  spamu przy przenoszeniu do odwracalnej kwarantanny. Timeout całego skanu,
+  pominięcie i soft reject nadal blokują decyzję. Ratowanie wymaga kompletnego
+  skanu; trwałe usuwanie zachowuje kompletność, próg co najmniej 12, minimum
+  nauki 200/200 i pozostałe odrębne warunki.
+- W Ustawieniach dostępna jest ponowna ocena jakości bez resetowania historii.
+  Ten sam proces jest dostępny przez `guardian qualify`; raporty zawierają
+  skróty i wyniki, bez treści wiadomości i danych logowania.
+- Budowanie i instalacja wymagają Go 1.27.3 lub poprawionego Go 1.26.10.
+  Usuwa to osiągalne zgłoszenie GO-2026-6809 dotyczące sprawdzania certyfikatów.
+
+## Poprawka lokalna 2026-10-22 — skanowanie dostarczonej poczty
+
+- Skan IMAP wyłącza wyłącznie `GREYLIST_CHECK` i `GREYLIST_SAVE`: odraczanie
+  dostawy SMTP nie ma zastosowania do poczty już znajdującej się w skrzynce.
+  Rzeczywiste timeouty, błędy DNS oraz pozostałe odpowiedzi `soft reject`
+  nadal blokują automatyczną decyzję.
+- Wiadomości pozostawione w skanowanym zakresie Odebranych są oceniane ponownie
+  po dobie albo po potwierdzonym uczeniu podczas bieżącego przebiegu.
+  Skończone ruchy i jawne korekty nie są powtarzane.
+- Pierwsza ocena i akcja są zachowane oddzielnie od aktualnego wyniku.
+  Powtórny skan nie może poprawić wstecz historycznych kryteriów aktywacji.
+- Komunikat po zakończonej obserwacji wyjaśnia bezterminowe blokady historyczne;
+  zdrowy harmonogram nie sugeruje, że automatyczne porządkowanie jest gotowe.
+  Ta poprawka nie włącza porządkowania ani trwałego usuwania.
+
+## 0.5.3
+
+- Logowanie IMAP czeka na powitanie serwera. Usunięto wyścig, w którym
+  LOGIN mógł zostać wysłany przed gotowością serwera.
+- Jawna korekta w folderze nauki pozostaje skuteczna również dla wiadomości
+  z wadliwym MIME: Guardian szyfruje oryginał, zapisuje korektę dokładnej treści
+  i przenosi ją zgodnie z wyborem użytkownika. Nie wysyła wadliwej treści do
+  uczenia ani nie zwiększa liczników Bayesa. Automatyczna klasyfikacja nadal
+  odrzuca wadliwe wiadomości. Dawniej zablokowane korekty są ponawiane.
+- Zależność x/crypto 0.58.0 usuwa 16 zgłoszeń dotyczących starszych wydań.
+  Nienaprawialne zgłoszenie dotyczące nieużywanego OpenPGP pozostaje jawne;
+  kontrola zależności zabrania importowania tego pakietu.
+- Błędy zapisu wirtualnego dysku Colimy blokują start, restart instalatora
+  i pomyślne zakończenie przebiegu, również gdy Redis nadal odpowiada z pamięci.
+  Zapis AOF jest synchroniczny; jego przebudowa rozpoczyna się od 4 MiB.
+
+## 0.5.2
+
+- Zerwanie połączenia i niedostępność serwera podczas logowania IMAP nie są
+  przedstawiane jako odrzucenie hasła; zachowana jest rzeczywista przyczyna błędu.
+- Próba z błędami pojedynczych wiadomości nie potwierdza gotowości do
+  włączenia harmonogramu. API zachowuje podsumowanie, lecz nie zgłasza
+  pełnego sukcesu; polecenie konsolowe zwraca błąd również przy częściowej awarii.
+- Budowanie używa poprawionego Go 1.27.2. Pakowanie i instalacja ze źródeł
+  odrzucają starsze podatne wersje, w tym Go 1.27.1 i 1.26.8.
+- Budowanie aplikacji, testy, podgląd i instalator wybierają pełny Xcode,
+  gdy system wskazuje Command Line Tools, a Xcode jest zainstalowany.
+  Jawny wybór DEVELOPER_DIR jest zachowany; ustawienie systemowe nie zmienia się.
+- Wspólny katalog roboczy Swift poza Documents może być używany również
+  podczas pakowania, podglądu i instalacji ze źródeł.
+
 ## 0.5.1
 
 - Naprawa i sprawdzanie stosu działają z aplikacji macOS również przy

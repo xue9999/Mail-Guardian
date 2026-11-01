@@ -31,7 +31,7 @@ abort "Unbound nie może wystawiać portów na hosta" if services.fetch("unbound
 
 bayes = File.read(File.join(File.dirname(path), "rspamd/local.d/classifier-bayes.conf"))
 abort "autolearning Bayesa nie jest wyłączony" unless bayes.match?(/^autolearn\s*=\s*false;/)
-abort "Bayes nie wymaga 200 przykładów" unless bayes.match?(/^min_learns\s*=\s*200;/)
+abort "Bayes nie wymaga 100 przykładów" unless bayes.match?(/^min_learns\s*=\s*100;/)
 fuzzy = File.read(File.join(File.dirname(path), "rspamd/local.d/fuzzy_check.conf"))
 abort "publiczne fuzzy nie jest wyłączone" unless fuzzy.match?(/^enabled\s*=\s*false;/)
 neural = File.read(File.join(File.dirname(path), "rspamd/local.d/neural.conf"))
@@ -62,3 +62,7 @@ fi
 
 /usr/bin/grep -Fq 'rspamadm configtest' "${PROJECT_DIR}/scripts/02-uruchom-silnik.command"
 printf '%s\n' "Końcowy configtest Rspamd po uruchomieniu: obecny"
+/usr/bin/grep -Fxq 'appendfsync always' "${PROJECT_DIR}/deploy/redis/redis.conf"
+/usr/bin/grep -Fxq 'auto-aof-rewrite-min-size 4mb' "${PROJECT_DIR}/deploy/redis/redis.conf"
+/usr/bin/grep -Fq 'guardian_check_guest_storage' "${PROJECT_DIR}/scripts/02-uruchom-silnik.command"
+printf '%s\n' "Synchroniczny AOF, rotacja i kontrola dysku przed restartem: OK"

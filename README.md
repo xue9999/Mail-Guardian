@@ -1,5 +1,27 @@
 # O2 Mail Guardian
 
+**Wersja źródłowa 0.6.1 — 1 listopada 2026 r.** Guardian zawiera aplikację
+macOS oraz worker Linux z systemd, szyfrowanymi kopiami, odzyskiwaniem,
+monitoringiem i kontrolowanymi aktualizacjami. Ostatnia poprawka wzmacnia
+potwierdzanie ruchu IMAP, gdy serwer nie zwraca docelowego UID.
+
+| Potrzebujesz | Zacznij tutaj |
+| --- | --- |
+| Instalacja i codzienna obsługa | Instrukcja poniżej i [instrukcja instalacji](docs/INSTALACJA.md) |
+| Dokumentacja projektu i status funkcji | [Mapa dokumentacji](docs/README.md) |
+| Rozwój, testy i wymagane kontrole | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Architektura, granice uprawnień i bezpieczeństwo poczty | [Architektura dla developerów](docs/maintainers/ARCHITECTURE.md) |
+| Serwer, monitoring, backup i awaria | [Przewodnik operacyjny](docs/maintainers/OPERATIONS.md) |
+| Codzienne aktualizacje i przegląd nowych wersji | [Konserwacja VPS](ops/vps-maintenance/README.md) |
+| Publikacja i zgodność źródeł z wdrożeniem | [Proces wydania](docs/maintainers/RELEASING.md) |
+
+Linux obsługuje prywatne hosty Ubuntu amd64; szczegółowe wymagania i zakres
+sprawdzeń poszczególnych wydań opisuje [instrukcja wdrożenia](deploy/linux/README.md).
+Nowy instalator pozostawia harmonogram wyłączony. Samo pobranie źródeł,
+budowanie lub opublikowanie wydania nie uruchamia dostępu do poczty.
+Jedna skrzynka ma jednego aktywnego pracownika. Po migracji na VPS stary Mac
+pozostaje panelem kontrolnym; nie wznawiaj jego nieaktualnego stanu.
+
 Lokalny strażnik poczty o2.pl, który pomaga w obu najbardziej uciążliwych
 sytuacjach:
 
@@ -9,8 +31,9 @@ sytuacjach:
 - uczy się na podstawie dwóch prostych folderów: „to jest spam” i „to jest
   ważne”.
 
-Program działa lokalnie na Macu. Nie korzysta z LLM, nie otwiera linków ani
-załączników i nie wysyła treści wiadomości do usług chmurowych. Publiczna
+Program przetwarza wiadomości na wybranym Macu lub prywatnym serwerze Linux.
+Nie korzysta z LLM, nie otwiera linków ani załączników i nie wysyła treści
+wiadomości do zewnętrznych usług analizy. Publiczna
 usługa fuzzy Rspamd jest wyłączona — skróty treści wiadomości również nie
 trafiają do zewnętrznej bazy fuzzy.
 
@@ -19,6 +42,15 @@ trafiają do zewnętrznej bazy fuzzy.
 > `AI-Do-sprawdzenia`, a Twoje korekty są przetwarzane. Trwałe usuwanie jest wyłączone. Nie zmieniaj ustawień
 > zaawansowanych, dopóki aplikacja nie potwierdzi zakończenia okresu obserwacji
 > i wszystkich kontroli jakości.
+
+Sam upływ 14 dni nie włącza porządkowania. Obecne kryteria zawierają
+historyczne blokady. W Ustawieniach wybierz **Sprawdź ponownie jakość filtra**:
+Guardian nauczy osobny model i oceni go na innych wiadomościach. Pomyślny
+raport potwierdza aktualną jakość bez wymazywania dawnej historii.
+Bayes zaczyna klasyfikować dopiero po osiągnięciu `min_learns` w **obu**
+klasach; przy domyślnym ustawieniu potrzeba 100 przykładów statystycznych spamu i 100 ważnych. Trwałe usuwanie nadal
+wymaga co najmniej 200/200 i dodatkowych kontroli.
+Przykłady muszą odzwierciedlać rzeczywiste oceny użytkownika.
 
 ## Najprostszy start
 
@@ -38,7 +70,7 @@ po kroku znajduje się w
 
 Jeżeli nie jesteś programistą, zacznij właśnie tutaj — nie trzeba wcześniej
 otwierać Terminala ani wpisywać poleceń. Jeżeli otrzymałeś plik
-**`O2-Mail-Guardian-0.5.1-macos-arm64.zip`**, rozpakuj go i otwórz powstały folder. Są w
+**`O2-Mail-Guardian-0.6.1-macos-arm64.zip`**, rozpakuj go i otwórz powstały folder. Są w
 nim tylko instrukcja, licencja i instalator; techniczne składniki są celowo
 ukryte. W Finderze kliknij dwukrotnie **`Install.command`**. Instalator:
 
@@ -62,7 +94,7 @@ globalnie zabezpieczeń macOS.
 Ten sam `Install.command` służy do bezpiecznej aktualizacji. Jeśli działająca
 konfiguracja już istnieje, instalator zachowuje konto, hasło w pęku kluczy,
 bazę, archiwum i ustawienie automatycznej usługi. Nie uruchamia ponownie
-kreatora hasła. Najpierw weryfikuje gotowe programy wersji 0.5.1, a backend,
+kreatora hasła. Najpierw weryfikuje gotowe programy wersji 0.6.1, a backend,
 aplikację i konfigurację silnika podmienia dopiero po walidacji. Po awarii
 podejmuje przywracanie poprzedniego kompletu. Jeśli przywracanie się nie uda,
 zachowuje kopie i prosi o pomoc zamiast potwierdzać sukces.
@@ -154,6 +186,11 @@ tej wiadomości i również ją przeniesie, ale nie zwiększy licznika przykład
 Bayesa. Błąd połączenia lub brak prawidłowego potwierdzenia pozostawia
 wiadomość w folderze uczącym do ponownej próby.
 
+Wadliwe kodowanie MIME nie jest poprawiane przez przepisywanie wiadomości.
+Jeśli sam przeniesiesz taki oryginał do folderu nauki, Guardian zachowa jego
+zaszyfrowaną kopię i Twoją korektę, a następnie przeniesie oryginał zgodnie
+z wybranym folderem. Pominie uczenie Bayesa i nie zwiększy jego liczników.
+
 Lista **Zaufani** w o2 działa wyłącznie po stronie o2. Guardian jej nie
 odczytuje i nie używa jej jako sygnału zaufania — każdą wiadomość ocenia na
 podstawie jej rzeczywistych nagłówków i lokalnego filtra.
@@ -207,7 +244,7 @@ według instrukcji rozwiązywania problemów.
 
 ## Dokumentacja
 
-- [Zmiany w wersji 0.5.1](CHANGELOG.md)
+- [Zmiany w wersji 0.6.1](CHANGELOG.md)
 - [Kryteria audytu CX i dostępności](docs/AUDYT-CX.md)
 
 - [Instalacja krok po kroku](docs/INSTALACJA.md)

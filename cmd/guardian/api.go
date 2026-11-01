@@ -22,6 +22,8 @@ import (
 	"github.com/o2-mail-guardian/guardian/internal/engine"
 	"github.com/o2-mail-guardian/guardian/internal/imapmail"
 	"github.com/o2-mail-guardian/guardian/internal/keychain"
+	"github.com/o2-mail-guardian/guardian/internal/qualification"
+	"github.com/o2-mail-guardian/guardian/internal/secrets"
 	"github.com/o2-mail-guardian/guardian/internal/service"
 	"github.com/o2-mail-guardian/guardian/internal/store"
 )
@@ -110,6 +112,13 @@ func (a *application) apiCommand(args []string) error {
 				actionErr = a.repair()
 				data = map[string]any{"completed": actionErr == nil}
 			}
+		case "qualify":
+			if len(args) != 1 {
+				actionErr = errors.New("użyj guardian api qualify")
+			} else {
+				actionErr = a.qualifyCommand(nil)
+				data = map[string]any{"completed": actionErr == nil}
+			}
 		case "service":
 			data, actionErr = a.apiService(args[1:])
 		case "app-autostart":
@@ -187,7 +196,7 @@ func (a *application) buildAPISnapshot() (apiSnapshot, error) {
 	}
 	snapshot.Configured = true
 	snapshot.Mode, snapshot.PurgeEnabled = cfg.Safety.Mode, cfg.Safety.PurgeEnabled
-	snapshot.RequiredSpam, snapshot.RequiredHam = cfg.Safety.MinLearnSpam, cfg.Safety.MinLearnHam
+	snapshot.RequiredSpam, snapshot.RequiredHam = qualification.MinLearns, qualification.MinLearns
 	db, err := store.Open(cfg.Runtime.Database)
 	if err != nil {
 		return snapshot, err
@@ -210,7 +219,7 @@ func (a *application) buildAPISnapshot() (apiSnapshot, error) {
 	if err != nil {
 		return snapshot, err
 	}
-	snapshot.FirstDryRun, err = db.DryRunAuthorized(context.Background())
+	snapshot.FirstDryRun, err = db.DryRunAuthorizedFor(context.Background(), cfg)
 	if err != nil {
 		return snapshot, err
 	}
@@ -234,17 +243,11 @@ func (a *application) buildAPISnapshot() (apiSnapshot, error) {
 	snapshot.Automation = "on"
 	snapshot.Health, snapshot.HealthLabel = "healthy", "Wszystko działa"
 	snapshot.Recommendation = "Nie musisz nic robić."
-	if heartbeat.LastSuccess == nil {
+	if stale := heartbeatFreshnessError(heartbeat, time.Now()); stale != nil {
 		snapshot.Health, snapshot.HealthLabel = "attention", "Wymaga uwagi"
-		snapshot.Recommendation = "Uruchom pierwsze sprawdzenie skrzynki."
-	} else {
-		age := time.Since(*heartbeat.LastSuccess)
-		if age > 48*time.Hour {
+		snapshot.Recommendation = stale.Recovery
+		if stale.Severity == "critical" {
 			snapshot.Health, snapshot.HealthLabel = "critical", "Nie działa"
-			snapshot.Recommendation = "Uruchom Napraw; automat nie zakończył pracy od ponad 48 godzin."
-		} else if age > 4*time.Hour {
-			snapshot.Health, snapshot.HealthLabel = "attention", "Wymaga uwagi"
-			snapshot.Recommendation = "Sprawdź teraz skrzynkę albo uruchom Napraw."
 		}
 	}
 	if latestStatus == "error" || latestErrors > 0 || snapshot.Summary.PendingMoves > 0 || heartbeatErr != nil {
@@ -252,6 +255,15 @@ func (a *application) buildAPISnapshot() (apiSnapshot, error) {
 			snapshot.Health, snapshot.HealthLabel = "attention", "Wymaga uwagi"
 		}
 		snapshot.Recommendation = "Wybierz „Sprawdź i napraw”; wiadomości pozostają zabezpieczone."
+	}
+	if !snapshot.FirstDryRun {
+		if snapshot.Health == "healthy" {
+			snapshot.Health, snapshot.HealthLabel = "attention", "Wymaga uwagi"
+		}
+		snapshot.Recommendation = "Wykonaj udany dry-run dla bieżącej konfiguracji, zanim włączysz automatyzację."
+	}
+	if snapshot.Health == "healthy" && snapshot.Mode == "protect" && snapshot.Protection != nil {
+		snapshot.Recommendation = snapshot.Protection.Message
 	}
 	return snapshot, nil
 }
@@ -267,6 +279,11 @@ func laterTime(first, second *time.Time) *time.Time {
 }
 
 type setupRequest struct {
+	Provider               string `json:"provider,omitempty"`
+	Host                   string `json:"host,omitempty"`
+	Port                   int    `json:"port,omitempty"`
+	Username               string `json:"username,omitempty"`
+	AuthMethod             string `json:"auth_method,omitempty"`
 	Email                  string `json:"email"`
 	Password               string `json:"password"`
 	SpamFolder             string `json:"spam_folder,omitempty"`
@@ -274,6 +291,11 @@ type setupRequest struct {
 }
 
 type setupRequestWire struct {
+	Provider                    string  `json:"provider"`
+	Host                        string  `json:"host"`
+	Port                        int     `json:"port"`
+	Username                    string  `json:"username"`
+	AuthMethod                  string  `json:"auth_method"`
 	Email                       string  `json:"email"`
 	Password                    string  `json:"password"`
 	SpamFolder                  *string `json:"spam_folder"`
@@ -294,7 +316,8 @@ func readSetupRequest(reader io.Reader) (setupRequest, error) {
 		*wire.AcceptExistingTraining != *wire.AcceptExistingTrainingCamel {
 		return setupRequest{}, errors.New("sprzeczne potwierdzenia folderów nauki")
 	}
-	request := setupRequest{Email: wire.Email, Password: wire.Password}
+	request := setupRequest{Email: wire.Email, Password: wire.Password,
+		Provider: wire.Provider, Host: wire.Host, Port: wire.Port, Username: wire.Username, AuthMethod: wire.AuthMethod}
 	if wire.SpamFolder != nil {
 		request.SpamFolder = *wire.SpamFolder
 	} else if wire.SpamFolderCamel != nil {
@@ -324,17 +347,22 @@ func (a *application) apiSetup(args []string) (any, error) {
 	}
 	request.Email = strings.TrimSpace(request.Email)
 	if request.Email == "" || !strings.Contains(request.Email, "@") || request.Password == "" {
-		return nil, apperror.Wrap(apperror.IMAPAuth, "attention", "Podaj pełny adres o2 i hasło aplikacyjne.", "Popraw dane bez używania zwykłego hasła do poczty.", nil)
+		return nil, apperror.Wrap(apperror.IMAPAuth, "attention", "Podaj pełny adres e-mail i hasło aplikacyjne.", "Popraw dane bez używania zwykłego hasła do poczty.", nil)
 	}
+	cfg, hadConfig, err := a.resolveSetupConfiguration(request)
+	if err != nil {
+		return nil, err
+	}
+	previousConfig := cfg
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	mail, err := imapmail.Dial(ctx, "poczta.o2.pl", 993, request.Email, request.Password)
+	mail, err := dialMailbox(ctx, cfg, request.Password)
 	if err != nil {
 		code := apperror.Unknown
 		if errors.Is(err, imapmail.ErrAuthentication) {
 			code = apperror.IMAPAuth
 		}
-		return nil, apperror.Wrap(code, "attention", "Nie udało się zalogować do o2.", "Sprawdź IMAP, 2FA i osobne hasło aplikacyjne.", err)
+		return nil, apperror.Wrap(code, "attention", "Nie udało się zalogować do serwera poczty.", "Sprawdź IMAP, 2FA i osobne hasło aplikacyjne.", err)
 	}
 	defer mail.Close()
 	boxes, err := mail.ListMailboxes()
@@ -363,7 +391,7 @@ func (a *application) apiSetup(args []string) (any, error) {
 		return probe, nil
 	}
 	if !probe.SafeMove {
-		return nil, errors.New("o2 nie zgłosiło bezpiecznego IMAP MOVE")
+		return nil, errors.New("serwer nie zgłosił bezpiecznego IMAP MOVE")
 	}
 	spamFolder := strings.TrimSpace(request.SpamFolder)
 	if spamFolder == "" {
@@ -378,17 +406,8 @@ func (a *application) apiSetup(args []string) (any, error) {
 	if !found || strings.EqualFold(spamFolder, "INBOX") {
 		return nil, errors.New("wybrany folder SPAM nie istnieje albo wskazuje Odebrane")
 	}
-	cfg := config.Default()
-	hadConfig := false
-	var previousConfig config.Config
-	if existing, loadErr := config.Load(a.configPath); loadErr == nil {
-		hadConfig, previousConfig, cfg = true, existing, existing
-		if !strings.EqualFold(existing.Account.Email, request.Email) {
-			return nil, errors.New("istniejące dane należą do innego konta")
-		}
-		request.Email = existing.Account.Email
-	}
-	cfg.Account.Email, cfg.Folders.ServerSpam = request.Email, spamFolder
+	request.Email = cfg.Account.Email
+	cfg.Folders.ServerSpam = spamFolder
 	// A dry-run and observation period accepted for an older mailbox layout
 	// cannot authorize unattended decisions for this configuration.
 	enforceSetupProtection(&cfg)
@@ -400,6 +419,20 @@ func (a *application) apiSetup(args []string) (any, error) {
 		return nil, err
 	}
 	defer lock.Close()
+	// Check the existing journal before creating folders or replacing secrets.
+	if _, err := os.Stat(cfg.Runtime.Database); err == nil {
+		db, err := store.Open(cfg.Runtime.Database)
+		if err != nil {
+			return nil, err
+		}
+		bindingErr := db.BindConfiguration(context.Background(), previousConfig, time.Now())
+		closeErr := db.Close()
+		if err := errors.Join(bindingErr, closeErr); err != nil {
+			return nil, err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
 	// Pełna lista jest celowo niezależna od bezpiecznie przefiltrowanej listy
 	// wysyłanej do GUI. Foldery uczące są ukryte w wyborze SPAM-u, ale ich
 	// wcześniejsza zawartość nadal musi wymagać jawnego potwierdzenia.
@@ -503,6 +536,9 @@ func (a *application) apiSetup(args []string) (any, error) {
 		return nil, rollbackFailure(err)
 	}
 	defer db.Close()
+	if err := db.BindConfiguration(context.Background(), cfg, time.Now()); err != nil {
+		return nil, rollbackFailure(err)
+	}
 	installedAt, err := db.GetSetting(context.Background(), "installed_at")
 	if err != nil {
 		return nil, rollbackFailure(err)
@@ -535,11 +571,7 @@ func enforceSetupProtection(cfg *config.Config) {
 	cfg.Safety.PurgeEnabled = false
 }
 
-type secretStore interface {
-	Get(service, account string) (string, error)
-	Set(service, account, value, label string) error
-	Delete(service, account string) error
-}
+type secretStore = secrets.Store
 
 func replaceSecret(store secretStore, service, account, value, label string) (func() error, error) {
 	previous, previousErr := store.Get(service, account)
@@ -705,7 +737,7 @@ func (a *application) apiArchive(args []string) (any, error) {
 			return nil, err
 		}
 		defer cleanup()
-		err = rt.engine.Restore(context.Background(), id)
+		err = rt.engine.Restore(rt.ctx, id)
 		if errors.Is(err, engine.ErrRestoreAlreadyPresent) {
 			return map[string]any{"restored": false, "already_present": true}, nil
 		}

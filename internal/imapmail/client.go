@@ -18,14 +18,22 @@ import (
 )
 
 type Client struct {
-	client      *imapclient.Client
-	account     string
-	selected    string
-	uidValidity uint32
-	uidNext     uint32
-	done        chan struct{}
-	closeOnce   sync.Once
+	client         *imapclient.Client
+	account        string
+	selected       string
+	uidValidity    uint32
+	uidNext        uint32
+	done           chan struct{}
+	closeOnce      sync.Once
+	logoutOnce     sync.Once
+	ctx            context.Context
+	cancel         context.CancelCauseFunc
+	commandTimeout time.Duration
 }
+
+// Match go-imap's existing maximum for reading/writing a message literal.
+// Each command gets its own budget; a healthy session has no total age limit.
+const defaultCommandTimeout = 5 * time.Minute
 
 type Mailbox struct {
 	Name       string
@@ -58,9 +66,22 @@ type MoveResult struct {
 }
 
 var (
-	ErrAuthentication     = errors.New("o2 odrzuciło dane logowania IMAP")
+	ErrAuthentication     = errors.New("serwer odrzucił dane logowania IMAP")
 	ErrUIDValidityChanged = errors.New("UIDVALIDITY folderu zmieniło się; operacja według UID została zablokowana")
 )
+
+// Authentication keeps the login mechanism explicit as providers add token
+// adapters. Unsupported methods must never fall back to a password LOGIN.
+type Authentication struct {
+	Method, Username, Secret string
+}
+
+func DialAuthenticated(ctx context.Context, host string, port int, auth Authentication) (*Client, error) {
+	if auth.Method != "password" && auth.Method != "" {
+		return nil, errors.New("nieobsługiwana metoda uwierzytelniania IMAP; logowanie zablokowane")
+	}
+	return Dial(ctx, host, port, auth.Username, auth.Secret)
+}
 
 func Dial(ctx context.Context, host string, port int, account, password string) (*Client, error) {
 	return dialWithTLSConfig(ctx, host, port, account, password, &tls.Config{
@@ -74,47 +95,162 @@ func dialWithTLSConfig(ctx context.Context, host string, port int, account, pass
 		return nil, errors.New("niepełne dane połączenia IMAP")
 	}
 	address := net.JoinHostPort(host, fmt.Sprintf("%d", port))
-	c, err := imapclient.DialTLS(address, &imapclient.Options{
-		TLSConfig: tlsConfig,
-		Dialer:    &net.Dialer{Timeout: 15 * time.Second, KeepAlive: 30 * time.Second},
-	})
+	tlsConfig = tlsConfig.Clone()
+	if tlsConfig.NextProtos == nil {
+		tlsConfig.NextProtos = []string{"imap"}
+	}
+	dialer := &tls.Dialer{Config: tlsConfig, NetDialer: &net.Dialer{Timeout: 15 * time.Second, KeepAlive: 30 * time.Second}}
+	conn, err := dialWithDNSRetry(ctx, func(ctx context.Context) (net.Conn, error) {
+		return dialer.DialContext(ctx, "tcp", address)
+	}, []time.Duration{2 * time.Second, 4 * time.Second})
 	if err != nil {
 		return nil, fmt.Errorf("połączenie TLS z %s: %w", address, err)
 	}
-	out := &Client{client: c, account: account, done: make(chan struct{})}
-	go func() {
-		select {
-		case <-ctx.Done():
-			out.abort()
-		case <-out.done:
+	c := imapclient.New(conn, &imapclient.Options{TLSConfig: tlsConfig})
+	out := newClient(ctx, c, account)
+	// LOGIN must not race the server's initial greeting. imapclient.New only
+	// creates the reader goroutine; it does not wait until the server is ready.
+	if err := out.command("greeting", c.WaitGreeting); err != nil {
+		out.abort()
+		return nil, fmt.Errorf("powitanie serwera IMAP: %w", err)
+	}
+	caps, err := command(out, "CAPABILITY", func() (imap.CapSet, error) { return c.Caps(), nil })
+	if err != nil || caps == nil {
+		out.abort()
+		if err != nil {
+			return nil, fmt.Errorf("możliwości serwera IMAP: %w", err)
 		}
-	}()
-	if err := c.Login(account, password).Wait(); err != nil {
+		return nil, errors.New("serwer IMAP nie potwierdził możliwości przed logowaniem")
+	}
+	if err := out.command("LOGIN", func() error { return c.Login(account, password).Wait() }); err != nil {
 		_ = out.Close()
-		return nil, fmt.Errorf("%w: %v", ErrAuthentication, err)
+		return nil, loginError(err)
 	}
 	return out, nil
 }
 
+// Retry only name-resolution failures while establishing the initial TLS
+// connection. No IMAP greeting, login, command, or mailbox mutation has taken
+// place here. Other connection/TLS failures are returned without retrying.
+// A bounded retry also handles a transient "no such host" immediately after
+// a sleeping host wakes, without treating that error as proof of its cause.
+func dialWithDNSRetry(ctx context.Context, dial func(context.Context) (net.Conn, error), delays []time.Duration) (net.Conn, error) {
+	for attempt := 0; ; attempt++ {
+		if err := context.Cause(ctx); err != nil {
+			return nil, err
+		}
+		conn, err := dial(ctx)
+		if err == nil {
+			return conn, nil
+		}
+		if conn != nil {
+			_ = conn.Close()
+		}
+		if cause := context.Cause(ctx); cause != nil {
+			return nil, cause
+		}
+		var dnsErr *net.DNSError
+		if attempt >= len(delays) || !errors.As(err, &dnsErr) || !(dnsErr.IsNotFound || dnsErr.IsTemporary || dnsErr.IsTimeout) {
+			return nil, err
+		}
+		timer := time.NewTimer(delays[attempt])
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, context.Cause(ctx)
+		case <-timer.C:
+		}
+	}
+}
+
+func newClient(ctx context.Context, c *imapclient.Client, account string) *Client {
+	lifetime, cancel := context.WithCancelCause(ctx)
+	out := &Client{client: c, account: account, done: make(chan struct{}), ctx: lifetime, cancel: cancel, commandTimeout: defaultCommandTimeout}
+	go func() {
+		select {
+		case <-out.ctx.Done():
+			out.abort()
+		case <-out.done:
+		}
+	}()
+	return out
+}
+
+func loginError(err error) error {
+	var response *imap.Error
+	if errors.As(err, &response) && response.Type == imap.StatusResponseTypeNo &&
+		(response.Code == "" || response.Code == "AUTHENTICATIONFAILED" || response.Code == "AUTHORIZATIONFAILED") {
+		return fmt.Errorf("%w: %w", ErrAuthentication, err)
+	}
+	// A reset, timeout or server outage is not evidence of a wrong password.
+	return fmt.Errorf("nie udało się zakończyć logowania IMAP: %w", err)
+}
+
 func (c *Client) Close() error {
 	var err error
-	c.closeOnce.Do(func() {
-		close(c.done)
-		err = c.client.Logout().Wait()
-		_ = c.client.Close()
+	c.logoutOnce.Do(func() {
+		if c.ctx.Err() == nil {
+			err = c.command("LOGOUT", func() error { return c.client.Logout().Wait() })
+		}
+		c.abort()
 	})
 	return err
 }
 
 func (c *Client) abort() {
+	c.cancel(context.Canceled)
 	c.closeOnce.Do(func() {
 		close(c.done)
 		_ = c.client.Close()
 	})
 }
 
+// Context is cancelled when the caller stops the session or a command loses
+// its connection/deadline. The engine uses it to stop before the next message.
+func (c *Client) Context() context.Context { return c.ctx }
+
+func (c *Client) command(name string, operation func() error) error {
+	_, err := command(c, name, func() (struct{}, error) { return struct{}{}, operation() })
+	return err
+}
+
+// Start the watchdog before constructing the command, because construction can
+// itself block while writing. Closing go-imap unblocks Wait/Collect/Write.
+func command[T any](c *Client, name string, operation func() (T, error)) (T, error) {
+	var zero T
+	if err := context.Cause(c.ctx); err != nil {
+		return zero, err
+	}
+	timeout := c.commandTimeout
+	if name == "LOGOUT" && timeout > 30*time.Second {
+		timeout = 30 * time.Second
+	}
+	expired := make(chan struct{})
+	timer := time.AfterFunc(timeout, func() {
+		defer close(expired)
+		c.cancel(fmt.Errorf("komenda IMAP %s przekroczyła limit %s: %w", name, timeout, context.DeadlineExceeded))
+		c.abort()
+	})
+	result, err := operation()
+	if !timer.Stop() {
+		<-expired
+	}
+	if cause := context.Cause(c.ctx); cause != nil {
+		return zero, cause
+	}
+	var response *imap.Error
+	recoverable := errors.As(err, &response) && (response.Type == imap.StatusResponseTypeNo || response.Type == imap.StatusResponseTypeBad)
+	if err != nil && !recoverable {
+		// Tagged NO/BAD responses affect one command. A transport/protocol error
+		// means the session cannot safely process the rest of the mailbox.
+		c.cancel(err)
+		c.abort()
+	}
+	return result, err
+}
+
 func (c *Client) Capabilities() Capabilities {
-	caps := c.client.Caps()
+	caps, _ := command(c, "CAPABILITY", func() (imap.CapSet, error) { return c.client.Caps(), nil })
 	var names []string
 	for capName := range caps {
 		names = append(names, string(capName))
@@ -144,8 +280,7 @@ func (c *Client) SafeDeleteSupported() bool {
 }
 
 func (c *Client) ListMailboxes() ([]Mailbox, error) {
-	cmd := c.client.List("", "*", nil)
-	data, err := cmd.Collect()
+	data, err := command(c, "LIST", func() ([]*imap.ListData, error) { return c.client.List("", "*", nil).Collect() })
 	if err != nil {
 		return nil, fmt.Errorf("lista folderów IMAP: %w", err)
 	}
@@ -206,7 +341,7 @@ func (c *Client) EnsureMailboxes(names ...string) error {
 				name,
 			)
 		}
-		if err := c.client.Create(name, nil).Wait(); err != nil {
+		if err := c.command("CREATE", func() error { return c.client.Create(name, nil).Wait() }); err != nil {
 			return fmt.Errorf("tworzenie folderu %q: %w", name, err)
 		}
 		seen[name] = true
@@ -224,7 +359,7 @@ func (c *Client) SearchSince(folder string, since time.Time, limit int) ([]uint3
 	if !since.IsZero() {
 		criteria.Since = since
 	}
-	data, err := c.client.UIDSearch(criteria, nil).Wait()
+	data, err := command(c, "UID SEARCH", func() (*imap.SearchData, error) { return c.client.UIDSearch(criteria, nil).Wait() })
 	if err != nil {
 		return nil, 0, fmt.Errorf("wyszukiwanie w folderze %q: %w", folder, err)
 	}
@@ -250,7 +385,9 @@ func (c *Client) SearchExactSize(folder string, size int64) ([]uint32, uint32, e
 	if err != nil {
 		return nil, 0, err
 	}
-	data, err := c.client.UIDSearch(&imap.SearchCriteria{Larger: size - 1, Smaller: size + 1}, nil).Wait()
+	data, err := command(c, "UID SEARCH", func() (*imap.SearchData, error) {
+		return c.client.UIDSearch(&imap.SearchCriteria{Larger: size - 1, Smaller: size + 1}, nil).Wait()
+	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("wyszukiwanie rozmiaru w folderze %q: %w", folder, err)
 	}
@@ -287,7 +424,9 @@ func (c *Client) SearchUIDPage(folder string, afterUID uint32, limit int) ([]uin
 	}
 	uidSet := imap.UIDSet{}
 	uidSet.AddRange(imap.UID(start), imap.UID(end))
-	data, err := c.client.UIDSearch(&imap.SearchCriteria{UID: []imap.UIDSet{uidSet}}, nil).Wait()
+	data, err := command(c, "UID SEARCH", func() (*imap.SearchData, error) {
+		return c.client.UIDSearch(&imap.SearchCriteria{UID: []imap.UIDSet{uidSet}}, nil).Wait()
+	})
 	if err != nil {
 		return nil, 0, false, fmt.Errorf("stronicowane wyszukiwanie w folderze %q: %w", folder, err)
 	}
@@ -312,7 +451,9 @@ func (c *Client) Fetch(folder string, uid uint32, withRaw bool) (Message, error)
 	if withRaw {
 		options.BodySection = []*imap.FetchItemBodySection{{Peek: true}}
 	}
-	items, err := c.client.Fetch(imap.UIDSetNum(imap.UID(uid)), options).Collect()
+	items, err := command(c, "UID FETCH", func() ([]*imapclient.FetchMessageBuffer, error) {
+		return c.client.Fetch(imap.UIDSetNum(imap.UID(uid)), options).Collect()
+	})
 	if err != nil {
 		return Message{}, fmt.Errorf("pobieranie UID %d z %q: %w", uid, folder, err)
 	}
@@ -358,9 +499,14 @@ func (c *Client) ProbeFetch(folder string, uid uint32) (map[string]string, error
 	}
 	result := map[string]string{}
 	for _, check := range checks {
-		items, err := c.client.Fetch(imap.UIDSetNum(imap.UID(uid)), check.options).Collect()
+		items, err := command(c, "UID FETCH", func() ([]*imapclient.FetchMessageBuffer, error) {
+			return c.client.Fetch(imap.UIDSetNum(imap.UID(uid)), check.options).Collect()
+		})
 		if err != nil {
 			result[check.name] = err.Error()
+			if cause := context.Cause(c.ctx); cause != nil {
+				return result, cause
+			}
 		} else if len(items) != 1 {
 			result[check.name] = "missing"
 		} else {
@@ -404,7 +550,9 @@ func (c *Client) move(folder string, expectedUIDValidity, uid uint32, destinatio
 	if err := requireUIDValidity(folder, expectedUIDValidity, uidValidity); err != nil {
 		return MoveResult{}, err
 	}
-	data, err := c.client.Move(imap.UIDSetNum(imap.UID(uid)), destination).Wait()
+	data, err := command(c, "UID MOVE", func() (*imapclient.MoveData, error) {
+		return c.client.Move(imap.UIDSetNum(imap.UID(uid)), destination).Wait()
+	})
 	if err != nil {
 		return MoveResult{}, fmt.Errorf("przenoszenie UID %d z %q do %q: %w", uid, folder, destination, err)
 	}
@@ -429,8 +577,34 @@ func (c *Client) move(folder string, expectedUIDValidity, uid uint32, destinatio
 }
 
 func (c *Client) resolveMovedUID(destination string, oldValidity, oldNext uint32, rawSHA256 string) (MoveResult, bool) {
+	// Some providers acknowledge MOVE before their destination view catches
+	// up. Retry confirmation reads only; repeating MOVE could duplicate mail.
+	for attempt, delay := range []time.Duration{0, 250 * time.Millisecond, 750 * time.Millisecond} {
+		if attempt > 0 {
+			timer := time.NewTimer(delay)
+			select {
+			case <-c.ctx.Done():
+				timer.Stop()
+				return MoveResult{}, false
+			case <-timer.C:
+			}
+		}
+		result, retry := c.resolveMovedUIDOnce(destination, oldValidity, oldNext, rawSHA256)
+		if result.UID != 0 {
+			return result, true
+		}
+		if !retry {
+			break
+		}
+	}
+	return MoveResult{}, false
+}
+
+// retry is true only for a complete, unambiguous read with no match yet.
+// Errors, changed UIDVALIDITY and multiple matches require durable recovery.
+func (c *Client) resolveMovedUIDOnce(destination string, oldValidity, oldNext uint32, rawSHA256 string) (result MoveResult, retry bool) {
 	newValidity, err := c.selectFolderFresh(destination, true)
-	if err != nil || newValidity == 0 || newValidity != oldValidity || c.uidNext < oldNext {
+	if err != nil || oldNext == 0 || newValidity == 0 || newValidity != oldValidity || c.uidNext < oldNext {
 		return MoveResult{}, false
 	}
 	if c.uidNext-oldNext > 1000 {
@@ -442,11 +616,17 @@ func (c *Client) resolveMovedUID(destination string, oldValidity, oldNext uint32
 	}
 	var matchedUID uint32
 	for _, candidateUID := range uids {
-		message, err := c.Fetch(destination, candidateUID, true)
-		if err != nil {
+		// Confirmation needs exact bytes, not an ENVELOPE parsed by the
+		// provider. An unrelated malformed envelope must not break a move.
+		items, err := command(c, "UID FETCH", func() ([]*imapclient.FetchMessageBuffer, error) {
+			return c.client.Fetch(imap.UIDSetNum(imap.UID(candidateUID)), &imap.FetchOptions{
+				UID: true, BodySection: []*imap.FetchItemBodySection{{Peek: true}},
+			}).Collect()
+		})
+		if err != nil || len(items) != 1 || uint32(items[0].UID) != candidateUID || len(items[0].BodySection) != 1 {
 			return MoveResult{}, false
 		}
-		sum := sha256.Sum256(message.Raw)
+		sum := sha256.Sum256(items[0].BodySection[0].Bytes)
 		if hex.EncodeToString(sum[:]) == rawSHA256 {
 			if matchedUID != 0 {
 				return MoveResult{}, false
@@ -454,7 +634,10 @@ func (c *Client) resolveMovedUID(destination string, oldValidity, oldNext uint32
 			matchedUID = candidateUID
 		}
 	}
-	return MoveResult{UIDValidity: newValidity, UID: matchedUID}, matchedUID != 0
+	if matchedUID == 0 {
+		return MoveResult{}, true
+	}
+	return MoveResult{UIDValidity: newValidity, UID: matchedUID}, false
 }
 
 func (c *Client) MarkUnread(folder string, expectedUIDValidity, uid uint32) error {
@@ -465,10 +648,11 @@ func (c *Client) MarkUnread(folder string, expectedUIDValidity, uid uint32) erro
 	if err := requireUIDValidity(folder, expectedUIDValidity, uidValidity); err != nil {
 		return err
 	}
-	cmd := c.client.Store(imap.UIDSetNum(imap.UID(uid)), &imap.StoreFlags{
-		Op: imap.StoreFlagsDel, Silent: true, Flags: []imap.Flag{imap.FlagSeen},
-	}, nil)
-	if err := cmd.Close(); err != nil {
+	if err := c.command("UID STORE", func() error {
+		return c.client.Store(imap.UIDSetNum(imap.UID(uid)), &imap.StoreFlags{
+			Op: imap.StoreFlagsDel, Silent: true, Flags: []imap.Flag{imap.FlagSeen},
+		}, nil).Close()
+	}); err != nil {
 		return fmt.Errorf("oznaczanie odzyskanej wiadomości jako nieprzeczytanej: %w", err)
 	}
 	return nil
@@ -481,14 +665,16 @@ func (c *Client) AppendUnread(folder string, raw []byte, internalDate time.Time)
 	if internalDate.IsZero() {
 		internalDate = time.Now()
 	}
-	cmd := c.client.Append(folder, int64(len(raw)), &imap.AppendOptions{Time: internalDate})
-	if _, err := cmd.Write(raw); err != nil {
-		return MoveResult{}, err
-	}
-	if err := cmd.Close(); err != nil {
-		return MoveResult{}, err
-	}
-	data, err := cmd.Wait()
+	data, err := command(c, "APPEND", func() (*imap.AppendData, error) {
+		cmd := c.client.Append(folder, int64(len(raw)), &imap.AppendOptions{Time: internalDate})
+		if _, err := cmd.Write(raw); err != nil {
+			return nil, err
+		}
+		if err := cmd.Close(); err != nil {
+			return nil, err
+		}
+		return cmd.Wait()
+	})
 	if err != nil {
 		return MoveResult{}, fmt.Errorf("przywracanie wiadomości do %q: %w", folder, err)
 	}
@@ -506,10 +692,11 @@ func (c *Client) DeleteUID(folder string, expectedUIDValidity, uid uint32) error
 	if err := requireUIDValidity(folder, expectedUIDValidity, uidValidity); err != nil {
 		return err
 	}
-	cmd := c.client.Store(imap.UIDSetNum(imap.UID(uid)), &imap.StoreFlags{
-		Op: imap.StoreFlagsAdd, Silent: true, Flags: []imap.Flag{imap.FlagDeleted},
-	}, nil)
-	if err := cmd.Close(); err != nil {
+	if err := c.command("UID STORE", func() error {
+		return c.client.Store(imap.UIDSetNum(imap.UID(uid)), &imap.StoreFlags{
+			Op: imap.StoreFlagsAdd, Silent: true, Flags: []imap.Flag{imap.FlagDeleted},
+		}, nil).Close()
+	}); err != nil {
 		return err
 	}
 	// STORE and UID EXPUNGE are separate UID mutations. Re-select and compare
@@ -522,11 +709,13 @@ func (c *Client) DeleteUID(folder string, expectedUIDValidity, uid uint32) error
 	if err := requireUIDValidity(folder, expectedUIDValidity, uidValidity); err != nil {
 		return err
 	}
-	if err := c.client.UIDExpunge(imap.UIDSetNum(imap.UID(uid))).Close(); err != nil {
-		rollback := c.client.Store(imap.UIDSetNum(imap.UID(uid)), &imap.StoreFlags{
-			Op: imap.StoreFlagsDel, Silent: true, Flags: []imap.Flag{imap.FlagDeleted},
-		}, nil)
-		if rollbackErr := rollback.Close(); rollbackErr != nil {
+	if err := c.command("UID EXPUNGE", func() error { return c.client.UIDExpunge(imap.UIDSetNum(imap.UID(uid))).Close() }); err != nil {
+		rollbackErr := c.command("UID STORE rollback", func() error {
+			return c.client.Store(imap.UIDSetNum(imap.UID(uid)), &imap.StoreFlags{
+				Op: imap.StoreFlagsDel, Silent: true, Flags: []imap.Flag{imap.FlagDeleted},
+			}, nil).Close()
+		})
+		if rollbackErr != nil {
 			return fmt.Errorf(
 				"UID EXPUNGE %d w %q nie zostało jednoznacznie potwierdzone (%v), a cofnięcie flagi \\\\Deleted także się nie udało: %w",
 				uid, folder, err, rollbackErr,
@@ -559,7 +748,9 @@ func (c *Client) selectFolder(folder string, readOnly bool) (uint32, error) {
 }
 
 func (c *Client) selectFolderFresh(folder string, readOnly bool) (uint32, error) {
-	data, err := c.client.Select(folder, &imap.SelectOptions{ReadOnly: readOnly}).Wait()
+	data, err := command(c, "SELECT", func() (*imap.SelectData, error) {
+		return c.client.Select(folder, &imap.SelectOptions{ReadOnly: readOnly}).Wait()
+	})
 	if err != nil {
 		return 0, fmt.Errorf("otwieranie folderu %q: %w", folder, err)
 	}

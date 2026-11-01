@@ -1,9 +1,41 @@
 package imapmail
 
 import (
+	"context"
 	"errors"
+	"io"
 	"testing"
+
+	"github.com/emersion/go-imap/v2"
 )
+
+func TestUnsupportedAuthenticationFailsBeforeOpeningAConnection(t *testing.T) {
+	if _, err := DialAuthenticated(context.Background(), "", 0, Authentication{Method: "xoauth2", Username: "fixture", Secret: "never-log-this"}); err == nil {
+		t.Fatal("unsupported authentication fell back to password LOGIN")
+	}
+}
+
+func TestLoginFailureDistinguishesCredentialsFromTransportAndServerOutage(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		cause error
+		auth  bool
+	}{
+		{"incorrect password", &imap.Error{Type: imap.StatusResponseTypeNo, Code: "AUTHENTICATIONFAILED"}, true},
+		{"legacy login rejection", &imap.Error{Type: imap.StatusResponseTypeNo}, true},
+		{"connection closed", io.ErrUnexpectedEOF, false},
+		{"server unavailable", &imap.Error{Type: imap.StatusResponseTypeNo, Code: "UNAVAILABLE"}, false},
+		{"server shutdown", &imap.Error{Type: imap.StatusResponseTypeBye}, false},
+		{"protocol error", &imap.Error{Type: imap.StatusResponseTypeBad}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := loginError(tc.cause)
+			if errors.Is(err, ErrAuthentication) != tc.auth || !errors.Is(err, tc.cause) {
+				t.Fatalf("misclassified or lost original login failure: %v", err)
+			}
+		})
+	}
+}
 
 func TestSafeMoveSupported(t *testing.T) {
 	tests := []struct {

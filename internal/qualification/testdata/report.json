@@ -1,0 +1,3620 @@
+{
+  "protocol": 1,
+  "method": "subject-grouped-disjoint-70-10-20",
+  "policy": "delivered-imap-v2-bayes100-dns-quarantine",
+  "created_at": "2026-10-22T08:00:00Z",
+  "authorization_fingerprint": "",
+  "min_learns": 100,
+  "spam_threshold": 6,
+  "training_stats": {
+    "spam_revision": 120,
+    "ham_revision": 120
+  },
+  "training": [
+    {
+      "Hash": "37d49a19e1917c3148c28f04f4c1626f1894d82ffcf7f9366aac4c2c62e18252",
+      "Label": "spam",
+      "Group": "f4c959cc4ff84d908d59c23fe7072aafc68c02b268abf5167567c7698a84e029",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9d1917cbc4c7d2bec12aba6002550e11da181a7bf5f9fa51367e5140887b8d61",
+      "Label": "spam",
+      "Group": "3667f08e034054230b86d9a1744f56d0aef4e87136da0cd90b690e390d3a20f8",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "00eff768ec67714a1b4a855b34737967638cd9620221032db127687afa8f3869",
+      "Label": "spam",
+      "Group": "bab307ece9c489746da3a056081fad4f702c973f9ae5ea04dd3f96cdc113dd7a",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7ac292215b06e8655daddd03571236f0b8b93607e8ef4f3bb1bb313e69d3740d",
+      "Label": "spam",
+      "Group": "5cdac10c39f970aff4298e7c8ff2a95f38d1641c932d06874bead33c577835f0",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "cee4378e5e99a40f4b378843387067ef1424f8e615b65870b58f650d4eda63a7",
+      "Label": "spam",
+      "Group": "6cca140ad2d238016d94abca2fe16428180127bcf2433007a047ab644fbebe31",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9f2f1e6c00aa02b0dbd909d2cc490b641f27b7b276e1e6776b92162f865031b1",
+      "Label": "spam",
+      "Group": "ebfd11cc62bf360a6d7a379831f1ecdf3483180fb8316f574e43f0e3913d1ef2",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d3d47fdeaf185990bd84c8ca8e212034886b8ba3dd4c8393425a04796a791b19",
+      "Label": "spam",
+      "Group": "1d703d64d3a793f4c06a2b763993458900f2f6268721440f566ede8bcdb1d2c3",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a375f88dc7fd6dd1ff331e4dd57072fafc3a3ea14b5d8b29d534c25b44bcdef7",
+      "Label": "spam",
+      "Group": "a7b4a4d1e67c82965af87fb542a045c813730b04d08329f088efaceee4da194b",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "630d5aae89cc8854abbe6a3b285275474f73deb0b08a3c4641408f6579cae9ad",
+      "Label": "spam",
+      "Group": "63bb2f87bf2ee0fed4be7fb5a988b3aab1c0ff692a5f8ad77c10a8b5b51a3450",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f21482b6c2325ee8e9c60da9ca3b5470924b7f852f8ca1115f6386eca53cc5a1",
+      "Label": "spam",
+      "Group": "37c4b9c494749fd2e4d7c361e139a689356c841e1b9473d2b80b40031453ace5",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "953539a3b01fa0c34800ed1de2642eee7992cb49e461a912d75bf02742bd5ab4",
+      "Label": "spam",
+      "Group": "596aad3e0f83a9ebdd7b32dac70802397cb3b4642068ea7cdaa40db1b0afc72b",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6a07565e55aa366365d82ff14d97c716bd9285f40d14f4f7e3d85a5dc00d839e",
+      "Label": "spam",
+      "Group": "d95b62f1f7185ba46e6770159b9aac4b7099117d5381c8a7ade64ee104866aa5",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "414aeee4e0e618579f7c444677c0cefd397d7a872bf218571b955f152492d6cd",
+      "Label": "spam",
+      "Group": "d91bcf54639b91376f5267cc5767887a87591127de758075562af50721cc7635",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e3c1aaeb967f72517d9221ce13a211fcf2d60ad6215adfc4a05d8377e9a190a8",
+      "Label": "spam",
+      "Group": "f8332450a094ec8c19cfee6dd6e07503799a9980b82e98146366da03babbbc66",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "76609da0e6c6e774a9354277ca07c96b30814092dc13bf072319cf634717c5c0",
+      "Label": "spam",
+      "Group": "bb69a5ee3cfc5bf0bf8f0458ab8987e4136f7b31b4bb3be3650c14805ffed151",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d1272c9cf782a363025eb48c595460cac925e45407a8a2f702caade8ae73b179",
+      "Label": "spam",
+      "Group": "4ecdf33bc10710c15e46884209be7066bd39b37e3c0983736ec907562317cfb6",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "df207bac8ea8cc5f7e8fc3b661b930cdbf7eca3a67e2f6f629efdcc410c69121",
+      "Label": "spam",
+      "Group": "da3451ac55be8b410693226c2a036ac876c6d3b0af0d853e5d0eb46075e294c3",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "46a80de64a5c32312218bef50f48f3eb2bc2c9aab05ae7ef1ce6f71ab2237955",
+      "Label": "spam",
+      "Group": "cc93b0b34f1322948f8f6bc821f21846b8fe3daadd325a036c7cea18bcd9a103",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2abba385fdfc78f6905a2b90bec10907ba9cd01b231be98ddc328ce0d2e8a333",
+      "Label": "spam",
+      "Group": "3c5360160b7e5af0fb2327b80038281dc589be780b5cdd7cb5b5c2295792da0f",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "25c1d0a587a6de0c399488a638204f87d2fce2d496be567eb3a53b1dc0e8056e",
+      "Label": "spam",
+      "Group": "a6dec4f8fbc4e6b03b99c3a258e8588dc6e0143251e4c0b7b47853a4e6594e76",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ab2509c3a4381172cbacbe76ae39d2c9a316ddb48a074cd9ee7593bce32d5493",
+      "Label": "spam",
+      "Group": "a33721bc90bcb856e026f316c1244a896cd9697b853e9b6b1869719ed73e3858",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "df4f971fc52fefc5846f42650239742a1b81d481351142095652f5df26abdf41",
+      "Label": "spam",
+      "Group": "0ce0022232e5f4c315a60a7378b9eeb5743ee63603600ad8bd3e35e6a0423812",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0125cd6573c1d0090faf5f5180a34281f53277f7b61a6656b9925fffe52c130a",
+      "Label": "spam",
+      "Group": "45e0b72d939cee389387ecd0eb973468be9c2405a57f5bdb557e3e5b19ee866f",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "250c03f254b62a40e00ebd23a05e986e58df0b7c55cf0d335e1c528404b62050",
+      "Label": "spam",
+      "Group": "d03c4574b96c0c9c5c0352c4e758dda0848f17d0a00572796e5b6fd76249d285",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5f558ff9e9d2a58d5319d6966cc3486c31a91619c4ae2b6f05f990bc4fed32a0",
+      "Label": "spam",
+      "Group": "a2928b24d0246aba6d466fdca196263c828c2a3b1fc033c751aa8c77821eafd5",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0bab4db4be6e22f812e6e625acf29ebadc6fc7dd51b5e35549889f4e02219016",
+      "Label": "spam",
+      "Group": "3da97f749b886df33a9180770b776b125b517df922cf98eba865f897bad615bc",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9215363000e4af57aeb6390d832d12b603ae82db81a6e03ce0eaf7a4c98031b1",
+      "Label": "spam",
+      "Group": "75aaa79dd999d0683366f98ac337c3c650e7203b63bea7064d3b903010aba6c6",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "963d9dae3a95ce0280d5646c620010fed2aa46dc3fcf4f0b7e49400cc3465219",
+      "Label": "spam",
+      "Group": "8fd031b61190a511fb1f58dc19a3fef6c205ac4c4431d3bea7a2d7ba41ee996d",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5f4acd5ab4460e19031648eb0d02a735e64c575a50148a784e1db7bfe2d5a86f",
+      "Label": "spam",
+      "Group": "9df1c3d8035bb51a1477d95a7508e6b92c624022c334ff5909b28deb12e3d3a2",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "15d2a5947b2eeb0746bf692ff4d9259587d973a920595546763293f97364b7e1",
+      "Label": "spam",
+      "Group": "d527dbd545f2edc5dbe7eff8a5bb8195d52b278c58bdb9bfe027069fa90a4899",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "411609fab16cc7d296dd99c99413b1ec91944a30a147a0a50b5ca33e5822e422",
+      "Label": "spam",
+      "Group": "cd7de99bf6a7128436aeaa6e802759a78ce99315c36d770393e43bddebcec7c4",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "349ccdc3705a31c9bde54ca2d8205bccf309f8c2bf389a9e955077aa457c7b53",
+      "Label": "spam",
+      "Group": "802c7d0599e8b4c1cbe8db7516ad86d3668620e90bc65727c282353e8139bb2d",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6a4b91db336d5220b646cdd5a9db3094626a421c01c5a3aaeb8c36e35f1b6d5e",
+      "Label": "spam",
+      "Group": "4808eb6acc0c306eab5c82c9c57835a37768c18728e2c203a7b655b453796771",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "4dcbea154cc5f8b169fdf3c8009efc7abdc4a9b952632e1c16a7fe91be7a5675",
+      "Label": "spam",
+      "Group": "2e085db832746e3377750cc39f432bc350723ce2122d69532e05fcaf98ca8e0d",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "01f2b3c8ac0e702d3dd3ca5f4385e0fbedc88b184fcfe16820ede63fdd730f8b",
+      "Label": "spam",
+      "Group": "4af8c115dc15c42ebaaf8bc10034e14eae115c5250f725a959fc389daebcf3f8",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0a7eeb8d122065f5b50096fd6f11dbabe82d0bdfc30fa9e389f441ec01981e9d",
+      "Label": "spam",
+      "Group": "178f0c57472061ec5ced5a59fc533ef85e57be23b773050e54f4edfedd5d07e1",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8174801a3327032c85ab19bfc7b7bd12255fa881add2f7883c59006b707215b9",
+      "Label": "spam",
+      "Group": "8416ca093deeb4543d600eae1af0f7fd5453008f3f89819d31dee77c6c37a642",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d6db6f3e8594e8295dfb2b1ae981d1ed7db5af13c0b31d1cfcfee116f4245fc0",
+      "Label": "spam",
+      "Group": "9579533ee8f0297106aa970e8333df2cb5897b45ec39f0e221fa365ba6b6b4a0",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6a8884169ab079dc38a38d92ab4d726a09c8572ecb29cd133477629a3d0bc015",
+      "Label": "spam",
+      "Group": "eecd3e6edc6958bdfd375d0bd8ef51c292f082a0ddf1f93130149deb31c631ac",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bc91d09996aaae0ad63aabacaa59210ffdc4fe75d4f60e4102ab4be664c04466",
+      "Label": "spam",
+      "Group": "e39dac2db66801b0b43891ca934e0eff911f2d8ba2f5cdc7080c6d1111fc42cb",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9d92351dbe82c1f96ed42be80bb3167351af1515d78bc479081c8b478c16cd5e",
+      "Label": "spam",
+      "Group": "62717853da270b925a0775102521d2d3f17780b31464393ea5e1ecd95a0ff10c",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1de062660de43d2e1e87963c95374067dc333c0ab3c0a15f60247d630da3b476",
+      "Label": "spam",
+      "Group": "cfb7b41e51ec7d191d02ec9733ead042a513ec8e3b93e4af080ac58c723cfa81",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bfc0cbb43b2f02bb72da33e5c214fcfec66653d77564f2f81b1482d0a0ff1a07",
+      "Label": "spam",
+      "Group": "d957f3a0323930d48d7eb7d77c475abb315b4fed48f6e665813dc9d774454bf0",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "31146da03918af79346a9a66a742d93f4b9dd0d4a2a5359fefca4e551a27bca2",
+      "Label": "spam",
+      "Group": "9280bc5822d029b3a991a64f57e2d21edf7cdf35be481956bd63b903476129b0",
+      "Bucket": 3,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6b01f359699f059d0bcc5bf7dd73ffb392bded0ad60c4c45b173b397d0c188dd",
+      "Label": "spam",
+      "Group": "61098ed94e06bd222468ca341616126f3dcf3107467c46abaf6ce69cce2b3c79",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "af32c9c3d4a43b7dddd608d5279b942f60f4ff242813444b49441b979b481235",
+      "Label": "spam",
+      "Group": "c7aaad912d31ec16d7b26bc55fcd107a3b6a20c90800849f8eab3dfb4b078abd",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c5a4849a2b2750217169f89894a03f87a354e5fc1895d21274d3f9207975366d",
+      "Label": "spam",
+      "Group": "eb1d0c8e4006473aec6ef9f076c268cf22ef620aaa63b684db689916fbdb4e42",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "16457f92613f0a6b5988fa234c17a421ea00d937b4555d8585a7da0332ec6445",
+      "Label": "spam",
+      "Group": "a420e062c4ac4ab6ee5b9c2224700789c1a8bd42678d7b2e7e1b380a1a5aff31",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "4537275b0e6e124aa5cd4e6d410a319eda112486e1a9571e819d9d3bf2f4b464",
+      "Label": "spam",
+      "Group": "aede503c3f2e79369fe19d98eb01500a82e1deb1ca1f8caf6a34e81c9251784c",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e23492a28b7ca6720e5ba82e31b6685101b8e6928a00d854ace596deb0a44c3a",
+      "Label": "spam",
+      "Group": "ac92183a372399157cd8a503f725c67dbc16e9b6441029d15dc5062886e5a8cc",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "eed3c22db57645d9e2a007acc11e327f179a786f2526d695855ae5b0f4e108f1",
+      "Label": "spam",
+      "Group": "7e02dce50b9cfcbeb94fdb0a04ca0bb51f9181cc833d5bf11233a44663dd95b5",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "44bfa9bd3f62607513373850295ccfd6527260ba7d8b983a7ce5badf36f6b74e",
+      "Label": "spam",
+      "Group": "0c362a1aed8f6b0887c15dedc05ad94134a071ff4a536b743ef2ead252307fa9",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d0f8d3ce974ec63bb4d2232bd3f2baa44ac9438ff36da96526a7924cd77e2215",
+      "Label": "spam",
+      "Group": "a0a358835fa449f5448051a043f9312750329b207e97b13d4e60817907103f13",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2d68f582b62fbfc2cb416361a817173942735e69084d6130040a1e26091eb9c4",
+      "Label": "spam",
+      "Group": "e03afdee7e77ffaf4ab3befff08d4646a4d28d8a0feaa805662dfa989bba2fd6",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6f46b355b4a9202795f1acf737ff370947759f70a35bf28c6640fab9123465fa",
+      "Label": "spam",
+      "Group": "a5b05a8fde010333db670904f79b61f7556d6f97bd2747e77b76adce301019de",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "188d2d2b19bdd5432ed46f89964dfa40e24d30514779873c6f946312596247a5",
+      "Label": "spam",
+      "Group": "179ed2698c11f0d905923e9890ce4245c6bed564a5a55a402d5733fb00ede0df",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "39db11cec2f95513dd54c97858c8e64a947837f972b7b0e996ce9b20088cfb96",
+      "Label": "spam",
+      "Group": "e3cfcb00d8f38185f564e2dcbe357a123d9e35578c3519ec5e23a1a63eb67afa",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "4b55b570ff1007eb9024b20635290bdcd59f4296afa736d26cb0ce98e7dc9c45",
+      "Label": "spam",
+      "Group": "004a8f53b35f506848b69f75d0eec4fe3e9c856354597fe844bfd289bc71f48a",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e455345fd8a8c5cef225ea6dd5ebd189253d8a6b381a5c65627db27af0c6d463",
+      "Label": "spam",
+      "Group": "9f33250d4748f50835dc5515ffff928a9db875150d89e825cc1e62dbf33af2e6",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ddab54d112397cd13602dc1d7ad7e9a47d50a8c0cbe34108c469cd439ab7e1a7",
+      "Label": "spam",
+      "Group": "c57269ef764be3b4868612837405bbf337f4b06327de0209f87c11d2310f9608",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c46bc845b11c8f98e648624d4b722163d86064887a789950ceca12b5a12480b3",
+      "Label": "spam",
+      "Group": "982156180222c426e6de4d851d086e203be0340f68c1a8b7aa7c4f0512869bc9",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "92cefc5e812cc25e77ad8c8fb2d24fe381036d37aebeadbe94aab14ec0c7212a",
+      "Label": "spam",
+      "Group": "d7583e66c99b069ff46bdaa3bc6f4f1f7c8cd0af9a5526d1454c1c9873e5c011",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "019500682e3bfc95e6ec50e7924d93fd4ee5cef9d6049d43bb358c1e964320d6",
+      "Label": "spam",
+      "Group": "d6a6a02ed7adaeee0cec0e0beaf7b460742f021560fb8316e5e90b45330b6df6",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "71705a4c4c4eafe5f15bde2cad8c4b95e84353532d601095e9f712b19327a314",
+      "Label": "spam",
+      "Group": "8b0891bba5eac3222ce28c23924d69b7e63a20a7ca4616df2fadd61263582296",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d96f3945e8ec18d89b439430f3e810e851d5777b8fb8baebf3928c6fb2db781a",
+      "Label": "spam",
+      "Group": "11f59881401be22f06e9418cc9037c0052d829980b49fdb96dabfb7150e91588",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "24bd8c4e5931b0030d8ca151e5d1f922f6a68b748ce2d77ff22a1dab9e171db9",
+      "Label": "spam",
+      "Group": "bb4e615473fde1118f448bb3ee98acdc6b044c2a6450744aba29b47688e8358b",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "af97a39ac735028ad79e012123a68acd3055efbaf9bf68f72026341d365e1687",
+      "Label": "spam",
+      "Group": "5b3140de756433b1cb2270af8bc7161f7254b55f424c9a9cb7e6f67032cded6f",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f677867ffefe83a517027df110287a50dcd7c2af08ecd4ff404275fd93bccc80",
+      "Label": "spam",
+      "Group": "2631d654e8d52c258841b89f1edc4658a6d9b5d8b18a45d5a20e7af268835a99",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "70f2b5d99cbaaac39b993e09cb518c258010cf81fb8760274cc167c62615166b",
+      "Label": "spam",
+      "Group": "df4573f5f4dd39cb262762a5d9720e81db7920eab96b431bb50b79891b1e97d5",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a4dbc5a47405f8789d217b6fbee74c3ec5dd24da3cf5bf1f2200e1848d44d042",
+      "Label": "spam",
+      "Group": "62c98a97991f88364cf0b45f114fe6e0a869ff669eac2cb81b3c3cdb5b3de9d1",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "81ab28fd99f830399e5af6364640243664d480ca3cc3725e78dfe1d67637729f",
+      "Label": "spam",
+      "Group": "d6754077dbb1a1bc392f9872fa99cbd76c9800476a9b33b18f21f8c9337d8b2f",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7f7fb0fe891d809910fa10e0c9e7bb32925f06a76460549bfac597b1d3444a03",
+      "Label": "spam",
+      "Group": "ada41fe0cb9791eb636ebbd026fb40a1cc3e97c720c5063fbf0ac5ee293adae4",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "98c6b230626ff9ce7c79a754561afc9313e8c86c14d6170281537d7d4ee96e59",
+      "Label": "spam",
+      "Group": "da7e630f9201e1953cc3219fdb7341b7b00e86f27b32f71f31586b674c82cbf7",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6635a0029c237d18bb29a8726428e8da9ba9d47d3394d6445b514baea82a0c69",
+      "Label": "spam",
+      "Group": "ec492d7396ec07c590b3d19aa82fde2115c2546032cb0c1766c1d87428045c55",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "25b3c0cc992e67313fce73b98021985bc05333e840497ced8db8aa3af8c6cce1",
+      "Label": "spam",
+      "Group": "d88f7ba22c401098fc5fc36c4d9a190199160d2c674a3a4d056201c8f83395a3",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2da9812ecd385e914332b7c9ea180167cc80d3fdaeed260d0130953b980d1d46",
+      "Label": "spam",
+      "Group": "e9924d6b5be2c9cb311d930b5513897b9bb031594745e6bba22c44109f0f1b6b",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "80c1f9207f346eca744676f140f1c94dd8a92801686517283305a4d935915c4d",
+      "Label": "spam",
+      "Group": "5f4e24088bc49e01964f2558062c8b61e27788611de02405bcb8f3220ef9e653",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "79eb4b56ddb5ad7db3b00bd51ec0b9c9f145a32c66ed294eef9340f539e5a831",
+      "Label": "spam",
+      "Group": "d6d30a86c41ace69d489f2e239a82126e6488df01f2560ec76defba63e8ba977",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8c561858c3bb415a83e43ac95cc1c2508f87fcf808527df279314d51ed209198",
+      "Label": "spam",
+      "Group": "7cbf8d6eb244f8bbbe8a4b140e37210444795595f592f721bf1135a4b51025c1",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "dc970bb228eda3f96b8907023d5c93476c0059a87aa6eb4c8d229d5ac8b0f87f",
+      "Label": "spam",
+      "Group": "fb57875155ce1d5df74d88c237cd1e88e305d2a276040166717e4fae738c6e38",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b8a4dc80399c697046c0cac6b86d9791e6cb544597ffebc15ecb2f0e8b93d2df",
+      "Label": "spam",
+      "Group": "0f4457ff315394ac88d172589f8f9bca5fd9583a5892d85aadc3e921e3b5f54c",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "062fdb4b079295fa948582629edd0be99ea04940f4ecc5354034a215f356b546",
+      "Label": "spam",
+      "Group": "2264ff41cd9ada7feaea756c90f23ee09f004ecbdb1df70e91c7754f465aeb7b",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2d14c90654d6d8c7cd44c74064d8dfb28e513c1d682397ff3a21b291ba16bfe6",
+      "Label": "spam",
+      "Group": "a4dd97b58802aa9a20e98c0591784552825168e9f2dada9a2e3889f8cbbc219c",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "af1cf3f86212a863a9da691b204253358eafb656034f9b6c2f9039002a43bf24",
+      "Label": "spam",
+      "Group": "75c9b7197ae46b6f4a563c6b58cd9bd99d750209e4361d8ef83e174e51cfe319",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0f5ade18f551e1e27194e83b68409031359457b9651aa4f7e9d148d460264185",
+      "Label": "spam",
+      "Group": "c2302c7d6b9f47a8fc13acd4ad77b19632b310858ce594d058c46c4bc3e3371c",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "63db0b8902088f2806e216fe81e8531d4451d5aebe5466f349b3d8a9f3e806a2",
+      "Label": "spam",
+      "Group": "e0408ba7521c0ee6c81e680090441fa90fa8603a0efb119b1e373a7c344ee492",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "36d47d37e3160d3f3e4f284ada5b41c72ac346d7c21b7423d0fe90a0c0d2259b",
+      "Label": "spam",
+      "Group": "5bf5f1445047b214f8de1c036dd6f470c19c72aafc25817204576396f5ce2134",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1c0c2e22294c4379a0ea1281ff009415d6b94cd00f2bdf8ffe7ebeb011482842",
+      "Label": "spam",
+      "Group": "4c96c0a3b4cf086b6874d578f4dccfa5133d43f8e251ae94acba9a84ce1afed8",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b34c14ee1cd9721f374c945369b8a1e00174a22cb0b3d8ed5a82378edb832d4f",
+      "Label": "spam",
+      "Group": "bbca60d4ff12e4df27cd93dc7cfacbf71889af6af0fb2053916f3d7e719909b1",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d34c9c2a28e3c99e5af0bc3b106538f4053e3cda30cdfe1a86b1c873d28aeb46",
+      "Label": "spam",
+      "Group": "8eaf1fcc5353f061f95db0e3cca786883921139377190a79f8121d16e404da69",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "913f9cc77ab53162ca358e9ad0bce589d06c3eff52349e5c757d21d8d1f9eff6",
+      "Label": "spam",
+      "Group": "6452ee2bc8c1dc23e33a44cff2a794a2e14c6d5f150c81d10945aace76021a1b",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "88d7c10d9f2211c33ce64b74d05c38cb2545db9e03b979bc4ab90cd73fad89df",
+      "Label": "spam",
+      "Group": "67abc7cc20bbdb85a8d89c7ace3be755e8d9135fbec4087080566dce69eb2bd1",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "24b94c8860a8673fd8a999cbca77356afc9a7bf054fbb5d3edacc2ec85509b2b",
+      "Label": "spam",
+      "Group": "958cb117aa28f2158f224fa9a57557ebccd82a02ab523b44227dcf2a9e533342",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a23ecb3fee46b136045746fb962dcd18a21ebf7188b9dc5d41087b72df1cf6f1",
+      "Label": "spam",
+      "Group": "4e2ceb28e5ea1143b15ff4d557a976d480bc1318c9f77236b4f121fd1aeea9d0",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "84febd574ec08324b0601397f99505f44098b2833f7576352c86ad2d646f6a37",
+      "Label": "spam",
+      "Group": "56b16c7fbc9b32e7ab6673f952607e8f40e799e73840c41dba52c1d03e83cfe0",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "be95e7d37de14f02f5980e92461af490726262d6acea86d85192b84d85e2f024",
+      "Label": "spam",
+      "Group": "3c42229b15bf91b501d2ca43dcc5c2e494d3513eb42c4117ccc22b157aaa81fb",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6a4025b4223ce56b6288c6973e49db644964f3c81ba26241b00e90e2bd50c1f6",
+      "Label": "spam",
+      "Group": "c2dbfadf18116e63ec9be754d09cde952a7f6100469291450fbfed8c0818e063",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "56771765ae1f32404ccd59cf4bc4ae100e928c881a8c55b3380c7121420a6abc",
+      "Label": "spam",
+      "Group": "2322f16a32cc9dd3191143fc5d085ee22d7a72c566646f4b2976b878bafc7238",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0d9bfb0f11d30f5f855bf44c107f3ca87d3d6d09b2a2cab1502742036f7a4ea3",
+      "Label": "spam",
+      "Group": "9a89b379e70ed5e0a8719e8153b95c7a7b42083b2b0c5102bca9e1b9e33bc53d",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3581bdffdb150b8f19b2bff0b90329080ccf4a5481ce54d1ba5b485fabb0990f",
+      "Label": "spam",
+      "Group": "18f3674411f73e13325f6ffcabf3b451fef525f1cdce1055fc23c723ce7d17bc",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2721b084010fd41dc374be7db6b62c3a5d3e6ff286f9454f58ee23eae2d40cb5",
+      "Label": "spam",
+      "Group": "bed7679ab31db8b0e17ffdb6b055f46500928fb3b62f20b135e4e2e4c6d9f7bc",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bb86ae1c738dafb3fb6d4b90f31d4be7c094ce1f47eb9d3ba3d37e986d3c17db",
+      "Label": "spam",
+      "Group": "24b3b5992e2081a28c3427ed5740e99ab3200946eb626bf025df3d58efbf791e",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5044b009512a2b682133ca26ca6cd2c33e24cdf83e41cccacb3daed0799dd15a",
+      "Label": "spam",
+      "Group": "6f27792cd353a413b030e0f8245a67273ab5b6099c5cbd21bd0fe5cf8c800e8c",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "64fc9599b575b416c4821037d506c3f196b50fa01f51698814e3fef958767d95",
+      "Label": "spam",
+      "Group": "c5306a0d03cf9870d1dceaab512d6f5afc79e942aa7599e3246dee1b56d76311",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8cfb9a093ff721b178c163b16a6f33eaf1cbdab5c3a17395a05e7f96dc1091c1",
+      "Label": "spam",
+      "Group": "fd9d95ccc90caed341180ed21b9d2f60fe9447582334991f76aef7d85afcd874",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "621c014fd851064c28a534b8b711c8b41c43fd70643d2d106b94615ac7eea434",
+      "Label": "spam",
+      "Group": "38c2cca27520a255cedbcf9bce188a90140c82478486d29fc1c091d8d8fa7615",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "eb28b4c35514b9a933076ff2e37094df12604809a064fda49e9912fb38ccc25c",
+      "Label": "spam",
+      "Group": "bccbf24fa4be831a9774f6001a9fbb358c2745e886176ca20da90dfa1cc32a9e",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f61c6efdb86db4e7c4514f336f006be8a6cfcb1eecf09e0f8636d66ee1c835f6",
+      "Label": "spam",
+      "Group": "220f81b0455692a97a029e0699cedd67c88516e750b51b437b91bee9388a7342",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "102ff2ee2b457b99c115d374eb9ad37662ac42eb560577e914d952f237106c4a",
+      "Label": "spam",
+      "Group": "a34ec5a2d82fd4eca50f3cdf9549f13270ac392b38e81cc920a2b9d55f40412b",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "fc9d6a7ac3f3f29b7d2abd26af52aad14fcd3cfc274639d764da761b54f07029",
+      "Label": "spam",
+      "Group": "3c5aa9e9d26153abb9ec99560dab48d3505d409bea3060a50710dcb72c4baa85",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ad128442353205fe3723c647215ac1fb6ba6b180ef529e2f6ac08a729b97246f",
+      "Label": "spam",
+      "Group": "31330942600039ece0d9ecfc295e5f4c607f5abcbc6d2f4cff5faf270f2bcf0d",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1040162c181ed634f12f87389b6ea8197064934f8a4933594e22bf9f4acc22be",
+      "Label": "spam",
+      "Group": "0c162df1f1b251778f4de6b605edf15466a35e3bbea0cf38434d4e8b1985201f",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0f592731cd32d1069291073951a4078e6fa64e5c736c97e75e5a0faa54fe9410",
+      "Label": "spam",
+      "Group": "c72f57085709aa65ef4f5332756d2d173e9cdc70007ec41e703152a39fdd237b",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "33d68819d496196ccdae33d9974ddd6a1c294e55bfbdd82835e34c4b82dc7542",
+      "Label": "spam",
+      "Group": "846dcffd3b6d5cf410623ffa54de806ce32a2c7ff84f88a340128b51c1b7f3c4",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1492986f2fd45906d3291da33e34ac7adfd973d522f4d63449d6f9fd3596152f",
+      "Label": "spam",
+      "Group": "a18fbcfd55918a5429f49758c64d570495df8581323212aaf3c25bc78c8aabad",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a4cc3e9051e710e62e6ba23ccd3a15f1534dd59ca87393b19700366a2830dae0",
+      "Label": "spam",
+      "Group": "6c0f9f6d5f9932efcd446c90aef6807eb5e899984b614c3c686af3eff59dfc1e",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "dd27ba19e8ecc229af4e6a5c3b5916a44aa70d89114e756481496a8cd534ead0",
+      "Label": "spam",
+      "Group": "90cc9f7a92f656693c607cf8f65619bfa117fd64411a770d1c97f9f9819e1c17",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a2c9b00ab5d3f9539491d023914606eaf6879416dfa68dd22dbd7e0789728034",
+      "Label": "spam",
+      "Group": "9a26622a68af8ad065a3f289807722e239378eefa063f6b306bdf63ddf1dadf9",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3b4f92408ae94dee011f2b79fc75fcc32e24f87a4c664d669ed8b2e42f5516ee",
+      "Label": "spam",
+      "Group": "c4c23a9d17d1cc7422dea6eb3c7f8df4fe6b9e6f6d71b3ad5af926bcdc661a56",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2bfd3ac8ba320f418aca511835a142f8ed5dc045e8adfd7ff1f2f7845b1797c1",
+      "Label": "spam",
+      "Group": "9e470cc438550954eb5f7fae85436d973d559d0b03841193076d166987fd8c04",
+      "Bucket": 3,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bf2172682460b65144847e1e5d14e733cb4986f3e9d4b724ab0c5ee7e21223b1",
+      "Label": "ham",
+      "Group": "56322f5603f76f1774a2365e477175ee8e32887a11759eb9a959ab8bb92c29dd",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8235a1db0d779e41a23487a7dba0d6e94b02ec6cf90744605bfae88175d7617b",
+      "Label": "ham",
+      "Group": "44a2a555a931729dc7a8bd4dad54818f060b4a99b3cbab55a038ba5d32a67f50",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b6205dc10bf52b857014d975e00c0ff9dfeaa46f03cb3b9a7dabd94feaefe80a",
+      "Label": "ham",
+      "Group": "b708c4d5e8afe75a6f58050a4417f5df9d96e1ed7a2245b2e74491d02ad27047",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e17afc8989977eab26b44535ca2cd8364303ef933d968f723d16776308fe5b2a",
+      "Label": "ham",
+      "Group": "879f7c1ff37be61ed87ed56ff1435fcaacdd52eae867b8163314e1e3b7e149fb",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5d2256a70915876194062140f9d32b0b5dc8151924df9d695fc9b23e4cfac980",
+      "Label": "ham",
+      "Group": "1566036a9f99e3cf3c8f3e7732041e53c81b31f52eae8db7a4f7e963663b186e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8ab3e0b8b4f202a20cba87fb41c31c135157587473cd6234b8df0e6df8d894c3",
+      "Label": "ham",
+      "Group": "04167d72f31d585ec109283df01be98ced5a006dcad09e6dbf741ea9e05891ec",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1083f6d9fe0aca19e33d0fe9a475235c59c533184dc781f31cf7198331f372a6",
+      "Label": "ham",
+      "Group": "579843d236aac6df2acbdcabbcf8005e29e73b9aee5a301b57cb2e55d3d3c9dc",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "839d50db32b42408a5c7d6b861eca2923cbd085510c86b2cd4f2d8a8074bb1c0",
+      "Label": "ham",
+      "Group": "cf9e24fc05c29061ca9308b0bddd639afc4826ff2b7075501022b97077bb07cb",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5cce9842a94a78ca3a457073623a15f21a017d1bca487d4e931c0977cacd2a28",
+      "Label": "ham",
+      "Group": "2011c773c6d04e4633aa59eee5183942cb743e175f964771fc6913b11f712dd7",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "fde94ae7e4ddb60f9d748be3944bad43339f580a2d7401eb5e2f91b0d6384ff7",
+      "Label": "ham",
+      "Group": "ab0d47ed15b21ba29e1685f9b51c1c2694a6dc50517bfc0dd96349fc0e17aade",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6750a5d05a7922cfa27647e45282d9978f823c766975832f01614f7766b22f57",
+      "Label": "ham",
+      "Group": "adca3161bbeb74e7408b1fc5902f55371b4be5e96ada163b8700ece3bdcd1505",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5c036c7f46ab4d72006c6d66190a8efbf266c04d64339e0eb1827e24bcf839d6",
+      "Label": "ham",
+      "Group": "0fe0feffe14e9e8f2ac0e36dfe4bef60e1e0a139e9dcab10a36c4c41aa9f23e7",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5cd41bb1e8d7f030f925cfa0da70e35f8d716333954e1efecf42231020dc8759",
+      "Label": "ham",
+      "Group": "b5d73f65965406a2ae1a7423918c94f95c8ea8d9f3d1ee7ce500fff2554923af",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "42c0262e7032710293b2f5aae1b1e2132aeed7e1a4d3de2ead092647c037f0ff",
+      "Label": "ham",
+      "Group": "a6a9d29420a92e040f1b2d73861ae8227518c5bf5945bfe264131b594961bf44",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5ef655015a3257d592dbfccde627322da18943883d688442c57585c29f0abebd",
+      "Label": "ham",
+      "Group": "de14e7643e2d844882bfe5fcf62893fc2f43bc3bbb074f043ea15bfa2122c1c7",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "35a5ee207bc767d2b47db887f61d9c90d31ea74510a766669299ba7ba3988902",
+      "Label": "ham",
+      "Group": "50b6e750edfd6111febb37ce3860759c09a72200a2bee782b65222fdd1b0566a",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "513d941f896457150efc280ff52218563f5c7ad3a47bbd3fe6cd12a655f30d85",
+      "Label": "ham",
+      "Group": "b410a6211e7c1c1c52281e258c46cdf8d7afff90f616b8a039693d99b6d710c7",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2429a02f16e02c2cb2d291170c32e1fade62d43f0c720b35e5c21b6d7ef56d95",
+      "Label": "ham",
+      "Group": "62de6c4525ddda086a1ecc5549273f4e752f01d6a6f0fa2a0a5ceb1b49b1da47",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "465911e5f0f5664afe7a52d2faefff4fe88bbcc76c28c32a23eed6c06e90d87d",
+      "Label": "ham",
+      "Group": "2b2c4e20a6be5a19edde7922f9db69a2aaf80f4a96405e1ccfcff6f218e9df41",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "20658054708a1141233692a5ec229debfc5d17f1da370c64d9515315b9d0a1d0",
+      "Label": "ham",
+      "Group": "4136d6ed367ab79d6b377132884b8f47fb98c7265030cb39bb8a40e66ed92119",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "70ef9a0062430970d5e0ce364f4f337dabc5af4e63587c557a6f313afcd9de23",
+      "Label": "ham",
+      "Group": "52c2a288df2ff7c7b7dd5bcdef51af915e66900914e0d66b67201364d76cdf33",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "12715a20cfe6bf3c0e98795c95b0496026d2439d218e7cdbf59b4299527e13cd",
+      "Label": "ham",
+      "Group": "a4a9b2cab48a4da8d6938e93090da06cd548badd65546c20c3fe3df97a749167",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f9bd68b2a6da0ac73aedc8a613fd6e96938d3edef3745c2a14d37bd9f93995b9",
+      "Label": "ham",
+      "Group": "5b47718badf5e12bd9c338f8f85396af5e178647d306e7c2d65d3f446884360a",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8a46ffb5c95c383110f5465bab8f68b5550ed36df82fedabf225a6771b4de838",
+      "Label": "ham",
+      "Group": "17f58e01e9d0eac632b44558701a0e8fec083b1e8c9677f002d03dfa61e1c756",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7b93fafd2ed0a6cf41f1c655a3f02249657e63199ce919039eee46a9a3bad5c9",
+      "Label": "ham",
+      "Group": "bf93f470af2b52c7994749744444602e948934c568c84c1a2a60d6aca310313e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "112cfd0376a00dea005d2a8ee51a88ebfc2ecf58ef8517a02a47c7f72b2d44eb",
+      "Label": "ham",
+      "Group": "43925690115cb5aef5909bfaf506888c686d657dc3c4e68be8ed800f3061a913",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "da07dc0d22a6628f2aa92f76d2fbdc6a5c0d184d6e14fbeb034f56f1fccc3703",
+      "Label": "ham",
+      "Group": "d721593e42957a5ea2386b4a760e3c13a69700cbcbc8834436f827a0f37766d9",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d109c2fb2c93df61f38258a01513acabf87d6fe5dd7c5d2ed94cbb34e3e7bbab",
+      "Label": "ham",
+      "Group": "625979c27120790206aa6dd468670164b69a2172cd755c75e685548c7582ebc4",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "12b73f38b5dda532d1c479ebbc5ac9fd41efe5dd9d36fddf6bba846a38422fd1",
+      "Label": "ham",
+      "Group": "6e35a40732efe06089300cdafb19cd70192c15c6229e41c8ef8d499caa1b1b5e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "682c0c6e057bb49dd49a9237e1ce652182c796e7eddb565e26c06c0d6f1588a6",
+      "Label": "ham",
+      "Group": "969c080890f16efc994c2abc8ad1b3846efee506da0a652db4bc8a69ab1b0e92",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "aa9d63a6237a7b20bdac5cbfe89aa45386339b3c8ae9eb61bd5d982709fa3780",
+      "Label": "ham",
+      "Group": "08a9b7bd2ce3fd7515cd80837e9cdaacf7f7f1b5fb61691b72f07dd9c4f5545a",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0efd786b859ccd3874722de4abb6320ce3453e5b044b90d9f084e656fb18ad6f",
+      "Label": "ham",
+      "Group": "7b1afa05b434bad5370d8cd3779be87d3d1d87096e4c879a0e057c0e633ffe48",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a82455a63d3e9eeaf740cbf0555ed126c2537781accc4b2fd436970c11cbc4e9",
+      "Label": "ham",
+      "Group": "0831aeddcfdbbc7f376e69508b6f870a35e53291c0b2696610f78effa032b254",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "26d7e13d62d751cccb0e3cb92a48628ebcb233416d4f160119d5d3f81be16bc8",
+      "Label": "ham",
+      "Group": "f5a8f6f115ea9d5342a19b209b5f1d189bd0b611c4aa778cc73b9d701f069ee2",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f65c4a97a46d0f6a7a6e7166d06d4e25527a5dd391d5284460c14c1be818a5a2",
+      "Label": "ham",
+      "Group": "47e045f58645af096e8e6c8ddb699e515c43ec38c6b60d2c7cb6e50877cb93ab",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "cf0e7bbe3d415b73b7706502e123f4ff45bc399de47ed81f192b7e6703e67743",
+      "Label": "ham",
+      "Group": "e8a1a03edbf7709d560d0c9283e8544c59270b231619b7abd0662c54c15784f3",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "548b4233063261c240ccf120872ac884c3f9b273ab5ebf316f7eb480f9d3d75e",
+      "Label": "ham",
+      "Group": "6c252270aa54cf79d6ddd122b17fb5177f3eb3d375739f579b396766779f2459",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "349d3dc246a38e8b28be5ab2f9d1b732b9f4da61ec1de755f132a07a0337307d",
+      "Label": "ham",
+      "Group": "1105f0fcad1662ab90772adc491da713d6333ea6e7842cb728739f39374af963",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ff2c5a9b00481d33306f6e554205f2c6aa4f1803e1f6312d5d4ff29b3daaac16",
+      "Label": "ham",
+      "Group": "2ce2c442b6f4bd77c31884aa696160e0fa6518454e44303fe6ba23bcd734dec4",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "51b192578d0403c56597ace46207909cc08b8704b85175fb4caa824af4f0d95d",
+      "Label": "ham",
+      "Group": "1c404beda09f361d4a9c966cccda50d1f962c24f2b3c2fe39aaa5e4fd9d7640d",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c08d2a0bceb6354e646197dea9cd9d8073a9fbb22a951b52bb4212233538dfa6",
+      "Label": "ham",
+      "Group": "7bf9328ccf52dfcdd7d0fc8911b9ebe3d73348dbee899e14744faf9af4a9ca6c",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b3c479f86a66d8ff3c23bbec8f0d313d749b4f64e8f4210337af29d6fb496c3d",
+      "Label": "ham",
+      "Group": "cd3f64d019936315110881ace3f99152cc7074345f8fad03729fd7c6316556ec",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0ed71c61e219fa383f2fb93d16d1f752280ace3a676235c5c861c9b107730d59",
+      "Label": "ham",
+      "Group": "fd80204eb9b650aa18070f6948ad7046a0f801fd64e111c3578a7fb447e6ed9d",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5fb78481c4577a9cf1e98ae3e2be95b05f8c0932cfcef7f1463d97d17a33b268",
+      "Label": "ham",
+      "Group": "b1edee4ae39b962dd22a58dad915b75988ebe926a5b391267fa55e59e0efa90b",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5f6cdad62daa1deabe797d0cda61ccfdce1c878f665ec958bed1083ac74e159c",
+      "Label": "ham",
+      "Group": "ecc0c7f4652f2276c8401e719a8a518f5c4af2c2e18fb12d3535fcb5da315873",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "68d4916459d311c934e063e642ea37d5e9bd108c11db4d0ca73b01c47d3cea0e",
+      "Label": "ham",
+      "Group": "287932e48ff5d2bee0e238d947bcb27af2391e2a1090193ba1eb6624f44af629",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3e75730d406ff2b50883a75fc4dfd87c1c4c7b2542f0af2bb9f69c94003ae11f",
+      "Label": "ham",
+      "Group": "53c877d1bffcdcb7c04b37756a58b0e97310bb5e6c98ea271560a91bcc020d3d",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e253a2aa095433e88c0d8aacf7ee6f34a1596186cba43c1415d0f95ca5608713",
+      "Label": "ham",
+      "Group": "d61201131350f170c1a88221b5dc4d62e9d67087dfbd67e780175d3ed17211cc",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c92ea94320131e770e95c4c410043dbe29c50e58aa5cec186d9e552d59052875",
+      "Label": "ham",
+      "Group": "a411e19fd5e1082dd63949f5c2d75b5eaee48ccb78b268f560c2c2daef5192e6",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7c21298356a7c69571f12458ffb5a7a17227fc54e0e651d3db41ba5643ce97e3",
+      "Label": "ham",
+      "Group": "24dc2d473bbbbfaebaff8f144a7a2665d8e39ef89e55a2a8583f7088411beeb3",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6152639f627dad4950c8544210988675f18896edbb084bacb89742af7be646eb",
+      "Label": "ham",
+      "Group": "f31ae37c9e202fedd720b3331040e2c57463db0a402728ed246d94d617d7f1bd",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e802182d8057d534bfa6405ba0ef1baa6a3563c2eacd01936f8a5ebfc8b856d5",
+      "Label": "ham",
+      "Group": "8652b5442f07567c87af378877d2fc581c2a60b9a88063c4a5282baaf1a23d4d",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8adf14ef2c9748ebaa21dced666ac30704ecbc2e128d369d2b6b890520e55fa2",
+      "Label": "ham",
+      "Group": "c848634060576aab958af8429dadb28ebad2039221637ba918b798e84e7935dd",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "570585cc6909ade0e5d088a94648f869c0b84c58092af837245dcee72c237810",
+      "Label": "ham",
+      "Group": "31921ce331142401143ae9a951dd1607c1ed9c29911a0a70920a89850eedc837",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2e38fcbf93830f09baba703a7912197928c3d69b630d23f337d268c2971c0094",
+      "Label": "ham",
+      "Group": "39bbfb433ea517523e914e5911d14daf5cadfd720952228400586aa2c4db000c",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a52280c805b0fd8b40301cb9c50f6f873a7c8d330f52a20c9e465917495018dc",
+      "Label": "ham",
+      "Group": "cc3caab57d599dee3d644185e9bcf33b993a5046e711643f99e6dce5e9b38929",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "cafdbca7e27fcdfd3e08b622915d939d821904ed88900c98d1e04e1c3ba90ec2",
+      "Label": "ham",
+      "Group": "4f599f73bb6d2f2fc947490f18a4dc92ff1421409e64cd768852863dc0a7d15a",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6e81f97eddaf839c618eadd3b6b3ee09d777d1e9a0968f832d50fffa37430b02",
+      "Label": "ham",
+      "Group": "772883bf7fef9d86971bdcc18b298a1126bc4d6b2592ff4f57809bc832e5b060",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7145c13e3225b645be7d4ccd6f8eff46ba1a35bf09567e6e4fcba8f7a3b180e2",
+      "Label": "ham",
+      "Group": "6be721b22a92dfa691d6f0e16e8f8fa270f9fde90a821df6d1f570aaa7584fa3",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "602aac1c4d67f474ab8140aa4ba314d0da7d2aa06d00fc7af6ae8150a347996a",
+      "Label": "ham",
+      "Group": "2752066ee994fad63869ad36ff53507a408f6953db358d6e7d697964bbf9af3e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "4a46c8404cdca7b0f0d77945108d752140ffd81761d98b3ab610dadf69b1c997",
+      "Label": "ham",
+      "Group": "c50ef7ab4f475c2843b506cbdc86afd3ebf0f5bd0c9d916c79917ff66f60ee09",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3bbefde5e29b7d5c351c85e694144220510f9b97d530843248ea232365f8913d",
+      "Label": "ham",
+      "Group": "daef3ae2551707591a0bc27abcfc5b4b2b9f05e755e291bb0834cb4ccdbc982f",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "56c0efdd316d28eb0f3be6eb4ce769d33c88d59e07ce4f663e67d82e9da505b1",
+      "Label": "ham",
+      "Group": "e596157acc47bdd044aac62ca97873e5361dd03c30440ca3d7d9835ce3006fe2",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "80b5a940e09948ed9f5d28ee6fb9287a1c8c33e4e809a5f7418500f6b832df37",
+      "Label": "ham",
+      "Group": "49ae42054fa3f08a49d54044248db532a380ed1d8129204daaaa997485cc7499",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ff2b339c3f4034466d9e46d37353b3a6965adb7afc72abb8e79cef05370e0af7",
+      "Label": "ham",
+      "Group": "6e330237564bb06f52ef9adba00852d054df6f38af8f58605bc412af98763f31",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "82d675483dbc158e199867c1e89885691856ec29651da948e692b1626cc2be62",
+      "Label": "ham",
+      "Group": "386f020a1666564f8de20932e6fcb4928ba5cbd3661451797d8674683877b7e2",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "322ee02d1559492015f8005a7cad2a8acd9c9e94ad0ad03d458b0f0e233158c5",
+      "Label": "ham",
+      "Group": "31b266aa32316378ed3d652a9cb1998de7a9a5857c8f2e1dedb99449e17dd629",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b070671e03e67c06954fd8cdbeebfe51ac9d42ae4998aa0c9bb5e5562a4842dd",
+      "Label": "ham",
+      "Group": "52cf221616c901ad7ada5d10f8a1d31e09c32684cbd707ddbc69c04381136f34",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8596256b94dc752fd503078f8d41e852508e66335ecda01a91691ee868174f81",
+      "Label": "ham",
+      "Group": "9ad742088b76a85297e2f998a9106f788b91bb4541966055e7923331de27e4e2",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "cf31348f9f8c00d66db8e57a839f198a795a42b059373aaee1bdec1dae009267",
+      "Label": "ham",
+      "Group": "a854c6223856c3a4faea48b839af1e3310407d8be0c0060658315ace29e6f905",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2409688cc977e9f148c09d62a502903f9fae10a6278902333c2bc9cf2580c880",
+      "Label": "ham",
+      "Group": "b31d80c6661e54fd6a18da767d7c204a8ca2acdc1998b810369fa8a604b62a44",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2a4dbdd24a91eb0b7f2baf017b1e9abe95b23a23caa41832f6d5087804e12cbb",
+      "Label": "ham",
+      "Group": "dd8fed83d85572151c686e324293fc232d219bf111cc37c33b7075aef543d1a6",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bebd5859db3739c8f14d1c394223d24f117e7481f92f5d9f96e9260c77275762",
+      "Label": "ham",
+      "Group": "61fab6a68f73eac7c6ee09130189de9396de812b98edcc918b3e8a54360fd54c",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5732a56291bdc4062f41fb176c8ec8872e000ff917de308f7dd0816b5926ddcc",
+      "Label": "ham",
+      "Group": "7c220c153d1840192cc00f268facb2820c42dd99c5fb07eedd60080a7d9411eb",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a25615e78f7989662bf502068a8751993027c78e210435d1e9309ed50e7baecc",
+      "Label": "ham",
+      "Group": "bf8db51bc629b6ff05a00084376e4c81cc7399ea627a08bfbf06a0f0dcdfde08",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c6da5c6569237cff0601bbb22e5a0d3c1d43dea8c63dc27ff169ade317bd9b9b",
+      "Label": "ham",
+      "Group": "42347e1fd1f3d9191f843f638d098185008f7f3baf14a8e64397e49ca947dcf2",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0107c5676ba1df78df96123826c75d61c134d85e13470ced507a9bb5219c0a6b",
+      "Label": "ham",
+      "Group": "c651ce874fb862b85358c9203c7aadfedc2155844929b7bdbb6728cd4255172e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "371b16ea629306366c4705e8d66dcc69d7c4be51b47ed7f08204a9525c71a32a",
+      "Label": "ham",
+      "Group": "9892cbc35c5cfa3de3a998846b497e81e4ab90d0de9bd3766ac9729367a68a3f",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0d055f362415b6124b340a2faad3e98a6054722a8bff2c411554fbd3cb4d9d38",
+      "Label": "ham",
+      "Group": "ef8d239b33fd09073260204a956cfddbd576692d36fdd573cb58523049625a11",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c21d58c2255c10b3029c5786add5fb816780e40e2128fcd94dfe4ff6b5aa5770",
+      "Label": "ham",
+      "Group": "67a7061ddb8ef979da6631cc754fbc26fd425a235b0e904aae6c0dc6064a6384",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ef1d26988b928be2f4a0c2d08e424f7f8dd5fa481a2685283c72ebbeaff771f9",
+      "Label": "ham",
+      "Group": "69d1e686aa8c77165893d14eee7a1c268fb054f3c41b7f026e91a3d90ceb3e4e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "26ac20dbc7de9405abb08c8c84098c69f6ea8096f2b6f75f241b3ae6fb90b869",
+      "Label": "ham",
+      "Group": "3cbd69a9970bc94fc915c3d7127d5ffe62db4d129f4f405e890b9941072d0931",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "accde6baf376149b4fa3056abec367ed67cb8b937e46ac7706960c7059b7e6f2",
+      "Label": "ham",
+      "Group": "453a318912323c957e158be4c89e244ada9b494af30fb03fee7333f66280e0f3",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d870efbfb9fd058cedc7dd1776fb3eb4b0bababdc0af5a7e67812e74c96cf7ae",
+      "Label": "ham",
+      "Group": "089856a1fc6e2cd5cc29588ac851332cf564c43e25efe28717993d3ff17d21ec",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0e3ef2a2c2051bf8c1065d398a0488022f1a62403fb03b544550c640f7e5e837",
+      "Label": "ham",
+      "Group": "6dd9325ebe553b8089deae36b7a1c076b2b2f4cd55f1faa1582957e4d66473a1",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "75c33e7413c4dae538760108b85163e787cb1161c47365a0865728df37afdc2b",
+      "Label": "ham",
+      "Group": "cba0e582dd352cbc2fac6e153c2a2e1584a9f3e5dfb620d5cb8c50195950a676",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b91ca5e347a95d57c0f64b8a00c40c3ae51821d1982b2213d801e1f01db7cb5c",
+      "Label": "ham",
+      "Group": "de8204398ba67d29cf87e864f20b18ebe3422f7ea111d92c8aa355588aaf620b",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e813907d65dc5ee32c547c94575d74fee7360a3048bcd9d93542e415cb5bba95",
+      "Label": "ham",
+      "Group": "d5e812e16cc23fd9e2bc78c0ab99b0e5d1109ef1371d2587fc0d5783d2e44434",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1548c8f81d40cb7060ca61f6314d75badf6cf90160a31f30b3b52e51b707127c",
+      "Label": "ham",
+      "Group": "c7f51b2ab504bda18a254baedb80852c69d80a8083469b34ebcb6819865e636b",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "731a3605ecffd352ab7847e80ac85d8fddd4b975d5accb4d517338a05cc2f8a9",
+      "Label": "ham",
+      "Group": "ca1277764c9c9ab0ce9def31d7d0561d2fcd3a6ee073782063b8f29dc393c98e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5a3b47531ed34d83b4953af8fc65a8336442b937d7b9a793757a6bf96b9a0000",
+      "Label": "ham",
+      "Group": "1ea386f7c235b41d0a586f626131526d37657aca30584b708db79cf2a47d7a76",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3d79340803fcd41ab24f3a9d149a5168f05673a19ec9062b6a90781255e77f8c",
+      "Label": "ham",
+      "Group": "7993f39c30d3993441c020286e94affc908fd1235d4d4df38c73dcb087cbf3bc",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "4dca245b0021ebf770d95aaf16ba4f74ecda622072630fd4f9f3cffe1f277a10",
+      "Label": "ham",
+      "Group": "68f72c230534b40cc4ca11b5e8ee457dc8d4f54946709c0c3928d008d3c31655",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c98d67e3d3d8a52d374de2203a9a2c0f79bcd2d5d97c645fc8cf60ca4a5381d2",
+      "Label": "ham",
+      "Group": "9f8d8410e1e97d6716f0252b9f9a4737bcf0b38596790e5d7f1454d9a93cc10e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "657e1a398ab9605a71d3463d0fc007e17a9121c61234e8402495aa0b11106f9b",
+      "Label": "ham",
+      "Group": "95a66024e3bec73154ee8a1538218d5c6809b805109a84e923c8633fae8a61e0",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7e9c81d0f1fdc9fc1b61a8417b92ca68d808532f1290d3edf96185e1143b3c07",
+      "Label": "ham",
+      "Group": "7bf4200109dde392d06f70e2eed1d97e3a9ee3207b04075b873d14448c0c266c",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d947f41f0c868d0d46b406692e6fa87aa51471dae83f71b4b23dcfc8879363c6",
+      "Label": "ham",
+      "Group": "f9ac4510d4d72aa7579c6fb49dab4182dd44aa4b8354b8bb493c51667d49ef55",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b4bd1467503feae33c1ec1aafd67166f6176f7ccaccfe6042f4edf75e7dd8865",
+      "Label": "ham",
+      "Group": "7bdd7b7415ec38b1d3b006d8305bc8d07d5c669eb3beeab692795c366bdb79c9",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "901c5b6caf85a1a44b756f5057901081629ca3454664025f49ee14c78e951d34",
+      "Label": "ham",
+      "Group": "48c263faf881ab31fd350fb71473c4cb570a1e90ccb0e0c11566a9cf2887e13b",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6dbf8d2b2f314d8b3e21548296117358756672c2167ca3ecaf75f411cc3944ff",
+      "Label": "ham",
+      "Group": "518d8de7b79a901779ca9baf483c937d47f8403b132ebc1ae5a2e9d5329ebc7d",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d402adcb666f6fc0d55b87d99fa0aab78f61a0215cfbc0fcaab6d1dd01ecd699",
+      "Label": "ham",
+      "Group": "78babf48bc214b62d61ed8d390efdba386c25dea0e42807ceb1789a93e7df451",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f605aa7655bdbe446efed3c676b0e29dab0da5be18939a1952483ece094e94e6",
+      "Label": "ham",
+      "Group": "3e0913ab3bfc1172f37c524cbd3ac16cb4d09d67f8fa8edc497f6774d08ce2b1",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c8fca179820637a3bca2686d285b7b8e0dcd1cef955971c1b923e0e11315b5b2",
+      "Label": "ham",
+      "Group": "805f833dffd30e29114e17a731053f89be12af80dd0b7c3aa383cbf070e907f6",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "314f91ec1ef5550d3d3287af23dce286bb2e67179fa7ff41e6699cc7ee1c848c",
+      "Label": "ham",
+      "Group": "823e9dd2275b2db36fd51664e1509fa4039194b6e50cab4f3dc6459cc83fea7d",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e6dfb4a8e0873d97e4084c9d354edbd643d9239e32600581f62dbda56cecba2a",
+      "Label": "ham",
+      "Group": "37f22ad92e6b42597e86e0118dbd13a79807554da64e8029d5ad24afd6ab1706",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5536fc8528a7d81a0eca6ce95d4e1b831454361581903b7c70423cb20eddc708",
+      "Label": "ham",
+      "Group": "34034b6c9758b4c95ebd9da6f70cf78c79822516881e284658c180a290890717",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9297185b1f65848bd54463f3eb0736e083307fa8f1a473ad5725f7002ae1631b",
+      "Label": "ham",
+      "Group": "e613b739b5d75b7455dc395431bbf6199c109369250d2a4a5c266625ad9fea07",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "29729759be729d8e187761fefab788c4f3de3a27bc5f84916d50b98f4a8bbed3",
+      "Label": "ham",
+      "Group": "ccb96df33b9afe66cc01a94307c651072ac4a4f53ed1be7d7b2ba71150f80181",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bbd4aa9aecdb927c3e4e28b1af3a3e9122d185469c465df904e949ebb25874cd",
+      "Label": "ham",
+      "Group": "94139b48013fb461b8f2ab48d991a710f53ab2a5e8bf9fb66d487775d06f0de3",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5816f3bbdcaf0e98d5c6d3d537a9b57e882294240421a265d6f0c30dcc2651e3",
+      "Label": "ham",
+      "Group": "1d45ac61dbf9987513d7961a3faa1009ff2a733a09d791b7d285fcd5c302780e",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "37dc3b45a0ee89294416bd6f408a53e16d4cb732f7d776f4af08ccd282c7ca20",
+      "Label": "ham",
+      "Group": "e96f5cefd7d99b1fecafd8d63eb1d95cde25de277f89c285936328bfd0a6b4ce",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "66e48ffd88c17a2dbb2aa61f119c233eb9bf1d3b221310ec17b5774e76a1cb35",
+      "Label": "ham",
+      "Group": "3f5ce9d90d187507e9620ed57fad8b84f26f90548ef3b5ebd63f81e5170d9546",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "184053b95fad7a7f1b7a032329b06452c23a6d3c89b7fd47092cabb83d28fcb8",
+      "Label": "ham",
+      "Group": "2a94f636b662520eda47e4790eee84d8119f7613577c4fc9cd90c5469defbf99",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "087ad1fa3aaecc17e76078bf75fb75cbfab6aac02781e07cb3804dda8220c653",
+      "Label": "ham",
+      "Group": "3f21b3b666e707191ac0d5534cd52ebb62850b1b8015c9505e65eee6d7f54327",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b8b3fa7f2758cd1284fbdce0630b53d249bb937a334a6d8d0e49ee55ac30212d",
+      "Label": "ham",
+      "Group": "29864a1aeb282ec881b9d82f2be6074a02515bb3fa1d6262c146031ff0c6fc92",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "01ada7890db14a97bc7da9701d4f2ded3ded6bad643d5e3b3e7a59baab94fc46",
+      "Label": "ham",
+      "Group": "cfae9f77c8939c2e77459a212ac109dc893b7437a0efd7303240a6a680b238bd",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9465aa4e4a5652a6ad45f10ef5e6bcef735dcca7fc31844105315a7144add7f1",
+      "Label": "ham",
+      "Group": "8c1b8efcaa1f7a6a2014021eeffcc6684afafa2cc624dce7aaaab3f7ac2a0308",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c3a3425b2d8a1e484ecf06fecb966125685c24058b60847aa97a7d26d0b9849d",
+      "Label": "ham",
+      "Group": "8fc475cc19ee1c02ec455d1600e44557a0fdbe47fb6e3ca70f7aa076cd3fba4f",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a87153019c228357a0f9da2711d256cd2cd9e13d22fad4adf317ab53f04695f5",
+      "Label": "ham",
+      "Group": "750ac047e25db6b80ea4fef84027a7adcf9cb79697c9af75e8faacfca602212c",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "34d279518d5d2e8eabfed3af0ecfbb9b7dc65903f1622cd38a5d90f63bd70a89",
+      "Label": "ham",
+      "Group": "4eb5f53b6eaba64ec1e39f470b09e4b3e83d5f02a4d939b92065f162a74f8b46",
+      "Bucket": 3,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    }
+  ],
+  "calibration": [
+    {
+      "Hash": "24f2c37fe48ed1dc16fd6d8fe80f0eb41750d293a9669f939573db24922325a6",
+      "Label": "spam",
+      "Group": "6ed8c94297e87426424565a459d0deeaf68b7740ff7cc3f6eb732d4fdb614151",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "890c19ee9bf4ca43754803dc482ef5e79db8eb7db8a53964d5d414e00c48d923",
+      "Label": "spam",
+      "Group": "10de27f4e3eb21dcea5124a2699468e23b01caff620680940e483007925d6404",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "818eccdf7eb3f1b39c82e7f71240110c4139616cbf325098a8670f6041fb2b66",
+      "Label": "spam",
+      "Group": "7e625aed6bb36398ba1e96832e2c5bad79c4eb4c26bef4a0f734dd8b67febe8e",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "524a0fb2dc56b2ff9a2f585441f5325893ee0d3a6a487c9b93e28350d1d173c4",
+      "Label": "spam",
+      "Group": "7c88f60f4fe153c4f57d05bef810f91770af7f752643336f2e9301d416911eac",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7471e2be68bbaa35fc48b11791b62def4eb4da96958bc51310436b274717ddcc",
+      "Label": "spam",
+      "Group": "5b7a79a7a34fc28f6c58a6f9bd01d4f966e58e0d0e20d9177875e70ee44362ce",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0e26497e25b310a6c696cfac73479f847ee64de41bebaf160df32a63a4368b8b",
+      "Label": "spam",
+      "Group": "7155e183a5e50087122609e10fdf9ecb43e420cdaf0d1c7c73716fc1b91ecc87",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bc8ae5b08dc7887be679fef5d8ad41a018ed2494cfa76100689965cac7f188f3",
+      "Label": "spam",
+      "Group": "f8065d5060fc22dc2dc1a1fdf4ca49a862a089f44510801106cbcf1b085df9bd",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "aaf23564a4990901d4f6328ba2c5359cd7ff08e6e2d0eb57aba7469c6f2bc9bf",
+      "Label": "spam",
+      "Group": "9563e38fc3abcbbf0a8d848eb1b2bdc558a181119e3d941203d54c1221531324",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e9f6b82b802af99e20d7b786f736daf08ae4663af17fd744f1c7b03666c5e228",
+      "Label": "spam",
+      "Group": "70e974ca9333a3641eecfa7cd0e4e0ab4380baf1b73f5a4305666863a6822c14",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2a8a35aa85c7fb9f9e47ded6184a4b123b4bb032aa4a5e4650449a01f1bfdfe9",
+      "Label": "spam",
+      "Group": "090d4fd094bcaa659a26b0a680b4a8b4788078cd58519c11f9843738f725fd5f",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9b2262cecd6e01fc06a1cec5f5f97f0d2af7d006f811bb134f859c922c013763",
+      "Label": "spam",
+      "Group": "3e6d281466108394cfadf80df8e27659884792278e68aec86ae5662034a29920",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "98b080de523db40923a7236cf922e23cd66334d5089e639b4abae7fd898279db",
+      "Label": "spam",
+      "Group": "7f9efaf47d21555c17a03f653a0c5e3cc072c005ab2c8e884f18bd3ddad84248",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "162a549b5eeb53a2d7b9ad8e2f04085dfb7b0e52e3e6c2ee499919f27d8205f8",
+      "Label": "spam",
+      "Group": "1ee3ff1278e97181c939ed21ce1b66bb65a1e8b3877ec7f923ee792e4c5fd266",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "515afc3b54e4818fda84f11dd4931bac4c18af5154ddb41772191bf0970bafa2",
+      "Label": "spam",
+      "Group": "04c4446d22eef42757ff0252f9e734dc4db7bda6ffa2b14c8fe93c8a9934290e",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "88402e4ab31aa1324a1558c035fb00621b677dbc93a9ad6208272f3d4d75ccb6",
+      "Label": "spam",
+      "Group": "c9c0d65cfcf9a9934e0dde3836967a29caad1f3c5c19218853d6d323ff4ac0a7",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e818d5a86a484cd9fbec86f0e2451e3cb36be5725dfd55b75479d4976179b82a",
+      "Label": "spam",
+      "Group": "77d96880d28719223bc3d88a9014e0ae800cac401d2b1c8ac452d3650c532d04",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "31cacdc803297fb4ac7746c2338ef59ab1bd7c3b13452553223432fdba460dda",
+      "Label": "spam",
+      "Group": "7c17c604606a624babf7c5b9fab755d5fc74c3d50bc2568289862d11c2155c01",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ee67fac31d7eccb3069b31d7d4b6a663998233eff38697b77a4eba4f1079b637",
+      "Label": "spam",
+      "Group": "21da3d4e3a22e91437992491f362d0875754e47eb5cbd9a6a759227710633b1d",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "50e20f13112dfe1cc03d8ac6ab3572acb6b562171a9458d9b71a21fea6dd9b4d",
+      "Label": "spam",
+      "Group": "5cdb684be861c752ce669996e517e823e6fdc4cc75db5722b163d4cca596dffe",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9582481566f1d65f0b2c25b237a2b4bb8b59fc44a65416926f0b256b79acb9c9",
+      "Label": "spam",
+      "Group": "4ed8157b3cbd3e0473781a5173651bd42cc388f55e753540adb507ab7d2729f8",
+      "Bucket": 2,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "fa4d473962700d68e7ac10649478597256eaba2b37e4e8a3906f5cb5a2279805",
+      "Label": "ham",
+      "Group": "4d8b87ab4d4444e09ff78a6171457aaddc7514aac1612ff3425ac9a42cc11f5c",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ff7f75c5563ad52f8e620d964277bd2ef90915a9e527c8c634cacbe1bc39ed48",
+      "Label": "ham",
+      "Group": "563c724659e68bc384ed7865b4c62ef8461378e823f9a13b5afc8773dd7707a0",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2afd842c2440ab968142c9b5cec80fd047273d9025307fd2b22e5592cabbd6bc",
+      "Label": "ham",
+      "Group": "70fb898fe603196c5b9b139c5f4c114963619a5ce4b49f5be30afebf2281cd78",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "00f5cc395399f714491b7f1c363ba10060da41b6946a13074c33b894346cd171",
+      "Label": "ham",
+      "Group": "d939d3da779595335f05072f691b2290545997f49570d40678ab93cd1277f61d",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3bc2afb7275eea5717352057fc2a758df7e8b0756bca3dabbfdb19ec2746d685",
+      "Label": "ham",
+      "Group": "4decd58819ff0d62100ed3b1437ebd07483f3a56eaf2e17f183a6168d8030521",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "44691cc21a6f29d3dac27b3a74744e485d557d9528ee658fc3b281dc9c70ce94",
+      "Label": "ham",
+      "Group": "b37939ee532ee70777aa7a8640e981b7549b13d8052de50bf35b1bef46467460",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9972a3680e2529e451575bf5cc430f741b6c519934e047232a19a67c317dbd83",
+      "Label": "ham",
+      "Group": "4c7433314190192de36e9d3d8017c396cc63a295c84efee1f45f1ccb75d26eb5",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3af212ee6a87763f560e3345997d01f894c6c2f9efacb5594fb67d9992d43441",
+      "Label": "ham",
+      "Group": "844ea793db6dd6d52c3ed7c562f2b6963915731669d66fa7f14c1cbb4e604488",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "12e1b18eebcb17e9bc3f2ee654bf27f384bdb4a9047a28556f5da3e824af7b00",
+      "Label": "ham",
+      "Group": "7f2972e52bfe3e88b94751100b7ef63e1689d72ab8f3cec6b47a3c7123862665",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ab989f9013d79e7b669a4719d2749f4ead5957d9feaf4a1434c9b284fdd5bdaa",
+      "Label": "ham",
+      "Group": "df1b1736416c8b787b800310071e13f2f6d8633d583e17bd7260132f6cb2e90a",
+      "Bucket": 2,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    }
+  ],
+  "validation": [
+    {
+      "Hash": "6470452f5200ece6fb70a0af51db73422d7ef3974c6eeb078ce1516852d07ee9",
+      "Label": "spam",
+      "Group": "f24a9d84de71d19d2308c448b12df6bf0ca6d939f8902db6f59ecf65df5a5025",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1925e91c57a0294d7a7e9a0569dfb9c77ff84ad353f4b48f6fa9b43972ddfa18",
+      "Label": "spam",
+      "Group": "baabdb064274d8b8c7c0105e386a9097e5c94df5a9a50106052bc287b2d7c911",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "db4f47dbceeb72e35194199cd813400f1bc4d1ce19dc510a2504574c91f2b5a5",
+      "Label": "spam",
+      "Group": "8890c782ca4a3e16f4a9395775219a7a55d8bffcf93c580c4f89d81f29cb8bef",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "6a884a80e98ed05731af908f0d4680a8fe599064adcdaaf6a994c03ece8ce9bc",
+      "Label": "spam",
+      "Group": "fbc738d60af6c284cb2f3ee2aa605da5fbbd1fca2cd32126315d65f9591d9894",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2531af393b293a9f7f01ecdb43b75f30a18bf13a613f173fc63412810497962a",
+      "Label": "spam",
+      "Group": "deb2e5a397e00395db3679faad6b3ac3c68a5f373fa1eb5d8adbccaff5fa04b5",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "d2d0286ef478f91317a164d502df1063adcb4c012790217cb0f5dcf443394222",
+      "Label": "spam",
+      "Group": "16cea97a4d8b1ef351af5d9ed7a2052035920d709f67fd884f30fc914223b0ec",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9309f361d52899910009581c8239b1ee86d5e269d1b6feff7c0c9590b2e38a8d",
+      "Label": "spam",
+      "Group": "64ce4a072a8f7dc9859875388c21215507add07995b2d6ef399e8484360fc3ef",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "03f880b3b92d03708279e2b5cdabe283dd3e7dd08edf12349d54a6f6323bb4f0",
+      "Label": "spam",
+      "Group": "2d616e669546147e99105056c72d54f861e2774df200ebad47e68c619fbfc195",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b0188e003441e0fb843e0c305cbf3d5d41fe7318a1bce84db9c534104b4bc35a",
+      "Label": "spam",
+      "Group": "eae084563f34e08796eea041f4d9b0a7f775d69e8ecae7b68b8040655761eba7",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b57c5299f744f89d9cf20f81fb0815d64bbb4e715eb1fbc23e1687a6dd24304e",
+      "Label": "spam",
+      "Group": "7ef832fe4a5366a91e2c2f71d4e9f4c6744a0a2d032e825667062b99c209086c",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "830c4ac9e78d307460754671820dfd64e30d600b9d7b95691a1d68fc33b5dfc2",
+      "Label": "spam",
+      "Group": "8b8ff299d6e8acbfc0a3c07141ce9193f47144988c9282ec6bcf49ba3d8544a6",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2d67a332ef8eed7a6d73210e88981e83289c03c01a45d210e27ab75e8a406b9a",
+      "Label": "spam",
+      "Group": "1e069c7b618b7f40be2a834a9c6427885c1eee35a6c59dde40b93dc2bdf62c7a",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3b777b7892d288b22692021f84c7adedb720d9e9a0962b282792e37c838ad9ff",
+      "Label": "spam",
+      "Group": "f4a513b878b39c6f13f7e6e09eae457d149b93ec7c9daf28bcc01cd415b79ec6",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0d8f1c2a6c1f5bef55072ceae51820091ec3ec755667dcacb7e0ba68d7bc8528",
+      "Label": "spam",
+      "Group": "4e5c1ca9966a7850fb6e91ae1695dff407f178f73876a8c1f3d6ab8890c31f54",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "24d5910523e3437a5b78f6ac975911ec2347d697805d2f6e01ea8ea9b3153c67",
+      "Label": "spam",
+      "Group": "1c2489bd390b47ede28316fa20ebba7dcbedb6a5a272b7a6a4fb6b5d32893579",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "739da1b02c50d67decbe55035aae4f531c2562a5dae22783b82d18421197550f",
+      "Label": "spam",
+      "Group": "b2455e00675739cb84f215f61a71fcd46cc41ec69cba7d75ce01301be398478d",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "05ec52aa2d94821b80d1777974495ad0ec2352c542dae0f6bbdf237760052a44",
+      "Label": "spam",
+      "Group": "f92c607f1f34f659f4d089f24b80c478edc07f1f227a96889df3158d9e17ca66",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8a9810e42bd5ca4d2aa6dae40c713e7fbac08a6fe5df88feb85b4f17b9f97eaa",
+      "Label": "spam",
+      "Group": "b5bb702086f516f00b33d07b079ca53e0b629fc40d6fa0cdff3e8e38132586df",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "93e32f6d63c782963972fcd4e90ee79cbd3de5526c8362cb307ca5e1c479ccf8",
+      "Label": "spam",
+      "Group": "ee15cacdffa19029c4c0e62bbf9d6b95c16cd5be4176620f8c374a26b049eb34",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ac89566fb07c0273c139807de697da58b1bd3740930ec198544e7ce33ff39bf1",
+      "Label": "spam",
+      "Group": "94e5274659fb932806f90a0df5a24ee5f00c3c0eaf579ab43dd33557c239cbd7",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "702b8965cfb4f124aa2d9c790f15794adca8392c691b8d3adfb6c86e9972001c",
+      "Label": "spam",
+      "Group": "7c9c8e76171b032e34ec9aadf684d68d4b582f697d26a9c629eaca1b1e52a56d",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bd882b54fa6ec4d76a78ac14630a2b2c10ff066a93eca19dc2999a71e04ab08d",
+      "Label": "spam",
+      "Group": "1b6183f487db32f9afcfa4013859e946a35ef97cab920b432dc7495c62e70a44",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "b1593eca6e5f0bce111007c829e80cfe941d2fde935acfd969a83d3e9634277e",
+      "Label": "spam",
+      "Group": "ca5260cd3a5f78fa7fcba0f4af876c6918d86c99cf0ec1ab8f61c131382167c2",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "244f00941baacedb381c3895396719e336ae473880248a1dc2fcf5979b341154",
+      "Label": "spam",
+      "Group": "ec1269d5d9f4b446fc1ab111c7768a13738aae26e91c59dbfc52760a7df678f7",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "69a57a6815fd16205db86817349c3f5a58111dec4c619ead2bb2419ae36f9e0d",
+      "Label": "spam",
+      "Group": "20c84ccc458d003bcb02e291f9561a0589c5f71482a139a1a658d75f7b562522",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "69d4102fdfbcf5ad057e98e953955118bc408c0d6e29bf304f8e2c6fd07277c7",
+      "Label": "spam",
+      "Group": "8c2a280cd3b46cfd438b88a0a4f27a388a149c10a9dce70004b85f2a60196732",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bdd77ba2cb0ae1436f0819167dbd6b45e50e7d0e945571b10015f88decc77092",
+      "Label": "spam",
+      "Group": "5146143b6caa00eb7f2404264a5b8a8ba1b683b8d0e1a833f2d39a77e964f1aa",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ccf139f5b0927503321b04a87d90b7813112b062819420b6911b17d3c948c532",
+      "Label": "spam",
+      "Group": "f6ec492f3c0f75ea94f9cbdd5a376997a4b8ba5a4d968213c90bfeac95b0b1ee",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bc65fde22204f76be45300bda329aaa4387e87993359fce3100ddd53509f92fb",
+      "Label": "spam",
+      "Group": "463d9c8f2ae811e5620fa58b4fb5bf5bf6766f38c91d191d3103a69c47db0b35",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "9babe082456b299433ef909af49298b091bf76a82a4b1eb29582c76d6b895d32",
+      "Label": "spam",
+      "Group": "647e03898f76803fc1819bd9c34b4a436dfa86ee9e4928e78a86917dcdac0ec0",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "af5daa597e44cfaa96de75dc704d42f39587706468f4552385d0c67009416019",
+      "Label": "spam",
+      "Group": "9c9ece2b0b8a66da93331698e1f551f1c7e976b7aa46a31e9b03f73421f9d674",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "43edec1d43a85787b8ba7dd6449ab07f3c9790c2270ca75cc3ada0c3f2b34618",
+      "Label": "spam",
+      "Group": "3f6feba45e89716a0be5add5b4ab9862a17a7a2de764dcb22c303091a510477b",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ff9363c17604988dfbb81891bef837b6c74eb4076cda74486084f0fb9f32f544",
+      "Label": "spam",
+      "Group": "14d4a2a112b4fe4b9001f4d2478e8d8810f137a58913cc8b124371457cd4e377",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8a8e3fd2bc109443582ad4db36ff57d469fd001fc089086c793ce4520f2da7a4",
+      "Label": "spam",
+      "Group": "17917944c9ca14aac08ada5b5599207c5851af5f6764bdb5791c985c9820f2fd",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "256960f47bb1186693e75ffca0f696560eb998b7ace9f15372cdc6ea7d833e17",
+      "Label": "spam",
+      "Group": "b83b3953f6daaa9622238f616cbc0b44521d3e02300e0db12dd392ec448ac21b",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "54f21e591fbf7b6c4cc49d7cd628c37405bcb010777c4e84487b2b1f0e4e9b69",
+      "Label": "spam",
+      "Group": "1a19107baf84ea79fa7d55e3d1478ffcf07f1d4091108033075a6498b0f33d18",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5f78b127c8812c367d945ec8cbe296af0d97010f6781454e983fe6ea25dc20b4",
+      "Label": "spam",
+      "Group": "43056782d79a8311d62d46d55e92dfeb9e41d58f5939670213b8f198d65a9334",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7b611fedd07187607c737b9999c7cbdd55d97c7a154845673c768f1dd26a79c7",
+      "Label": "spam",
+      "Group": "75bbc11aeb2a922adf8c60c52a4f85d141ae6040aca82a8315ee707a540b79d3",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ac94a141639774686315de63933b2388216a36ae302041f9e1067748e18fdf39",
+      "Label": "spam",
+      "Group": "233494bda4fe40da1b3fa8ff1f10f2f481fcd072bd0c2caff0e94b1cb35c1aff",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "51d5c552aac6fdacca6cf300c9c2f23f8e20c2bb99322dff4e5956763ba715e4",
+      "Label": "spam",
+      "Group": "5b69ba2b5a679a16bbae4c5f1f0973777a94b295726082bf6036ded75bfc6dd1",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "5955be2889d0ab5ca760237b044e8bdcd010fce5c984d373a6ed853d3fa07308",
+      "Label": "spam",
+      "Group": "94f2ab362e2577e68ff0238eb6fe9ad8eca58c5b91f43d0bcb3688c28317ed6d",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a57aebd21bcca510477274c09d34db7c65b9f82bee24fa61a1546f0436cf7ec2",
+      "Label": "spam",
+      "Group": "f106c4303a421a12924a49b1bb7ef4bb41f8571fd55856312e87cbf7e2f1d489",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0d63e544800ff39ea895c80546a92c665ff86a0bcea85e9c08b17395fb2d1623",
+      "Label": "spam",
+      "Group": "c47bb2443f7d471b76be05db236650e8891249661933145fbb9dc97e107f389f",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "54d1ff092fde2b8237f87481ad40c78a748e594ba162b5d5d6ab6888008a9db1",
+      "Label": "spam",
+      "Group": "ae5cd34bc592941997f400e964712aff5f70984e5eb5ce6c4457c2908700e862",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "cf38ea4aeb9ea9df7de99daf678965fbfb0e7b58e102caace1844feedb4aa8fc",
+      "Label": "spam",
+      "Group": "38a502cf3462d1a38f3523786293fc5885f7c52ce631cae0a4ab677f495b9bd3",
+      "Bucket": 0,
+      "Score": 8,
+      "Verdict": "spam",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "631ffbd5a5090c64a8a3e5eee3c4b98eaea78e08e671e168c17b78900e052c9d",
+      "Label": "spam",
+      "Group": "85f566cb7325aac0ed51efdbe595805906e624be5539d39d0945f8abb96c4f60",
+      "Bucket": 0,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a9cb0a711cc92a0a3567f06999fcc23277f447aaca4b0fb965324e0f6f80adb6",
+      "Label": "spam",
+      "Group": "4dfa6c22de7b0f72afac83e1669ba32ee71f5b3a2e4162b6df7e3387ad959fe4",
+      "Bucket": 0,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c2726f71fbf87bc01b44de2deedd956e15bf958e1a136ef42fad1b1e942de969",
+      "Label": "spam",
+      "Group": "b5a3671320fce864ac639ee71ab9974cb7bcff609fe70c796088624e8b6f2406",
+      "Bucket": 0,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "286baca5c9fc014393ca3be685aa3ab942df9714d733fb164f49691c3d118413",
+      "Label": "spam",
+      "Group": "4a0005be3bf0c0b0dec6757e2c5ae72b78afdaecf25a6f311a8f45937013a08d",
+      "Bucket": 0,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ac558f6b199cbbcdc5b060693ea414481cb409ba4c4efaf987d3a232dbc56354",
+      "Label": "spam",
+      "Group": "d745b787777ca6dd0e1912ea7cc15bc87a915ca6bc70254d375ff05e5f5ffc8f",
+      "Bucket": 0,
+      "Score": 1,
+      "Verdict": "uncertain",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "826d9e8504f1755b36a89d97efdb85321bc153833c6f9bfb7ab4a134cccae739",
+      "Label": "ham",
+      "Group": "9c573caceac20b5f5919ad1558c0e594fba532e17903e4098e73f203dfeffb27",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2ec78521c23d296f2ecbf93084166782192564864477db3affae303a61e3ea58",
+      "Label": "ham",
+      "Group": "3e18e1b6244864bef5fb9c454f4e7c74fc019d3ecf7b1b0e02a31846e2639dfe",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a6b907f198f7fe2af454f05730fef0b2737c6dfe30768a3a4f6a4c03869065aa",
+      "Label": "ham",
+      "Group": "c2d339ef3b613a7396187296d5f942fb6cf6be2ece2e37d3195f0e3cadf8f46c",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "cc1211400983c5e34fc5c6d6b3661ba7c6bb20b0db033998a5d015971ca5273c",
+      "Label": "ham",
+      "Group": "fb924f44f4adb2251673a88da2c1e45f3b3b0d567bde16c85e489695da946efe",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "262c66503d97396a1355b626c8c9d7d61b4baaad52cff869fcca78058de99daf",
+      "Label": "ham",
+      "Group": "9ccaaf503feca616243265f8bd36813b9684390a2ada46afafca6a5c28eb921b",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2b07048206eb6833c2116a818393cae39d70cd31d045992ee5dde1203d77c07a",
+      "Label": "ham",
+      "Group": "585710882b52d72e5e2e9a4ea8bfd0eee7ca185ea0f2b3c971eda09a918ec20d",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2b2cdf1729d184a6ccf605b263a26c60d11c175bff37b462ad43916f155c49bb",
+      "Label": "ham",
+      "Group": "a5473e1af003fd311fa12f9002a961f8bdd0ba06e7481a0fb1b32995f5519364",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "03d3a49c994e9bc93fe11e1b6a6ef6d6d2c0443765983d8d8dc83b2e22e2543b",
+      "Label": "ham",
+      "Group": "c3254e0ffce69ec15360bb53935b95b52f3221382854cb30c7e30a669e1c2c81",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "445125da55e9c87f0a6a9891e04f4dcb5a7a966ec98f42c0815b107b688a82ef",
+      "Label": "ham",
+      "Group": "ea4c76b859a1a2a82f0a0647bd2cba4093d363a05f51fc1c06e858ca9a8eac42",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "bef66d143f24960df967815bb439df261bbfb10db693e48528891ec05e437f74",
+      "Label": "ham",
+      "Group": "9924ce08862286df22b09639767ad8acb81f251b83501dadcb7fd7cdbbaabf8f",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "ff1e2918e06fbdb06907ac26c1f675a3ee22f234584d273e796b02e741012010",
+      "Label": "ham",
+      "Group": "5ce099cf104af74b1a7859d4c6b1688c885769884a9ea11c40888426159a8001",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "30196df0b82e925748527f2d7999f9dd7be8e4e9a40e1068415edadd201bb64f",
+      "Label": "ham",
+      "Group": "3e83a1fabbce7ddd29c93bab67ec378f5b9080d924023cca0ec53f0212e53ea0",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "327f212e849a6d2ac27a4de191dfd45b67c1e4e45957240a4aaec5cf359eb301",
+      "Label": "ham",
+      "Group": "1d04bc1c69c16b171b5ceb53aca612095436ef53e78ccea4007323cd232ff5e7",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "7c5f8e2816d4351ec5c60f6b5ceca4dc95fd8208de015fa192740d20d64a6c08",
+      "Label": "ham",
+      "Group": "f04def9aeea90a5159010c00fb7cce5345c465ec1630faffaa5dc20e6974e86e",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "94011a89bbe1d479bc7f794b5f4a93f77a1b5cc63bd5ba1aa57c620e2491cf4a",
+      "Label": "ham",
+      "Group": "e4984e298cadbf3b95d9367a9660e08fa2665853d59a2ba90302a7a66a200f84",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "1659290f8035581554b6535288300452f1e5ca3fb2379c697a192388708b20f6",
+      "Label": "ham",
+      "Group": "8f30b38f9623600de68634f357b5dd85403255bb8608bd042107be2f6aa1e16d",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a59101efacee80e0eae46f40a35bdefea7cd2257413c99ac43ca1b6c70881b8b",
+      "Label": "ham",
+      "Group": "31dfea2664e8ab333ffb416dba0dee820bb83fd350bb7fe120a1244010e22040",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "498b654cab6df8687cb954b8368b294f0c87f2b0ab29cc25307526bbfbed9791",
+      "Label": "ham",
+      "Group": "0c78b51ade407c1f2fba4308b4b0bbfac168eed3149d6a6a72d0115bf79cbb67",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "144aacad9a3ba576fbcd23b29aa3409eb06cbedb57b9ffdcc748bc1772550d15",
+      "Label": "ham",
+      "Group": "d30a05be02ef051a1cfb4085e9e5eb1b81fa007f0d570a56b4d18c92ab5edfd3",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "4beb55c5becd736870f76394df7b1d382356353ce391b1b425879cc91fb2b674",
+      "Label": "ham",
+      "Group": "3f9aed68f0b0e717ec8b7f902d30d43d667cca2c607b44bc52215b0c760893c1",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "aaa70856c7306a9e0b71958ee2b6414d93564c34f341c247104c5971f3e4b9fa",
+      "Label": "ham",
+      "Group": "f942c97706ba8c30eebb9be5c49220f46c649b14d4100da7dcb52fb37f2b7224",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f062cfe3a2c01379199250c12f98d378baf32e4ed518a16e74df97e01763e855",
+      "Label": "ham",
+      "Group": "6c5e8f92881e6291ff5e73a4828d1972bf82489d4a6d2d3c7ddc963d6690da96",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "814537acc791aa83d13eb75b924a9a2a8bfa7cfe9a1d28d6a43b2ef991d16857",
+      "Label": "ham",
+      "Group": "4b0be6058241468812022c9300ddd550ffa61b755ad46f72f08279f1ddd6699d",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3239716f270b55421cbee7f9be1fed2d0b8f3306f7f47abb37d0978518714733",
+      "Label": "ham",
+      "Group": "364f66931a7a3e43ed93ac4b7fe602761bec17a9e568bfcd94128101e7a693c3",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "db228bf6aa81aeeff957024e87b665ec018dbc176c4e5db2dbc55d62c8a3363b",
+      "Label": "ham",
+      "Group": "21be62b7eefc2bcc0d77ae88371943a30b10129b0bcec7bbb628380023edbe75",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "57f53a5ab0381edd2672d98184308353e0d14153405ec43df67c186bdeb0e1d3",
+      "Label": "ham",
+      "Group": "8f292597d116f55a5860209d19b50a92a9d556ce76b77d26d5b8bb106be1748c",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "0ba4a84a201db59dbaa5baa7b7c4616bcb707b35b7aa9eebcf37b97b3b20d117",
+      "Label": "ham",
+      "Group": "2947a849af6091b0f5ee5a718d2147c15ccbd79195abd9bea7df49aeb293054f",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "a5a4ed5f5964ee84d0d5949f42937be52d0828fb7f0d72aa6acbd843f4abce63",
+      "Label": "ham",
+      "Group": "3f333c770147d422a0aab33457994f431e2d1cd1e029d9154dc4308aaf8224c4",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2f12e47a3dbb3a00ccf24a6a2cc71a1c7e1499fc55c46332df338a9b4bf8fc35",
+      "Label": "ham",
+      "Group": "4408c9baa560150a4c7f4785ce3c071f6de1ca616ca2bcb2e5d36f82579d3265",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "2af6ace7fc2acda261f8b61ecd17c8d74bcb8416aaf01b69b1a14b153a6e6cf4",
+      "Label": "ham",
+      "Group": "ecb63262afe21bb328c670664d88e91e14f8e76cf88cac8edaf60d670beb56b1",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "e1c57c771f22412f9c6ed3d58e1db841a6b76558304f295d416ca9b255116bb9",
+      "Label": "ham",
+      "Group": "f7c0c7c5f33aec5f43ff0e53a784af4bc27b9d27889fff9f43dd2e02d05b1289",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "460453cb0d9227993decb31799c7b74fb98a28eac8e7c01d7b2086ae8f8bbdf2",
+      "Label": "ham",
+      "Group": "e69b640f30dc9f2d92e9f861d92c10c3557b5e97de47c46fd35d836d7ba83da8",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "fc78669a0548386ea2d5a7304fd81435f3595fdd0bbe459f48c8891dcb641174",
+      "Label": "ham",
+      "Group": "d021ce8c7a968a0a380694093da30106f334097b462ac5590f49fa60e9c710c7",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "cd6b3f00438fb97a889f16098f9eea62f0faea80d29b64b2bc93d6388e62c972",
+      "Label": "ham",
+      "Group": "7803f648f86252faceba387d47bc12c2e91602234056af88ebb521f73f3bc19c",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "4b98fb8015434996195c4596c27ea402170e4b88817d3d333c8943bad1034818",
+      "Label": "ham",
+      "Group": "e1d7484f4ea9eb3d18817ba852df43e29aad7a79ba39c6f4cf29e300a722b3b5",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "c66ef275db4dbcdab8b9107e66f3808b6dec2323d075cec8880ef8473286d404",
+      "Label": "ham",
+      "Group": "ffb0785283ab8587e9c48d1b38ea4d5095f76dbea49623de8c26913941ea9203",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "95f1f8adeed60574f48a7c2e2a77d3bce6a5414d350d77ea19ba5e5d2706f4a6",
+      "Label": "ham",
+      "Group": "c663ba1c00eec7d7cb940ac8533b637be6aefe65a95662540ee8fcb4a81534d5",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "f3019fc120595c98858b672ec8917fc3f005232e122e4b4a31ff20147d66ddb5",
+      "Label": "ham",
+      "Group": "4fc0839e732e89e32640597c58d57f89a35f851ae4797ab45cdcf67923a9388e",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "3b842028ffb8d08c4e3d5ec46b15eb195d7a4b2ba00519d796892220a153bbfd",
+      "Label": "ham",
+      "Group": "533968339c2cc613736305056932cdb757a73bd669a3900e7cbf8ee1bab45815",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    },
+    {
+      "Hash": "8e93bdb54062ce18137ad1e94675031a976a64a950bd739d810ad5c7563cc4b5",
+      "Label": "ham",
+      "Group": "781d6c9228782e59637f6a3c9c4c39872eb2e230d606a87f65fa62e4b6b7956c",
+      "Bucket": 0,
+      "Score": -4,
+      "Verdict": "ham",
+      "Incomplete": false,
+      "Bayes": 0
+    }
+  ],
+  "excluded": 0
+}

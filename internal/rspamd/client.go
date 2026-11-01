@@ -118,6 +118,11 @@ func (c *Client) Scan(ctx context.Context, raw []byte, recipient string) (Result
 	// every applicable check. We deliberately do not invent a source IP from
 	// untrusted Received headers.
 	req.Header.Set("Pass", "all")
+	// These messages have already been delivered. SMTP greylisting cannot
+	// defer their delivery; its soft reject would hide an otherwise complete
+	// spam verdict. Disable only the two greylisting callbacks, retaining real
+	// timeout/DNS failure checks and the fail-closed soft-reject handling.
+	req.Header.Set("Settings", `{"symbols_disabled":["GREYLIST_CHECK","GREYLIST_SAVE"]}`)
 	if recipient != "" {
 		req.Header.Set("Deliver-To", recipient)
 	}
@@ -209,6 +214,46 @@ func Classify(result Result, spamScore, hamScore float64, requireAuth bool) Deci
 		decision.Verdict = "ham"
 	}
 	return decision
+}
+
+// ClassifyDelivery permits reversible quarantine on positive spam evidence
+// even when a supplementary DNS check failed. Such a result remains incomplete:
+// it must never authorize rescue or permanent deletion. Whole-task timeouts,
+// skipped scans and soft rejects still fail closed, regardless of score.
+func ClassifyDelivery(result Result, spamScore, hamScore float64, requireAuth bool) Decision {
+	d := Classify(result, spamScore, hamScore, requireAuth)
+	if !d.Incomplete || result.IsSkipped || strings.EqualFold(strings.TrimSpace(result.Action), "soft reject") {
+		return d
+	}
+	networkFailure := false
+	bayesSpam := 0.0
+	for key, symbol := range result.Symbols {
+		for _, name := range []string{strings.ToUpper(key), strings.ToUpper(symbol.Name)} {
+			if strings.Contains(name, "TIMEOUT") {
+				return d
+			}
+			if strings.Contains(name, "DNSFAIL") || strings.Contains(name, "TEMPFAIL") {
+				networkFailure = true
+			}
+			if name == "BAYES_SPAM" && symbol.Score > bayesSpam {
+				bayesSpam = symbol.Score
+			}
+		}
+	}
+	if networkFailure && result.Score >= spamScore && (result.Score >= 12 || bayesSpam >= 3) {
+		d.Verdict = "spam"
+		d.Symbols = append(d.Symbols, "QUARANTINE_ONLY_DNS_INCOMPLETE")
+	}
+	return d
+}
+
+// Permanent deletion retains the original score floor and requires every
+// check to complete, independently of the validated quarantine threshold.
+func ClassifyPermanent(result Result, spamScore, hamScore float64, requireAuth bool) Decision {
+	if spamScore < 12 {
+		spamScore = 12
+	}
+	return Classify(result, spamScore, hamScore, requireAuth)
 }
 
 func (c *Client) Learn(ctx context.Context, raw []byte, spam bool) error {

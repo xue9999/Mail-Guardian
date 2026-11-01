@@ -317,6 +317,14 @@ CREATE TABLE IF NOT EXISTS reconciliations (
 	if err := ensureColumn(ctx, tx, "messages", "feedback_intent", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migracja intencji korekt: %w", err)
 	}
+	for _, column := range []string{"initial_verdict", "initial_action"} {
+		if err := ensureColumn(ctx, tx, "messages", column, "TEXT NOT NULL DEFAULT ''"); err != nil {
+			return fmt.Errorf("zachowanie pierwszej oceny wiadomości: %w", err)
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE messages SET initial_verdict=verdict,initial_action=action WHERE initial_verdict=''`); err != nil {
+		return fmt.Errorf("utrwalenie historycznych ocen: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("utrwalenie migracji bazy: %w", err)
 	}
@@ -458,12 +466,23 @@ func (db *DB) LatestLiveRunOutcome(ctx context.Context) (status string, errorsCo
 }
 
 func (db *DB) LocationProcessed(ctx context.Context, account, folder string, uidValidity uint32, uid uint32, activeMode bool) (bool, error) {
+	return db.LocationProcessedSince(ctx, account, folder, uidValidity, uid, activeMode, time.Time{})
+}
+
+// LocationProcessedSince expires only automatic keep decisions. Completed
+// moves and explicit feedback never become eligible for repeated processing.
+func (db *DB) LocationProcessedSince(ctx context.Context, account, folder string, uidValidity uint32, uid uint32, activeMode bool, rescanBefore time.Time) (bool, error) {
 	var n int
 	query := `SELECT COUNT(*) FROM messages WHERE account=? AND current_folder=? AND uidvalidity=? AND uid=? AND status NOT IN ('error','restored','pending_move','pending_learn')`
+	args := []any{account, folder, uidValidity, uid}
 	if activeMode {
 		query += ` AND status<>'observed'`
 	}
-	err := db.sql.QueryRowContext(ctx, query, account, folder, uidValidity, uid).Scan(&n)
+	if !rescanBefore.IsZero() {
+		query += ` AND NOT (action='keep' AND status IN ('observed','kept') AND feedback='' AND feedback_intent='' AND julianday(last_scanned)<julianday(?))`
+		args = append(args, formatTime(rescanBefore))
+	}
+	err := db.sql.QueryRowContext(ctx, query, args...).Scan(&n)
 	return n > 0, err
 }
 
@@ -476,6 +495,14 @@ SELECT EXISTS(
    AND status IN ('pending_move','move_ambiguous')
 )`, account, folder, uidValidity, uid).Scan(&found)
 	return found != 0, err
+}
+
+// TrainingLocationProcessed retries blocked explicit corrections. Their raw
+// content may be unlearnable, but the user's folder choice is still actionable.
+func (db *DB) TrainingLocationProcessed(ctx context.Context, account, folder string, uidValidity, uid uint32) (bool, error) {
+	var n int
+	err := db.sql.QueryRowContext(ctx, `SELECT COUNT(*) FROM messages WHERE account=? AND current_folder=? AND uidvalidity=? AND uid=? AND status NOT IN ('error','restored','pending_move','pending_learn','observed','blocked')`, account, folder, uidValidity, uid).Scan(&n)
+	return n > 0, err
 }
 
 // PendingMessages returns moves whose durable intent was recorded before the
@@ -569,12 +596,12 @@ WHERE id=?`,
 	}
 	res, err := db.sql.ExecContext(ctx, `
 INSERT INTO messages(account,source_folder,current_folder,uidvalidity,uid,message_id_hash,
- raw_sha256,size_bytes,verdict,score,symbols_json,action,status,first_seen,last_scanned,
+ raw_sha256,size_bytes,verdict,score,symbols_json,action,status,first_seen,last_scanned,initial_verdict,initial_action,
  quarantined_at,delete_after,archive_path,archive_until,feedback,feedback_intent,last_error)
-VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
 		m.Account, m.SourceFolder, m.CurrentFolder, m.UIDValidity, m.UID,
 		m.MessageIDHash, m.RawSHA256, m.SizeBytes, m.Verdict, m.Score, string(symbols),
-		m.Action, m.Status, formatTime(m.FirstSeen), formatTime(m.LastScanned),
+		m.Action, m.Status, formatTime(m.FirstSeen), formatTime(m.LastScanned), m.Verdict, m.Action,
 		formatTimePtr(m.QuarantinedAt), formatTimePtr(m.DeleteAfter), m.ArchivePath,
 		formatTimePtr(m.ArchiveUntil), m.Feedback, m.FeedbackIntent, m.LastError)
 	if err != nil {
@@ -924,16 +951,43 @@ func (db *DB) HasSpamFeedback(ctx context.Context, account, rawSHA256 string) (b
 	return db.hasFeedback(ctx, account, rawSHA256, "spam")
 }
 
-// HasLearnedFeedback deliberately ignores a merely recorded intent. It is
-// used only to decide whether Rspamd itself may be skipped after a crash.
+// HasLearnedFeedback only deduplicates the latest confirmed class. A newer
+// opposite intent makes the external model uncertain: Rspamd could have learned
+// it even if its reply was lost before SQLite recorded the confirmation.
 func (db *DB) HasLearnedFeedback(ctx context.Context, account, rawSHA256, feedback string) (bool, error) {
-	var found int
+	var matches bool
 	err := db.sql.QueryRowContext(ctx, `
-SELECT EXISTS(
- SELECT 1 FROM messages
- WHERE account=? AND raw_sha256=? AND feedback=?
-)`, account, rawSHA256, feedback).Scan(&found)
-	return found != 0, err
+SELECT confirmed.feedback=?
+ AND (confirmed.feedback_intent='' OR confirmed.feedback_intent=confirmed.feedback)
+ AND NOT EXISTS (
+  SELECT 1 FROM messages newer
+  WHERE newer.account=confirmed.account AND newer.raw_sha256=confirmed.raw_sha256
+    AND newer.id>confirmed.id
+    AND COALESCE(NULLIF(newer.feedback_intent,''),newer.feedback) IN ('ham','spam')
+    AND COALESCE(NULLIF(newer.feedback_intent,''),newer.feedback)<>confirmed.feedback
+ )
+FROM messages confirmed
+WHERE confirmed.account=? AND confirmed.raw_sha256=? AND confirmed.feedback<>''
+ORDER BY confirmed.id DESC LIMIT 1`, feedback, account, rawSHA256).Scan(&matches)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return matches, err
+}
+
+// LatestFeedback follows the user's most recent explicit correction, including
+// an intent whose external learn has not succeeded. Historical ham corrections
+// remain available through HasHamFeedback as permanent vetoes for deletion.
+func (db *DB) LatestFeedback(ctx context.Context, account, rawSHA256 string) (string, error) {
+	var latest string
+	err := db.sql.QueryRowContext(ctx, `
+SELECT COALESCE(NULLIF(feedback_intent,''),feedback) FROM messages
+WHERE account=? AND raw_sha256=? AND (feedback<>'' OR feedback_intent<>'')
+ORDER BY id DESC LIMIT 1`, account, rawSHA256).Scan(&latest)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return latest, err
 }
 
 func (db *DB) hasFeedback(ctx context.Context, account, rawSHA256, feedback string) (bool, error) {
@@ -963,7 +1017,7 @@ func (db *DB) ActivationQualityUntil(ctx context.Context, account string, since,
    AND prior.raw_sha256=feedback_rows.raw_sha256
    AND prior.id<>feedback_rows.id
    AND prior.feedback=''
-   AND prior.verdict='spam'
+   AND prior.initial_verdict='spam'
    AND prior.first_seen<=feedback_rows.first_seen
 )`
 	const priorHam = `EXISTS (
@@ -972,7 +1026,7 @@ func (db *DB) ActivationQualityUntil(ctx context.Context, account string, since,
    AND prior.raw_sha256=feedback_rows.raw_sha256
    AND prior.id<>feedback_rows.id
    AND prior.feedback=''
-   AND prior.verdict='ham'
+   AND prior.initial_verdict='ham'
    AND prior.first_seen<=feedback_rows.first_seen
 )`
 	const priorReview = `EXISTS (
@@ -981,7 +1035,7 @@ func (db *DB) ActivationQualityUntil(ctx context.Context, account string, since,
    AND prior.raw_sha256=feedback_rows.raw_sha256
    AND prior.id<>feedback_rows.id
    AND prior.feedback=''
-   AND (prior.action='review' OR prior.status='review')
+   AND prior.initial_action='review'
    AND prior.first_seen<=feedback_rows.first_seen
 )`
 	query := `
@@ -1028,7 +1082,7 @@ SELECT
      AND prior.raw_sha256=feedback_rows.raw_sha256
      AND prior.id<>feedback_rows.id
      AND prior.feedback=''
-     AND prior.verdict='spam'
+     AND prior.initial_verdict='spam'
      AND prior.first_seen<=feedback_rows.first_seen
  ) THEN raw_sha256 END),
  COUNT(DISTINCT CASE WHEN feedback='spam' AND EXISTS (
@@ -1037,7 +1091,7 @@ SELECT
      AND prior.raw_sha256=feedback_rows.raw_sha256
      AND prior.id<>feedback_rows.id
      AND prior.feedback=''
-     AND prior.verdict='ham'
+     AND prior.initial_verdict='ham'
      AND prior.first_seen<=feedback_rows.first_seen
  ) THEN raw_sha256 END)
 FROM messages AS feedback_rows

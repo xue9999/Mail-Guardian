@@ -1,0 +1,25 @@
+[Unit]
+Description=Encrypted daily Mail Guardian application backup (%i)
+Wants=docker.service
+After=docker.service
+ConditionPathExists=/etc/mail-guardian/%i/backup-recipient
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+Restart=on-failure
+RestartSec=15min
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/local/libexec/mail-guardian-backup %i
+TimeoutStartSec=15min
+TimeoutStopSec=60s
+KillMode=control-group
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+StandardOutput=journal
+StandardError=journal

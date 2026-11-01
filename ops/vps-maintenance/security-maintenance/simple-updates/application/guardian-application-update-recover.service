@@ -1,0 +1,21 @@
+[Unit]
+Description=Recover interrupted Guardian application update forward
+After=docker.service network-online.target
+Wants=docker.service network-online.target
+Before=guardian-application-update.service
+ConditionPathExists=/var/lib/mail-guardian-application-update/pending.json
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+ExecStart=/usr/bin/python3 -I /opt/vps-maintenance/security-maintenance/simple-updates/application/updater.py --recover
+TimeoutStartSec=20min
+TimeoutStopSec=60s
+KillMode=control-group
+PrivateTmp=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -14,7 +14,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
+	"github.com/o2-mail-guardian/guardian/internal/secrets"
 )
 
 type Manager struct {
@@ -22,16 +22,16 @@ type Manager struct {
 	Identity *age.X25519Identity
 }
 
-func EnsureIdentity(kc keychain.Store, service, account string) (*age.X25519Identity, error) {
+func EnsureIdentity(kc secrets.Store, service, account string) (*age.X25519Identity, error) {
 	value, err := kc.Get(service, account)
 	if err == nil {
 		id, parseErr := age.ParseX25519Identity(value)
 		if parseErr != nil {
-			return nil, fmt.Errorf("klucz archiwum w pęku kluczy jest uszkodzony: %w", parseErr)
+			return nil, fmt.Errorf("zapisany klucz archiwum jest uszkodzony: %w", parseErr)
 		}
 		return id, nil
 	}
-	if !errors.Is(err, keychain.ErrNotFound) {
+	if !errors.Is(err, secrets.ErrNotFound) {
 		return nil, err
 	}
 	id, err := age.GenerateX25519Identity()
@@ -44,7 +44,7 @@ func EnsureIdentity(kc keychain.Store, service, account string) (*age.X25519Iden
 	return id, nil
 }
 
-func LoadIdentity(kc keychain.Store, service, account string) (*age.X25519Identity, error) {
+func LoadIdentity(kc secrets.Reader, service, account string) (*age.X25519Identity, error) {
 	value, err := kc.Get(service, account)
 	if err != nil {
 		return nil, err

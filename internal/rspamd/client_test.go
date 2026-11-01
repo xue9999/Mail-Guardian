@@ -77,6 +77,43 @@ func TestClassifyNeverTrustsSkippedOrTimedOutScan(t *testing.T) {
 	}
 }
 
+func TestDeliveryDNSFailureAllowsOnlyReversibleSpamDecision(t *testing.T) {
+	for _, test := range []struct {
+		name              string
+		score, bayes      float64
+		action, failed    string
+		skipped, wantSpam bool
+	}{
+		{"strong local evidence", 18, 0, "add header", "RDNS_DNSFAIL", false, true},
+		{"bayes evidence", 9, 5.1, "add header", "R_DKIM_TEMPFAIL", false, true},
+		{"insufficient evidence", 9, 0, "add header", "R_DKIM_TEMPFAIL", false, false},
+		{"whole task timeout", 30, 5.1, "soft reject", "TASK_TIMEOUT", false, false},
+		{"skipped", 30, 5.1, "reject", "RDNS_DNSFAIL", true, false},
+		{"ham cannot be rescued", -5, 0, "no action", "RDNS_DNSFAIL", false, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			r := Result{Score: test.score, Action: test.action, IsSkipped: test.skipped, Symbols: map[string]Symbol{test.failed: {Name: test.failed}, "BAYES_SPAM": {Name: "BAYES_SPAM", Score: test.bayes}, "DMARC_POLICY_ALLOW": {Name: "DMARC_POLICY_ALLOW"}}}
+			d := ClassifyDelivery(r, 6, -2, true)
+			if (d.Verdict == "spam") != test.wantSpam || !d.Incomplete || d.Verdict == "ham" {
+				t.Fatalf("unsafe delivery decision: %+v", d)
+			}
+			if strict := Classify(r, 6, -2, true); strict.Verdict != "uncertain" {
+				t.Fatal("permanent-deletion classifier was weakened")
+			}
+		})
+	}
+}
+
+func TestValidatedQuarantineThresholdDoesNotLowerPermanentDeletionThreshold(t *testing.T) {
+	r := Result{Score: 9, Action: "add header"}
+	if got := ClassifyDelivery(r, 6, -2, true); got.Verdict != "spam" {
+		t.Fatalf("delivery: %+v", got)
+	}
+	if got := ClassifyPermanent(r, 6, -2, true); got.Verdict != "uncertain" {
+		t.Fatalf("destructive threshold weakened: %+v", got)
+	}
+}
+
 func TestClassifyUsesSymbolKeyAndRejectsUnsafeHamAction(t *testing.T) {
 	maskedTimeout := Result{
 		Score:  -4,
@@ -127,6 +164,9 @@ func TestHTTPClientScanLearnAndPing(t *testing.T) {
 			}
 			if r.Header.Get("Pass") != "all" {
 				t.Error("IMAP scan did not request all applicable checks")
+			}
+			if r.Header.Get("Settings") != `{"symbols_disabled":["GREYLIST_CHECK","GREYLIST_SAVE"]}` {
+				t.Error("delivered IMAP message can still be deferred by SMTP greylisting")
 			}
 			body, _ := io.ReadAll(r.Body)
 			if !strings.Contains(string(body), "Subject: test") {

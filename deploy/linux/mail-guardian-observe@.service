@@ -1,0 +1,29 @@
+[Unit]
+Description=Observe Mail Guardian state and notify independent monitor (%i)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=mg-%i
+Group=mg-%i
+ExecStart=/usr/bin/python3 -I /usr/local/libexec/mail-guardian-observe --instance %i
+LoadCredential=healthchecks-url:/etc/mail-guardian/%i/credentials/healthchecks-url
+UMask=0077
+TimeoutStartSec=30s
+TimeoutStopSec=5s
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+# SQLite mode=ro may need ordinary WAL/SHM bookkeeping after a clean close.
+# SQL writes/migrations remain disabled; immutable=1 would hide live WAL data.
+ReadWritePaths=/var/lib/mail-guardian/%i
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+StandardOutput=journal
+StandardError=journal

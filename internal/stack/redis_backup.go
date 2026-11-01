@@ -10,7 +10,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -67,19 +69,34 @@ func redisRDBPayload(data []byte) ([]byte, error) {
 	return nil, errors.New("otrzymano uszkodzoną lub niepełną kopię Redis")
 }
 
-type rdbBuffer struct{ bytes.Buffer }
+// Do not embed bytes.Buffer: its promoted ReadFrom method would let io.Copy
+// bypass Write and silently defeat the size bound on subprocess output.
+type rdbBuffer struct{ buffer bytes.Buffer }
+
+func (b *rdbBuffer) Bytes() []byte { return b.buffer.Bytes() }
 
 func (b *rdbBuffer) Write(p []byte) (int, error) {
-	if b.Len()+len(p) > 128<<20 {
+	if b.buffer.Len()+len(p) > 128<<20 {
 		return 0, errors.New("kopia Redis przekracza 128 MiB")
 	}
-	return b.Buffer.Write(p)
+	return b.buffer.Write(p)
 }
 
 // BackupRedis preserves two checksummed generations outside the VM. A model
 // rollback cannot replace the last good generation. Paired metadata and RDB
 // are published as one directory, so a crash cannot mix their contents.
 func (m Manager) BackupRedis(dataDir string, spam, ham uint64) error {
+	if runtime.GOOS == "linux" {
+		// A recent snapshot is not evidence that current Redis writes or the
+		// host disk remain healthy. Check even when no new export is needed.
+		if err := m.checkRedisPersistence(); err != nil {
+			return err
+		}
+	}
+	return m.backupRedis(dataDir, spam, ham)
+}
+
+func (m Manager) backupRedis(dataDir string, spam, ham uint64) error {
 	root := filepath.Join(dataDir, "redis-backup")
 	current, previous := filepath.Join(root, "current"), filepath.Join(root, "previous")
 	baseline := current
@@ -114,27 +131,68 @@ func (m Manager) BackupRedis(dataDir string, spam, ham uint64) error {
 	if err := os.MkdirAll(root, 0o700); err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	docker := commandPath("docker")
-	if docker == "" {
-		return errors.New("brakuje Dockera do zabezpieczenia modelu")
-	}
-	cmd := stackCommand(ctx, docker, m.dockerComposeArgs("exec", "-T", "redis", "redis-cli", "--rdb", "-")...)
-	cmd.Env = append(cmd.Env, "GUARDIAN_RUNTIME_DIR="+m.RuntimeDir)
-	var output rdbBuffer
-	var diagnostic bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &output, &diagnostic
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("eksport modelu Redis: %w (%s)", err, safeOutput(diagnostic.Bytes()))
-	}
-	payload, err := redisRDBPayload(output.Bytes())
+	payload, err := retryRedisRDBExport(func(ctx context.Context) ([]byte, error) {
+		if runtime.GOOS == "linux" {
+			cmd, err := linuxMaintenanceCommand(ctx, m.Instance, "export-redis")
+			if err != nil {
+				return nil, err
+			}
+			output, err := captureLinuxMaintenance(ctx, cmd, 128<<20)
+			if err != nil {
+				return nil, err
+			}
+			return redisRDBPayload(output)
+		}
+		docker := commandPath("docker")
+		if docker == "" {
+			return nil, errors.New("brakuje Dockera do zabezpieczenia modelu")
+		}
+		cmd := stackCommand(ctx, docker, m.dockerComposeArgs("exec", "-T", "redis", "redis-cli", "--rdb", "-")...)
+		cmd.Env = append(cmd.Env, "GUARDIAN_RUNTIME_DIR="+m.RuntimeDir)
+		return captureRedisRDBExport(ctx, cmd)
+	})
 	if err != nil {
 		return err
 	}
 	hash := sha256.Sum256(payload)
 	info := redisBackupInfo{Spam: spam, Ham: ham, SHA256: hex.EncodeToString(hash[:]), Created: time.Now().UTC()}
 	return publishRedisBackup(root, payload, info)
+}
+
+// Export is read-only. One fresh retry can recover a transient Docker process
+// or transport failure without publishing the incomplete first attempt.
+func retryRedisRDBExport(export func(context.Context) ([]byte, error)) ([]byte, error) {
+	var failures error
+	for attempt := 1; attempt <= 2; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		payload, err := export(ctx)
+		cancel()
+		if err == nil {
+			return payload, nil
+		}
+		var processErr *redisExportProcessError
+		if !errors.As(err, &processErr) {
+			return nil, err
+		}
+		failures = errors.Join(failures, fmt.Errorf("próba %d: %w", attempt, err))
+	}
+	return nil, failures
+}
+
+type redisExportProcessError struct{ error }
+
+func (e *redisExportProcessError) Unwrap() error { return e.error }
+
+func captureRedisRDBExport(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
+	var output rdbBuffer
+	var diagnostic bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &output, &diagnostic
+	if err := cmd.Run(); err != nil {
+		// A transfer-success diagnostic or even valid captured bytes cannot
+		// substitute for successful termination of the exporting process.
+		return nil, &redisExportProcessError{fmt.Errorf("eksport modelu Redis: %w (%s)", errors.Join(err, ctx.Err()), safeOutput(diagnostic.Bytes()))}
+	}
+	return redisRDBPayload(output.Bytes())
 }
 
 func publishRedisBackup(root string, payload []byte, info redisBackupInfo) error {
@@ -207,14 +265,63 @@ func validateRedisPersistence(output string) error {
 	return nil
 }
 
+// CheckPersistence checks host storage plus synchronous Redis persistence.
+// Every unattended mutation must pass this gate before opening the mailbox.
+func (m Manager) CheckPersistence() error { return m.checkRedisPersistence() }
+
 func (m Manager) checkRedisPersistence() error {
-	ctx, cancel := context.WithTimeout(context.Background(), shortCommandTimeout)
-	defer cancel()
-	cmd := stackCommand(ctx, commandPath("docker"), m.dockerComposeArgs("exec", "-T", "redis", "redis-cli", "--raw", "INFO", "persistence")...)
-	cmd.Env = append(cmd.Env, "GUARDIAN_RUNTIME_DIR="+m.RuntimeDir)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("kontrola trwałości Redis: %w (%s)", err, safeOutput(output))
+	if runtime.GOOS == "linux" {
+		_, err := m.linuxMaintenance("check-persistence")
+		return err
 	}
-	return validateRedisPersistence(string(output))
+	if err := m.CheckStorage(); err != nil {
+		return err
+	}
+	return checkRedisPersistenceCommands(shortCommandTimeout, func(ctx context.Context, args ...string) ([]byte, error) {
+		commandArgs := append([]string{"exec", "-T", "redis", "redis-cli", "--raw"}, args...)
+		cmd := stackCommand(ctx, commandPath("docker"), m.dockerComposeArgs(commandArgs...)...)
+		cmd.Env = append(cmd.Env, "GUARDIAN_RUNTIME_DIR="+m.RuntimeDir)
+		output, err := cmd.Output()
+		var exit *exec.ExitError
+		if errors.As(err, &exit) {
+			err = fmt.Errorf("%w (%s)", err, safeOutput(exit.Stderr))
+		}
+		return output, err
+	})
+}
+
+func checkRedisPersistenceCommands(timeout time.Duration, command func(context.Context, ...string) ([]byte, error)) error {
+	read := func(args ...string) ([]byte, error) {
+		var failures error
+		for attempt := 1; attempt <= 2; attempt++ {
+			// Each read and retry gets its own full allowance. Sharing one
+			// deadline made a healthy second command inherit the first's delay.
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			output, err := command(ctx, args...)
+			if err != nil {
+				err = errors.Join(err, ctx.Err())
+			}
+			cancel()
+			if err == nil {
+				return output, nil
+			}
+			failures = errors.Join(failures, fmt.Errorf("próba %d: %w", attempt, err))
+		}
+		return nil, failures
+	}
+	output, err := read("INFO", "persistence")
+	if err != nil {
+		return fmt.Errorf("kontrola trwałości Redis: %w", err)
+	}
+	if err := validateRedisPersistence(string(output)); err != nil {
+		return err
+	}
+	config, err := read("CONFIG", "GET", "appendfsync")
+	if err != nil {
+		return fmt.Errorf("kontrola fsync Redis: %w", err)
+	}
+	if strings.Join(strings.Fields(string(config)), " ") != "appendfsync always" {
+		return errors.New("Redis nie potwierdza synchronicznego zapisu AOF; wymagane appendfsync always")
+	}
+	return nil
 }

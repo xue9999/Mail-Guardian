@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily discovery of Ubuntu releases for manual review
+
+[Timer]
+OnCalendar=*-*-* 06:45:00 UTC
+RandomizedDelaySec=2min
+Persistent=true
+Unit=vps-ubuntu-release-check.service
+
+[Install]
+WantedBy=timers.target

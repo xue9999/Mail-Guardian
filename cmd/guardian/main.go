@@ -12,10 +12,12 @@ import (
 	netmail "net/mail"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unicode"
 
@@ -28,6 +30,7 @@ import (
 	"github.com/o2-mail-guardian/guardian/internal/engine"
 	"github.com/o2-mail-guardian/guardian/internal/imapmail"
 	"github.com/o2-mail-guardian/guardian/internal/keychain"
+	"github.com/o2-mail-guardian/guardian/internal/qualification"
 	"github.com/o2-mail-guardian/guardian/internal/rspamd"
 	"github.com/o2-mail-guardian/guardian/internal/runlock"
 	"github.com/o2-mail-guardian/guardian/internal/service"
@@ -64,10 +67,12 @@ type application struct {
 	enableAutomation  func(config.Config) error
 	disableAutomation func(config.Config) error
 	sendNotification  func(title, message string) error
+	backupModel       func(context.Context, *runtimeApp) error
 	interactive       bool
 }
 
 type runtimeApp struct {
+	ctx     context.Context
 	cfg     config.Config
 	db      *store.DB
 	mail    *imapmail.Client
@@ -96,6 +101,10 @@ func main() {
 
 func (a *application) execute(args []string) error {
 	if len(args) == 0 {
+		if runtime.GOOS == "linux" {
+			a.help()
+			return nil
+		}
 		if term.IsTerminal(int(os.Stdin.Fd())) {
 			return a.menu()
 		}
@@ -109,12 +118,40 @@ func (a *application) execute(args []string) error {
 		a.configPath = args[1]
 		args = args[2:]
 	}
+	if runtime.GOOS == "linux" {
+		switch args[0] {
+		case "help", "pomoc", "-h", "--help", "version", "wersja", "--version", "self-test", "server":
+		case "run", "uruchom", "sprawdz", "status", "stan", "doctor", "kontrola", "preflight", "stack", "service-run", "archive":
+			if err := a.validateLinuxRuntime(); err != nil {
+				return err
+			}
+			// Even status/doctor/archive inspection can open or migrate SQLite.
+			// Hold the shared migration fence for the entire runtime command,
+			// including any mailbox work and privileged maintenance dispatch.
+			fence, err := acquireMigrationFence(filepath.Dir(a.configPath), 0)
+			if err != nil {
+				return err
+			}
+			defer fence.Close()
+			// An administrator may have changed the configuration after the
+			// initial path validation and before the fence was acquired. Check
+			// it again while publication is excluded.
+			if err := a.validateLinuxRuntime(); err != nil {
+				return err
+			}
+		default:
+			return errors.New("this Linux pilot supports server configuration, status, doctor, stack, run, service-run and archive commands; manage the timer as an administrator through systemd")
+		}
+	}
 	switch args[0] {
+	case "server":
+		return a.serverCommand(args[1:])
 	case "help", "pomoc", "-h", "--help":
 		a.help()
 		return nil
 	case "version", "wersja", "--version":
 		fmt.Fprintf(a.out, "O2 Mail Guardian %s (%s)\n", version, commit)
+		fmt.Fprintf(a.out, "Go: %s\n", runtime.Version())
 		return nil
 	case "self-test":
 		return a.selfTest()
@@ -132,6 +169,8 @@ func (a *application) execute(args []string) error {
 		return a.runCommand(args[1:])
 	case "status", "stan":
 		return a.statusCommand(args[1:])
+	case "qualify":
+		return a.qualifyCommand(args[1:])
 	case "purge":
 		return a.purgeCommand(args[1:])
 	case "archive":
@@ -192,6 +231,9 @@ func (a *application) doctorCommand(args []string) error {
 }
 
 func (a *application) serviceRun() (retErr error) {
+	if runtime.GOOS == "linux" {
+		return a.linuxServiceRun()
+	}
 	dataDir := config.DefaultDataDir()
 	if cfg, err := config.Load(a.configPath); err == nil {
 		dataDir = cfg.Runtime.DataDir
@@ -223,16 +265,32 @@ func (a *application) serviceRun() (retErr error) {
 	heartbeat.Stage = "mailbox"
 	_ = service.WriteHeartbeat(dataDir, heartbeat)
 	run, err := a.runCommandResult(nil)
-	if err != nil {
-		return err
-	}
-	if run.Errors > 0 {
-		return fmt.Errorf("przebieg zakończony z błędami: %d; część operacji wymaga sprawdzenia", run.Errors)
-	}
-	return nil
+	return requireSuccessfulRun(run, err)
 }
 
 func (a *application) help() {
+	if runtime.GOOS == "linux" {
+		fmt.Fprintln(a.out, `Mail Guardian — Linux pilot (protect/active policies, permanent deletion disabled)
+
+Create a new offline configuration:
+  guardian server init-config --instance NAME --email EMAIL --server-spam FOLDER [--mode protect|active] --output NEW-FILE
+  guardian --config FILE server validate-config --instance NAME
+
+After verified same-mailbox state import, before any normal runtime command:
+  sudo guardian --config /etc/mail-guardian/NAME/config.toml server adopt-policy --instance NAME --preserve-policy
+This preserves validated source policy history and requires a new server dry-run.
+
+Use the explicitly provisioned instance and systemd credentials:
+  guardian --config /etc/mail-guardian/NAME/config.toml run --dry-run
+  guardian --config /etc/mail-guardian/NAME/config.toml run
+  guardian --config /etc/mail-guardian/NAME/config.toml status
+  guardian --config /etc/mail-guardian/NAME/config.toml doctor --deep
+  guardian --config /etc/mail-guardian/NAME/config.toml archive list|show|restore
+
+The administrator manages the systemd timer after pilot and recovery acceptance.
+Protect mode can move mail and process corrections. Read the Linux pilot runbook.`)
+		return
+	}
 	fmt.Fprintln(a.out, `
 O2 Mail Guardian — lokalny strażnik skrzynki o2.pl
 
@@ -257,6 +315,7 @@ Bezpieczeństwo i odzyskiwanie:
 Automatyzacja i silnik:
   guardian service install|status|uninstall
   guardian stack up|status|down
+  guardian server init-config|validate-config
 
 Nie musisz zapamiętywać tych poleceń — wszystkie codzienne działania są w menu.
 Trwałe kasowanie jest domyślnie wyłączone i nie może zostać uruchomione przed
@@ -361,7 +420,7 @@ func (a *application) setup() (retErr error) {
 	}
 	if !firstSetup && savedPasswordErr == nil {
 		a.info("Sprawdzam zapisane hasło aplikacyjne — nie musisz wpisywać go ponownie…")
-		mail, err = imapmail.Dial(ctx, cfg.Account.Host, cfg.Account.Port, email, savedPassword)
+		mail, err = dialMailbox(ctx, cfg, savedPassword)
 		if err == nil {
 			a.success("Zapisane hasło aplikacyjne nadal działa.")
 		} else if !isIMAPAuthenticationError(err) {
@@ -394,7 +453,7 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 		a.info("Sprawdzam nowe hasło przez szyfrowane połączenie z o2…")
 		verify := func(candidate string) error {
 			var dialErr error
-			mail, dialErr = imapmail.Dial(ctx, cfg.Account.Host, cfg.Account.Port, email, candidate)
+			mail, dialErr = dialMailbox(ctx, cfg, candidate)
 			return dialErr
 		}
 		save := func(candidate string) error {
@@ -692,11 +751,13 @@ func (a *application) doctor(verbose, deep bool) error {
 		}
 	}
 	info, err := os.Stat(a.configPath)
-	if err == nil && info.Mode().Perm()&0o077 != 0 {
+	if err == nil && runtime.GOOS == "linux" {
+		err = validateAdministratorPath(a.configPath)
+	} else if err == nil && info.Mode().Perm()&0o077 != 0 {
 		err = fmt.Errorf("uprawnienia %o są zbyt szerokie; oczekiwano 600", info.Mode().Perm())
 	}
 	check("Konfiguracja jest prywatna", err)
-	kc := keychain.New()
+	kc := runtimeSecrets(cfg)
 	_, err = kc.Get(cfg.Account.PasswordKeychainService, cfg.Account.Email)
 	if err != nil {
 		err = apperror.Wrap(apperror.Keychain, "critical", "Nie można odczytać hasła o2 z pęku kluczy.", "Odblokuj pęk kluczy lub zapisz ponownie hasło aplikacyjne w ustawieniach.", err)
@@ -767,7 +828,7 @@ func (a *application) doctor(verbose, deep bool) error {
 	}
 	password, passErr := kc.Get(cfg.Account.PasswordKeychainService, cfg.Account.Email)
 	if passErr == nil {
-		mail, mailErr := imapmail.Dial(ctx, cfg.Account.Host, cfg.Account.Port, cfg.Account.Email, password)
+		mail, mailErr := dialMailbox(ctx, cfg, password)
 		check("Szyfrowane logowanie do o2 działa", mailErr)
 		if mailErr == nil {
 			defer mail.Close()
@@ -806,11 +867,13 @@ func (a *application) doctor(verbose, deep bool) error {
 		manager := service.Manager{Executable: executable, DataDir: cfg.Runtime.DataDir, LogFile: cfg.Runtime.LogFile}
 		check("Automatyczna usługa jest aktywna", func() error { _, statusErr := manager.Status(); return statusErr }())
 		heartbeat, heartbeatErr := service.ReadHeartbeat(cfg.Runtime.DataDir)
-		if heartbeatErr == nil && heartbeat.LastSuccess != nil && time.Since(*heartbeat.LastSuccess) > 48*time.Hour {
-			heartbeatErr = apperror.Wrap(apperror.ServiceStale, "critical", "Ostatni udany przebieg jest starszy niż 48 godzin.", "Uruchom Napraw.", nil)
+		if heartbeatErr == nil {
+			if stale := heartbeatFreshnessError(heartbeat, time.Now()); stale != nil {
+				heartbeatErr = stale
+			}
 		}
 		check("Heartbeat automatycznego sprawdzania jest aktualny", heartbeatErr)
-		managerStack := stack.Manager{ComposeFile: cfg.Runtime.ComposeFile, RuntimeDir: config.DefaultRuntimeDir()}
+		managerStack := runtimeStack(cfg)
 		stackErr := managerStack.DeepCheck()
 		check("Redis, DNS i Rspamd działają w lokalnym stosie", stackErr)
 	}
@@ -863,12 +926,36 @@ func compareBayesHighWater(ctx context.Context, db *store.DB, account string, st
 }
 
 func (a *application) runCommand(args []string) error {
-	_, err := a.runCommandResult(args)
-	return err
+	run, err := a.runCommandResult(args)
+	return requireSuccessfulRun(run, err)
+}
+
+func requireSuccessfulRun(run *store.Run, err error) error {
+	if err != nil {
+		return err
+	}
+	if run == nil {
+		return errors.New("brak potwierdzonego wyniku sprawdzania")
+	}
+	if run.Errors > 0 {
+		return fmt.Errorf("przebieg zakończony z błędami: %d; część operacji wymaga sprawdzenia", run.Errors)
+	}
+	return nil
+}
+
+func recordSuccessfulDryRun(db *store.DB, run *store.Run, now time.Time) error {
+	if run == nil || !run.DryRun || requireSuccessfulRun(run, nil) != nil {
+		return nil
+	}
+	return db.SetSetting(context.Background(), "first_dry_run_completed_at", now.UTC().Format(time.RFC3339Nano))
 }
 
 // Return the exact run to the GUI; a daily aggregate cannot describe a dry-run.
 func (a *application) runCommandResult(args []string) (*store.Run, error) {
+	return a.runCommandResultLocked(args, false)
+}
+
+func (a *application) runCommandResultLocked(args []string, locked bool) (*store.Run, error) {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	fs.SetOutput(a.errOut)
 	dryRun := fs.Bool("dry-run", false, "tylko pokaż decyzje")
@@ -882,11 +969,13 @@ func (a *application) runCommandResult(args []string) (*store.Run, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w\nOtwórz menu i rozpocznij pierwszą konfigurację", err)
 	}
-	lock, err := acquireRunLock(cfg.Runtime.DataDir)
-	if err != nil {
-		return nil, err
+	if !locked {
+		lock, err := acquireRunLock(cfg.Runtime.DataDir)
+		if err != nil {
+			return nil, err
+		}
+		defer lock.Close()
 	}
-	defer lock.Close()
 	rt, cleanup, err := a.openRuntime(true)
 	if err != nil {
 		return nil, err
@@ -900,40 +989,32 @@ func (a *application) runCommandResult(args []string) (*store.Run, error) {
 		if rolledBack {
 			a.warning("Wykryto cofnięcie lokalnego modelu Bayesa. Włączono tryb ochronny i wyłączono trwałe usuwanie.")
 		}
+		if runtime.GOOS == "linux" {
+			if err := a.prepareLinuxMutation(rt); err != nil {
+				return nil, err
+			}
+		}
 	}
 	a.header("Sprawdzanie skrzynki")
 	if *dryRun {
 		a.warning("PRÓBA: żadna wiadomość nie zostanie przeniesiona ani nauczona.")
 	}
-	run, err := rt.engine.Run(context.Background(), engine.RunOptions{DryRun: *dryRun})
+	run, err := rt.engine.Run(rt.ctx, engine.RunOptions{DryRun: *dryRun})
+	err = a.secureRunModel(rt, run, err, *dryRun)
 	if err != nil {
 		if !*dryRun && os.Getenv("GUARDIAN_SERVICE_RUNNER") != "1" {
 			a.maybeNotifyRunFailure(rt.db)
 		}
-		return nil, err
+		return run, err
 	}
 	if *dryRun {
-		if err := rt.db.SetSetting(context.Background(), "first_dry_run_completed_at", time.Now().UTC().Format(time.RFC3339Nano)); err != nil {
+		if err := recordSuccessfulDryRun(rt.db, run, time.Now()); err != nil {
 			return nil, fmt.Errorf("próba się udała, ale nie zapisano jej potwierdzenia: %w", err)
-		}
-	}
-	if !*dryRun {
-		if _, statsErr := a.ensureBayesContinuity(context.Background(), rt); statsErr != nil {
-			a.warning("Nie udało się zapisać aktualnego stanu Bayesa: " + statsErr.Error())
-		}
-		stats, backupErr := rt.scanner.Stats(context.Background())
-		if backupErr == nil {
-			backupErr = (stack.Manager{ComposeFile: rt.cfg.Runtime.ComposeFile, RuntimeDir: config.DefaultRuntimeDir()}).BackupRedis(rt.cfg.Runtime.DataDir, stats.SpamRevision, stats.HamRevision)
-		}
-		if backupErr != nil {
-			run.Errors++
-			_ = rt.db.FinishRun(context.Background(), run, backupErr)
-			return run, fmt.Errorf("poczta została sprawdzona, ale nie udało się zabezpieczyć modelu Bayesa na Macu: %w", backupErr)
 		}
 	}
 	a.printRun(run)
 	if rt.cfg.Safety.PurgeEnabled && !*dryRun {
-		purgeRun, purgeErr := rt.engine.Purge(context.Background(), false)
+		purgeRun, purgeErr := rt.engine.Purge(rt.ctx, false)
 		if purgeErr != nil {
 			a.warning("Automatyczne czyszczenie kwarantanny zostało pominięte: " + purgeErr.Error())
 		} else if purgeRun.Purged > 0 {
@@ -951,6 +1032,51 @@ func (a *application) runCommandResult(args []string) (*store.Run, error) {
 		a.maybeNotify(rt.db)
 	}
 	return run, nil
+}
+
+// A timed-out mailbox must not prevent backing up corrections already learned
+// earlier in that run. Local model checks use a fresh independent context.
+func (a *application) secureRunModel(rt *runtimeApp, run *store.Run, runErr error, dryRun bool) error {
+	if runtime.GOOS == "linux" && !dryRun {
+		checkpointErr := a.finishLinuxMutation(rt)
+		combined := errors.Join(runErr, checkpointErr)
+		if checkpointErr != nil && run != nil {
+			run.Errors++
+			combined = errors.Join(combined, rt.db.FinishRun(context.Background(), run, combined))
+		}
+		return combined
+	}
+	if dryRun || run == nil || (runErr != nil && run.LearnedSpam == 0 && run.LearnedHam == 0) {
+		return runErr
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	backup := a.backupModel
+	if backup == nil {
+		backup = func(ctx context.Context, rt *runtimeApp) error {
+			if _, statsErr := a.ensureBayesContinuity(ctx, rt); statsErr != nil {
+				a.warning("Nie udało się zapisać aktualnego stanu Bayesa: " + statsErr.Error())
+			}
+			stats, err := rt.scanner.Stats(ctx)
+			if err != nil {
+				return err
+			}
+			manager := runtimeStack(rt.cfg)
+			if err := manager.BackupRedis(rt.cfg.Runtime.DataDir, stats.SpamRevision, stats.HamRevision); err != nil {
+				return err
+			}
+			return manager.CheckStorage()
+		}
+	}
+	if err := backup(ctx, rt); err != nil {
+		run.Errors++
+		combined := errors.Join(runErr, fmt.Errorf("nie udało się zabezpieczyć modelu Bayesa na Macu: %w", err))
+		if finishErr := rt.db.FinishRun(context.Background(), run, combined); finishErr != nil {
+			return errors.Join(combined, finishErr)
+		}
+		return combined
+	}
+	return runErr
 }
 
 func (a *application) statusCommand(args []string) error {
@@ -1012,7 +1138,7 @@ func (a *application) statusCommand(args []string) error {
 	}
 	fmt.Fprintf(a.out, "Starsze niż okres kwarantanny (to jeszcze nie oznacza usunięcia): %d\n", summary.PurgeEligible)
 	fmt.Fprintf(a.out, "\nPostęp uczenia filtra: spam %d/%d, ważne %d/%d\n",
-		trainedSpam, cfg.Safety.MinLearnSpam, trainedHam, cfg.Safety.MinLearnHam)
+		trainedSpam, qualification.MinLearns, trainedHam, qualification.MinLearns)
 	fmt.Fprintf(a.out, "Pomyłki wykryte dzięki Twoim poprawkom (30 dni): ważne uznane za spam %d, spam uznany za ważny %d\n",
 		falseSpam, falseHam)
 
@@ -1021,10 +1147,20 @@ func (a *application) statusCommand(args []string) error {
 	if _, errorCount, outcomeErr := db.LatestLiveRunOutcome(context.Background()); outcomeErr == nil {
 		current.Errors = errorCount
 	}
-	for _, advice := range statusAdvice(current, trainedSpam, trainedHam, cfg.Safety.MinLearnSpam, cfg.Safety.MinLearnHam) {
+	for _, advice := range statusAdvice(current, trainedSpam, trainedHam, qualification.MinLearns, qualification.MinLearns) {
 		fmt.Fprintf(a.out, "  • %s\n", advice)
 	}
 	fmt.Fprintf(a.out, "\nDane programu: %s\nArchiwum kopii: %s\n", cfg.Runtime.DataDir, cfg.Runtime.ArchiveDir)
+	if runtime.GOOS == "linux" {
+		fmt.Fprintf(a.out, "Instancja Linux: %s (%s)\n", linuxInstance(cfg), cfg.InstanceID)
+		value, err := db.GetSetting(context.Background(), modelCheckpointRequired)
+		if err != nil {
+			return err
+		}
+		if value != "" {
+			return errors.New("model checkpoint is required; mailbox changes remain blocked until a verified checkpoint succeeds")
+		}
+	}
 	return nil
 }
 
@@ -1094,7 +1230,7 @@ func (a *application) purgeCommand(args []string) error {
 			"Lokalny model Bayesa cofnął się; purge został wyłączony.",
 			"Pozostań w trybie ochronnym i ponownie zbierz potwierdzone przykłady.", nil)
 	}
-	run, err := rt.engine.Purge(context.Background(), *dryRun)
+	run, err := rt.engine.Purge(rt.ctx, *dryRun)
 	if err != nil {
 		return err
 	}
@@ -1128,6 +1264,9 @@ func (a *application) setPurge(enable bool) error {
 		return err
 	}
 	defer db.Close()
+	if err := db.RequireConfiguration(context.Background(), cfg); err != nil {
+		return err
+	}
 	activeValue, _ := db.GetSetting(context.Background(), "active_since")
 	activeAt, _ := time.Parse(time.RFC3339, activeValue)
 	if activeAt.IsZero() || time.Since(activeAt) < 30*24*time.Hour {
@@ -1214,6 +1353,9 @@ func (a *application) modeCommand(args []string) error {
 		}
 		defer db.Close()
 		ctx := context.Background()
+		if err := db.RequireConfiguration(ctx, cfg); err != nil {
+			return err
+		}
 		installedValue, err := db.GetSetting(ctx, "installed_at")
 		if err != nil {
 			return fmt.Errorf("nie mogę sprawdzić początku okresu ochronnego: %w", err)
@@ -1242,12 +1384,21 @@ func (a *application) modeCommand(args []string) error {
 				cfg.Safety.ProtectDays, remainingDays,
 			)
 		}
+		qualified, err := db.CurrentQualification(ctx, cfg, time.Now().UTC())
+		if err != nil {
+			return fmt.Errorf("aktualna ocena filtra: %w", err)
+		}
 		quality, err := db.ActivationQuality(ctx, cfg.Account.Email, protectAt)
 		if err != nil {
 			return fmt.Errorf("nie mogę ocenić jakości dotychczasowych decyzji: %w", err)
 		}
-		if err := activationQualityProblem(quality); err != nil {
-			return err
+		if qualified == nil {
+			if cfg.Rspamd.SpamScore < 12 {
+				return errors.New("próg poniżej 12 wymaga odrębnej oceny: guardian qualify")
+			}
+			if err := activationQualityProblem(quality); err != nil {
+				return err
+			}
 		}
 		ok, err := a.confirmDanger("Tryb aktywny zacznie przenosić pewny spam z Odebranych do odwracalnej kwarantanny.", "AKTYWUJ")
 		if err != nil || !ok {
@@ -1347,7 +1498,7 @@ func (a *application) archiveCommand(args []string) error {
 		if record.ArchivePath == "" {
 			return errors.New("lokalna kopia tej wiadomości już wygasła albo nie została utworzona")
 		}
-		kc := keychain.New()
+		kc := runtimeSecrets(cfg)
 		identity, err := archive.LoadIdentity(kc, cfg.Runtime.ArchiveKeychainService, cfg.Account.Email)
 		if err != nil {
 			return fmt.Errorf("nie mogę otworzyć klucza zaszyfrowanej kopii: %w", err)
@@ -1393,7 +1544,18 @@ func (a *application) archiveCommand(args []string) error {
 			return err
 		}
 		defer cleanup()
-		if err := rt.engine.Restore(context.Background(), id); err != nil {
+		if runtime.GOOS == "linux" {
+			if err := a.prepareLinuxMutation(rt); err != nil {
+				return err
+			}
+		}
+		restoreErr := rt.engine.Restore(rt.ctx, id)
+		if runtime.GOOS == "linux" {
+			if checkpointErr := a.finishLinuxMutation(rt); checkpointErr != nil {
+				return errors.Join(restoreErr, checkpointErr)
+			}
+		}
+		if err := restoreErr; err != nil {
 			if errors.Is(err, engine.ErrRestoreAlreadyPresent) {
 				a.info("Wiadomość nadal istnieje w zapisanym folderze. Nie utworzono niepotrzebnego duplikatu.")
 				return nil
@@ -1460,7 +1622,7 @@ func dryRunAuthorized(cfg config.Config) (bool, error) {
 		return false, err
 	}
 	defer db.Close()
-	return db.DryRunAuthorized(context.Background())
+	return db.DryRunAuthorizedFor(context.Background(), cfg)
 }
 
 func (a *application) stackCommand(args []string) error {
@@ -1470,8 +1632,17 @@ func (a *application) stackCommand(args []string) error {
 	cfg := config.Default()
 	if loaded, err := config.Load(a.configPath); err == nil {
 		cfg = loaded
+	} else if runtime.GOOS == "linux" {
+		return err
 	}
-	manager := stack.Manager{ComposeFile: cfg.Runtime.ComposeFile, RuntimeDir: config.DefaultRuntimeDir()}
+	manager := runtimeStack(cfg)
+	if runtime.GOOS == "linux" && (args[0] == "up" || args[0] == "down") {
+		lock, err := acquireRunLock(cfg.Runtime.DataDir)
+		if err != nil {
+			return err
+		}
+		defer lock.Close()
+	}
 	switch args[0] {
 	case "up":
 		if err := manager.Up(); err != nil {
@@ -1888,8 +2059,22 @@ func (a *application) openRuntime(withMail bool) (*runtimeApp, func(), error) {
 		return nil, func() {}, err
 	}
 	cleanup := func() { _ = db.Close() }
-	kc := keychain.New()
-	controller, _ := kc.Get(cfg.Rspamd.PasswordKeychainService, "controller")
+	if err := db.BindConfiguration(context.Background(), cfg, time.Now()); err != nil {
+		cleanup()
+		return nil, func() {}, err
+	}
+	if runtime.GOOS == "linux" {
+		if err := bindLinuxDeployment(context.Background(), &runtimeApp{cfg: cfg, db: db}); err != nil {
+			cleanup()
+			return nil, func() {}, err
+		}
+	}
+	kc := runtimeSecrets(cfg)
+	controller, err := kc.Get(cfg.Rspamd.PasswordKeychainService, "controller")
+	if err != nil {
+		cleanup()
+		return nil, func() {}, fmt.Errorf("nie można odczytać sekretu kontrolera Rspamd: %w", err)
+	}
 	scanner := rspamd.New(cfg.Rspamd.ScanURL, cfg.Rspamd.LearnURL, controller, time.Duration(cfg.Rspamd.TimeoutSeconds)*time.Second)
 	id, err := archive.LoadIdentity(kc, cfg.Runtime.ArchiveKeychainService, cfg.Account.Email)
 	if err != nil {
@@ -1901,21 +2086,25 @@ func (a *application) openRuntime(withMail bool) (*runtimeApp, func(), error) {
 		cleanup()
 		return nil, func() {}, err
 	}
-	rt := &runtimeApp{cfg: cfg, db: db, scanner: scanner, archive: archiver}
+	rt := &runtimeApp{ctx: context.Background(), cfg: cfg, db: db, scanner: scanner, archive: archiver}
 	if withMail {
 		password, err := kc.Get(cfg.Account.PasswordKeychainService, cfg.Account.Email)
 		if err != nil {
 			cleanup()
 			return nil, func() {}, apperror.Wrap(apperror.Keychain, "critical", "Nie można odczytać hasła o2 z pęku kluczy.", "Odblokuj pęk kluczy lub zapisz ponownie hasło aplikacyjne.", err)
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		mail, err := imapmail.Dial(ctx, cfg.Account.Host, cfg.Account.Port, cfg.Account.Email, password)
+		// Command deadlines belong to the IMAP client. Healthy sessions may
+		// outlive ten minutes; interruption or a failed command cancels the same
+		// context passed to the engine, stopping before the next message.
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		mail, err := dialMailbox(ctx, cfg, password)
 		if err != nil {
 			cancel()
 			cleanup()
 			return nil, func() {}, err
 		}
 		rt.mail = mail
+		rt.ctx = mail.Context()
 		previous := cleanup
 		cleanup = func() {
 			_ = mail.Close()
@@ -2026,6 +2215,9 @@ func (a *application) ensureBayesContinuity(ctx context.Context, rt *runtimeApp)
 }
 
 func (a *application) maybeNotify(db *store.DB) {
+	if runtime.GOOS != "darwin" && a.sendNotification == nil {
+		return
+	}
 	ctx := context.Background()
 	value, _ := db.GetSetting(ctx, "last_notification")
 	last, _ := time.Parse(time.RFC3339, value)
@@ -2051,6 +2243,9 @@ func (a *application) maybeNotify(db *store.DB) {
 }
 
 func (a *application) maybeNotifyRunFailure(db *store.DB) {
+	if runtime.GOOS != "darwin" && a.sendNotification == nil {
+		return
+	}
 	if a.interactive || db == nil {
 		return
 	}
@@ -2097,7 +2292,7 @@ func (a *application) printRun(run *store.Run) {
 	} else if run.Review > 0 {
 		a.info("Zajrzyj do folderu AI-Do-sprawdzenia — są tam wiadomości wymagające Twojej decyzji.")
 	} else {
-		a.success("Sprawdzanie zakończone. Nie musisz nic więcej robić.")
+		a.success("Sprawdzanie zakończone.")
 	}
 }
 

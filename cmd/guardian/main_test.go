@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -206,6 +207,14 @@ func TestHelpUsesPolishAliasesAndPointsToMenu(t *testing.T) {
 	app := &application{out: &out, errOut: &out}
 	if err := app.execute([]string{"pomoc"}); err != nil {
 		t.Fatal(err)
+	}
+	if runtime.GOOS == "linux" {
+		for _, want := range []string{"Linux pilot", "--config", "--dry-run", "systemd", "Protect mode can move mail"} {
+			if !strings.Contains(out.String(), want) {
+				t.Fatalf("Linux help does not contain %q: %s", want, out.String())
+			}
+		}
+		return
 	}
 	for _, want := range []string{"guardian napraw", "guardian konfiguruj", "guardian stan", "guardian sprawdz", "Nie musisz zapamiętywać"} {
 		if !strings.Contains(out.String(), want) {

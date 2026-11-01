@@ -54,6 +54,28 @@ func protectionProgress(cfg config.Config, db *store.DB, now time.Time) *apiProt
 	remaining := start.Add(time.Duration(cfg.Safety.ProtectDays) * 24 * time.Hour).Sub(now)
 	p.RemainingDays = max(0, int((remaining+24*time.Hour-1)/(24*time.Hour)))
 	p.PeriodComplete = remaining <= 0
+	qualified, qualificationErr := db.CurrentQualification(ctx, cfg, now)
+	if qualificationErr != nil {
+		p.Message = "Aktualna ocena filtra jest nieważna. Uruchom ponowną ocenę jakości."
+		return p
+	}
+	if qualified != nil {
+		m := qualified.Metrics()
+		p.QualityReady = true
+		p.Ready = p.PeriodComplete
+		p.QualityChecks = []apiQualityCheck{
+			{"disjoint", "Oddzielna nauka i sprawdzenie", "Wiadomości testowe i podobne tematy były wyłączone z nauki oraz doboru progu.", true},
+			{"accuracy", "Rozpoznanie nowego spamu", fmt.Sprintf("W oddzielonym teście: %d z %d wiadomości spamu. Wymagane co najmniej 90%%.", m.SpamDetected, m.SpamTested), true},
+			{"important", "Ważna poczta bez błędnego zatrzymania", fmt.Sprintf("Błędnie zatrzymane: %d z %d ważnych wiadomości. Wymagane zero.", m.FalsePositives, m.HamTested), true},
+			{"rescues", "Spam bez błędnego ratowania", fmt.Sprintf("Błędnie ratowane wiadomości spamu: %d. Wymagane zero.", m.FalseRescues), true},
+			{"model", "Model Bayesa sprawdzony w teście", fmt.Sprintf("Minimalna liczba przykładów statystycznych w obu klasach: %d. Trwałe usuwanie ma osobne wymagania.", qualified.MinLearns), true},
+		}
+		p.Message = "Aktualny filtr przeszedł oddzielny test. Historyczne pomyłki pozostały w ewidencji."
+		if !p.PeriodComplete {
+			p.Message = "Filtr przeszedł test; trwa jeszcze okres obserwacji."
+		}
+		return p
+	}
 	quality, err := db.ActivationQualityUntil(ctx, cfg.Account.Email, start, now)
 	if err != nil {
 		return p
@@ -66,6 +88,8 @@ func protectionProgress(cfg config.Config, db *store.DB, now time.Time) *apiProt
 		p.Message = "Warunki spełnione. Możesz włączyć przenoszenie spamu z Odebranych do kwarantanny."
 	case quality.SpamFeedback == 0:
 		p.Message = "Potrzebne jest Twoje potwierdzenie spamu. Przenieś rozpoznany spam do AI-Naucz-spam i przetwórz korekty. Nie oznaczaj prawidłowych wiadomości tylko po to, by zakończyć obserwację."
+	case p.PeriodComplete && (quality.FalsePositives > 0 || quality.FalseRescues > 0 || quality.SpamUnexplained > 0):
+		p.Message = "Okres obserwacji zakończony, ale historyczne pomyłki blokują porządkowanie Odebranych. Samo czekanie ani dalsza nauka nie usuną tych blokad. Potrzebna jest naprawa i nowa niezależna ocena filtra."
 	case !p.QualityReady:
 		p.Message = "Korekty wskazują, że filtr wymaga dalszej nauki. Przenoszenie z Odebranych pozostaje wyłączone."
 	default:
@@ -77,7 +101,7 @@ func protectionProgress(cfg config.Config, db *store.DB, now time.Time) *apiProt
 // Only aggregate counts leave the backend. Headers, identifiers and message
 // contents are deliberately absent, including for the initial dry-run.
 func apiRunResult(run *store.Run, err error) map[string]any {
-	result := map[string]any{"completed": err == nil}
+	result := map[string]any{"completed": requireSuccessfulRun(run, err) == nil}
 	if err == nil && run != nil {
 		result["summary"] = map[string]any{
 			"dry_run": run.DryRun, "scanned": run.Scanned, "kept": run.Kept,

@@ -103,12 +103,14 @@ niezależnego automatu.
 
 Przenoszenie nie jest ukryte w ustawieniach zaawansowanych. Jego sekcja pokazuje
 postęp okresu ochronnego i wynik oceny jakości, odczytane z lokalnego backendu.
-Rozwijane **Warunki jakości** pokazują pięć wymagań i dane z bieżącego okresu:
-co najmniej jedno potwierdzenie spamu, minimum 90% zgodności wcześniejszych
-ocen spamu, brak potwierdzonych błędnych ocen ważnej poczty i spamu oraz
-znaną wcześniejszą decyzję dla potwierdzonego spamu. Nie należy oznaczać
-prawidłowych wiadomości jako spam, aby odblokować automat. Brak zgłoszonych
-pomyłek nie stanowi gwarancji bezbłędności. Po spełnieniu warunków można wybrać
+Przycisk **Sprawdź ponownie jakość filtra** uruchamia odrębną naukę, dobór
+progu i test na innych wiadomościach, bez zmiany folderów i bez resetu historii.
+Rozwijane **Warunki jakości** pokazują oddzielenie przykładów, minimum 90%
+wykrytego spamu w teście, zero błędnie zatrzymanych ważnych i zero błędnie
+ratowanego spamu oraz wystarczającą naukę modelu. Starsza instalacja bez
+raportu nadal pokazuje dotychczasowe warunki historyczne. Nie należy oznaczać
+prawidłowych wiadomości jako spam, aby odblokować automat. Wynik ograniczonej
+próby nie stanowi gwarancji bezbłędności. Po spełnieniu warunków można wybrać
 **Włącz porządkowanie…**. Nadal wymagane
 jest wpisanie `AKTYWNY`; backend ponownie sprawdza warunki przed zmianą trybu.
 Brak danych o gotowości albo nieaktualny stan nie odblokowuje przycisku.

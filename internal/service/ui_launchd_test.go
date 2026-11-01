@@ -26,6 +26,9 @@ func TestUIPlistIsBackgroundOnlyAndEscapesPath(t *testing.T) {
 }
 
 func TestUIInstallOnlyPersistsLoginItem(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("UI login items apply to macOS")
+	}
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	app := filepath.Join(home, "Applications", "O2 Mail Guardian.app")

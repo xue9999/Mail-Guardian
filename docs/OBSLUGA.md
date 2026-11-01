@@ -16,7 +16,9 @@ guardian menu
 GUI i menu opisują każde działanie prostym językiem i wymagają dodatkowego
 potwierdzenia przed operacją trwałego usunięcia. Na co dzień nie trzeba
 obserwować okna Terminala — automatyczna usługa wykonuje przebieg co 2
-godziny.
+godziny, o parzystych godzinach lokalnych. Gdy termin przypada podczas snu
+Maca, po wybudzeniu nadrabia jeden zaległy przebieg. Wyłączony lub uśpiony Mac
+nie filtruje poczty na bieżąco.
 
 Pozycja **Napraw instalację** wykonuje typowe działania naprawcze w poprawnej
 kolejności. To samo można uruchomić poleceniem `guardian napraw`.
@@ -68,7 +70,8 @@ uczenia pozostawiają wiadomość w folderze uczącym do ponownej próby.
 ## Jak bezpiecznie zebrać przykłady Bayesa
 
 Nie trzeba robić tego jednego dnia. `guardian status` pokazuje dwa liczniki
-postępu do 200 przykładów każdej klasy.
+postępu do 100 przykładów każdej klasy potrzebnych Bayesowi. Liczniki korekt
+i statystyczne liczniki Rspamd mogą się różnić dla podobnych wiadomości.
 
 - Przenoś do `AI-Naucz-spam` starsze wiadomości, co do których nie masz żadnych
   wątpliwości, że są spamem.
@@ -110,8 +113,25 @@ mogą zostać usunięte po 7 dniach:
 
 ### Po 14 pełnych dniach: bramka trybu aktywnego
 
-Upływ czasu nie wystarcza. Przed włączeniem trybu aktywnego Guardian sprawdza
-wyniki z bieżącego okresu ochronnego:
+Upływ czasu nie wystarcza. W wersji 0.6.0 wybierz w Ustawieniach
+**Sprawdź ponownie jakość filtra**. Guardian nauczy nowy, osobny model na
+około 70% Twoich jednoznacznych przykładów, dobierze próg na kolejnych 10%
+i sprawdzi wynik na pozostałych 20%. Wiadomości z takim samym znormalizowanym
+tematem pozostają w jednej części. Model testowy nie zmienia Twojej poczty
+ani produkcyjnej bazy Bayesa.
+
+Ocena wymaga co najmniej 40 wiadomości spamu i 30 ważnych w części testowej,
+minimum 90% wykrytego spamu, zera błędnie zatrzymanych ważnych i zera błędnie
+ratowanego spamu. Potrzeba też co najmniej 100 statystycznych przykładów
+każdej klasy w samej części uczącej. Wynik dotyczy sprawdzonego mechanizmu
+i próby; nie jest obietnicą bezbłędnej klasyfikacji przyszłej poczty.
+
+Pomyślny raport zastępuje historyczną blokadę bez wymazywania starych pomyłek.
+Nowa potwierdzona pomyłka w automatycznym przenoszeniu wymaga ponownej oceny.
+Możesz ją uruchomić tym samym przyciskiem, zachowując historię i daty obserwacji.
+
+Dla starszej instalacji bez takiego raportu pozostają dotychczasowe kontrole
+wyników z bieżącego okresu ochronnego:
 
 - żadna wiadomość oznaczona później jako ważna nie mogła wcześniej otrzymać
   pewnego werdyktu `spam`;

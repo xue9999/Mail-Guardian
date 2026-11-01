@@ -1,0 +1,20 @@
+[Unit]
+Description=Qualify and update Guardian application dependencies
+After=docker.service network-online.target
+Wants=docker.service network-online.target
+OnFailure=guardian-application-update-recover.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+UMask=0077
+Environment=NEEDRESTART_SUSPEND=1
+ExecStart=/usr/bin/python3 -I /opt/vps-maintenance/security-maintenance/simple-updates/application/updater.py
+TimeoutStartSec=45min
+TimeoutStopSec=60s
+KillMode=control-group
+Nice=10
+MemoryMax=256M
+PrivateTmp=yes
+ProtectHome=yes

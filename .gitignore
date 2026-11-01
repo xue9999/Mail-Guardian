@@ -12,3 +12,15 @@ deploy/secrets/
 dist/
 __pycache__/
 *.pyc
+
+# Operational state and private recovery artifacts never belong in Git.
+*.age
+*.age.sha256
+*.rdb
+*.aof
+*.sqlite
+*.sqlite3
+*.key
+*.pem
+credentials/
+audit-private/

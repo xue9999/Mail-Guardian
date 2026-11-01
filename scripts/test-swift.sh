@@ -3,10 +3,8 @@
 set -Eeuo pipefail
 
 PROJECT_DIR="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
+source "${PROJECT_DIR}/scripts/swift-common.sh"
 SWIFT_ARGS=(test --package-path "${PROJECT_DIR}/macos")
-if [[ -n "${GUARDIAN_SWIFT_SCRATCH_DIR:-}" ]]; then
-  SWIFT_ARGS+=(--scratch-path "${GUARDIAN_SWIFT_SCRATCH_DIR}")
-fi
 DEVELOPER_FRAMEWORKS="/Library/Developer/CommandLineTools/Library/Developer/Frameworks"
 
 # Testuje również prawdziwy most Process -> JSON używany przez GUI, ale wyłącznie
@@ -18,7 +16,7 @@ trap '/bin/rm -f -- "${GUARDIAN_MOCK_STATE}"' EXIT
 
 # Pełny Xcode konfiguruje framework testowy sam. Samodzielne Command Line
 # Tools 26 zawierają go, lecz nie dodają automatycznie ścieżki do SwiftPM.
-if [[ ! -d /Applications/Xcode.app ]] && [[ -d "${DEVELOPER_FRAMEWORKS}/Testing.framework" ]]; then
+if [[ "${DEVELOPER_DIR:-$(/usr/bin/xcode-select -p)}" == /Library/Developer/CommandLineTools ]] && [[ -d "${DEVELOPER_FRAMEWORKS}/Testing.framework" ]]; then
   SWIFT_ARGS+=(
     -Xswiftc -F -Xswiftc "${DEVELOPER_FRAMEWORKS}"
     -Xlinker -F -Xlinker "${DEVELOPER_FRAMEWORKS}"
@@ -30,4 +28,4 @@ if [[ ! -d /Applications/Xcode.app ]] && [[ -d "${DEVELOPER_FRAMEWORKS}/Testing.
   fi
 fi
 
-/usr/bin/swift "${SWIFT_ARGS[@]}"
+guardian_swift "${SWIFT_ARGS[@]}"

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/xml"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +23,7 @@ func TestPlistEscapesPathsAndUsesSafeInterval(t *testing.T) {
 		"/tmp/a&amp;b/guardian",
 		"/tmp/data path",
 		"/tmp/log&lt;guardian&gt;",
-		"<integer>7200</integer>",
+		"<key>StartCalendarInterval</key>",
 		"<integer>300</integer>",
 	} {
 		if !strings.Contains(value, expected) {
@@ -32,6 +33,47 @@ func TestPlistEscapesPathsAndUsesSafeInterval(t *testing.T) {
 	if strings.Contains(value, "StandardOutPath") || strings.Contains(value, "StandardErrorPath") {
 		t.Fatal("launchd must not pre-open the log before the runner rotates it")
 	}
+}
+
+func TestScannerCalendarCatchesUpAfterSleepEveryTwoHours(t *testing.T) {
+	value := plist("/tmp/runner", "/tmp/guardian", "/tmp/data", "/tmp/log")
+	if strings.Contains(value, "<key>StartInterval</key>") {
+		t.Fatal("StartInterval misses firings during sleep; use calendar wake catch-up")
+	}
+	var document struct {
+		Dict struct {
+			Entries []struct {
+				Value string `xml:",chardata"`
+				Dicts []struct {
+					Keys     []string `xml:"key"`
+					Integers []int    `xml:"integer"`
+				} `xml:"dict"`
+			} `xml:",any"`
+		} `xml:"dict"`
+	}
+	if err := xml.Unmarshal([]byte(value), &document); err != nil {
+		t.Fatal(err)
+	}
+	for i, entry := range document.Dict.Entries {
+		if strings.TrimSpace(entry.Value) != "StartCalendarInterval" {
+			continue
+		}
+		if i+1 >= len(document.Dict.Entries) {
+			t.Fatal("calendar schedule has no value")
+		}
+		schedule := document.Dict.Entries[i+1].Dicts
+		if len(schedule) != 12 {
+			t.Fatalf("calendar has %d firings, want 12", len(schedule))
+		}
+		for index, trigger := range schedule {
+			if len(trigger.Keys) != 2 || trigger.Keys[0] != "Hour" || trigger.Keys[1] != "Minute" ||
+				len(trigger.Integers) != 2 || trigger.Integers[0] != index*2 || trigger.Integers[1] != 0 {
+				t.Fatalf("calendar trigger %d = %#v, want hour %d, minute 0", index, trigger, index*2)
+			}
+		}
+		return
+	}
+	t.Fatal("calendar schedule missing")
 }
 
 func TestGeneratedPlistPassesMacOSValidation(t *testing.T) {
@@ -50,6 +92,9 @@ func TestGeneratedPlistPassesMacOSValidation(t *testing.T) {
 }
 
 func TestInstalledDetectsPersistentScannerDefinition(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("persistent LaunchAgent definitions apply to macOS")
+	}
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	manager := Manager{}

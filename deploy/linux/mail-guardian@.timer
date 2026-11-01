@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Mail Guardian mailbox every fifteen minutes (%i)
+
+[Timer]
+OnCalendar=*-*-* *:00/15:00
+Persistent=true
+AccuracySec=1min
+Unit=mail-guardian@%i.service
+
+[Install]
+WantedBy=timers.target
