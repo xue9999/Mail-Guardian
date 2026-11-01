@@ -1,0 +1,11 @@
+[Unit]
+Description=Observe Mail Guardian every five minutes (%i)
+
+[Timer]
+OnCalendar=*-*-* *:02/5:00
+Persistent=true
+AccuracySec=30s
+Unit=mail-guardian-observe@%i.service
+
+[Install]
+WantedBy=timers.target

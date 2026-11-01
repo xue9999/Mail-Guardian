@@ -52,6 +52,27 @@ func TestProtectionProgressFailsClosedAndDistinguishesTimeFromQuality(t *testing
 	}
 }
 
+func TestCompletedObservationExplainsHistoricalBlockInsteadOfPromisingMoreWaiting(t *testing.T) {
+	db, err := store.Open(filepath.Join(t.TempDir(), "state.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	ctx, now := context.Background(), time.Now().UTC()
+	cfg := config.Default()
+	cfg.Account.Email = "test@o2.pl"
+	if err := db.SetSetting(ctx, "installed_at", now.Add(-20*24*time.Hour).Format(time.RFC3339)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.UpsertMessage(ctx, &store.Message{Account: cfg.Account.Email, CurrentFolder: "training", SourceFolder: "training", UIDValidity: 1, UID: 1, RawSHA256: "unknown-history", MessageIDHash: "unknown-history", Verdict: "spam", Action: "learn_spam", Status: "quarantined", Feedback: "spam", FirstSeen: now.Add(-time.Hour), LastScanned: now.Add(-time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	p := protectionProgress(cfg, db, now)
+	if !p.PeriodComplete || p.Ready || !strings.Contains(p.Message, "Samo czekanie ani dalsza nauka nie usuną tych blokad") {
+		t.Fatalf("misleading readiness message: %+v", p)
+	}
+}
+
 func TestAPIRunResultUsesExactRunAndNeverExportsMailMetadata(t *testing.T) {
 	run := &store.Run{ID: 1234, DryRun: true, Scanned: 8, Kept: 6, Review: 2, Errors: 1}
 	raw, err := json.Marshal(apiRunResult(run, nil))
@@ -68,7 +89,7 @@ func TestAPIRunResultUsesExactRunAndNeverExportsMailMetadata(t *testing.T) {
 	if err := json.Unmarshal(raw, &got); err != nil {
 		t.Fatal(err)
 	}
-	if !got.Completed || !got.Summary.DryRun || got.Summary.Scanned != 8 || got.Summary.Review != 2 || got.Summary.Errors != 1 {
+	if got.Completed || !got.Summary.DryRun || got.Summary.Scanned != 8 || got.Summary.Review != 2 || got.Summary.Errors != 1 {
 		t.Fatalf("incorrect run: %s", raw)
 	}
 	for _, forbidden := range []string{"1234", "subject", "from", "account", "StartedAt"} {
@@ -79,6 +100,50 @@ func TestAPIRunResultUsesExactRunAndNeverExportsMailMetadata(t *testing.T) {
 	failed := apiRunResult(run, errors.New("failed"))
 	if failed["completed"] != false || failed["summary"] != nil {
 		t.Fatalf("failed run reported success: %+v", failed)
+	}
+}
+
+func TestPartialDryRunCannotAuthorizeFirstAutomationOrReplaceEarlierProof(t *testing.T) {
+	db, err := store.Open(filepath.Join(t.TempDir(), "state.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	ctx := context.Background()
+	now := time.Now().UTC()
+	for _, run := range []*store.Run{nil, {DryRun: true, Errors: 2}, {DryRun: false}} {
+		if err := recordSuccessfulDryRun(db, run, now); err != nil {
+			t.Fatal(err)
+		}
+		if _, exists, err := db.GetSettingWithPresence(ctx, "first_dry_run_completed_at"); err != nil || exists {
+			t.Fatalf("incomplete or live scan authorized first automation: run=%+v exists=%v err=%v", run, exists, err)
+		}
+	}
+	if err := recordSuccessfulDryRun(db, &store.Run{DryRun: true}, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := recordSuccessfulDryRun(db, &store.Run{DryRun: true, Errors: 1}, now.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	proof, err := db.GetSetting(ctx, "first_dry_run_completed_at")
+	if err != nil || proof != now.Format(time.RFC3339Nano) {
+		t.Fatalf("partial retry replaced the previous successful proof: %q err=%v", proof, err)
+	}
+}
+
+func TestCLIAndAPIRequireAnErrorFreeRun(t *testing.T) {
+	for _, run := range []*store.Run{nil, {Errors: 1}, {DryRun: true, Errors: 2}} {
+		if requireSuccessfulRun(run, nil) == nil || apiRunResult(run, nil)["completed"] != false {
+			t.Fatalf("incomplete run reported success: %+v", run)
+		}
+	}
+	run := &store.Run{Scanned: 2}
+	if requireSuccessfulRun(run, nil) != nil || apiRunResult(run, nil)["completed"] != true {
+		t.Fatal("clean run was rejected")
+	}
+	want := errors.New("interrupted")
+	if !errors.Is(requireSuccessfulRun(run, want), want) {
+		t.Fatal("underlying failure was lost")
 	}
 }
 

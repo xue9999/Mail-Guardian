@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily encrypted Mail Guardian application backup (%i)
+
+[Timer]
+OnCalendar=*-*-* 03:07:00
+Persistent=true
+RandomizedDelaySec=5min
+Unit=mail-guardian-backup@%i.service
+
+[Install]
+WantedBy=timers.target

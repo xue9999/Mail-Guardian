@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/o2-mail-guardian/guardian/internal/provider"
 )
 
 const (
@@ -17,7 +19,8 @@ const (
 )
 
 type Config struct {
-	Version int `toml:"version"`
+	Version    int    `toml:"version"`
+	InstanceID string `toml:"instance_id"`
 
 	Account Account `toml:"account"`
 	Folders Folders `toml:"folders"`
@@ -27,6 +30,10 @@ type Config struct {
 }
 
 type Account struct {
+	ID                      string `toml:"id"`
+	Provider                string `toml:"provider"`
+	Username                string `toml:"username"`
+	AuthMethod              string `toml:"auth_method"`
 	Email                   string `toml:"email"`
 	Host                    string `toml:"host"`
 	Port                    int    `toml:"port"`
@@ -156,24 +163,32 @@ func Load(path string) (Config, error) {
 	if _, err := toml.DecodeFile(path, &cfg); err != nil {
 		return Config{}, fmt.Errorf("nie mogę odczytać konfiguracji %q: %w", path, err)
 	}
-	if err := cfg.Validate(); err != nil {
-		return Config{}, err
-	}
-	return cfg, nil
+	return cfg.Resolve()
 }
 
 func (c Config) Validate() error {
 	var problems []string
+	if c.Version != 1 && c.Version != 2 {
+		problems = append(problems, "nieobsługiwana wersja konfiguracji")
+	}
+	if c.Version == 2 {
+		if !validID(c.InstanceID) || !validID(c.Account.ID) {
+			problems = append(problems, "brakuje prawidłowej tożsamości instancji lub konta")
+		}
+		if _, err := provider.Resolve(c.Account.Provider, c.Account.Host, c.Account.Port, c.Account.Username, c.Account.Email, c.Account.AuthMethod); err != nil {
+			problems = append(problems, err.Error())
+		}
+	}
 	if !strings.Contains(c.Account.Email, "@") {
 		problems = append(problems, "adres konta e-mail jest nieprawidłowy")
 	}
-	if c.Account.Host == "" || c.Account.Port < 1 {
+	if c.Account.Host == "" || c.Account.Port < 1 || c.Account.Port > 65535 {
 		problems = append(problems, "brakuje adresu lub portu IMAP")
 	}
 	if !c.Account.TLS {
 		problems = append(problems, "połączenie IMAP musi używać TLS")
 	}
-	if !strings.EqualFold(c.Account.Host, "poczta.o2.pl") || c.Account.Port != 993 {
+	if c.Version == 1 && (!strings.EqualFold(c.Account.Host, "poczta.o2.pl") || c.Account.Port != 993) {
 		problems = append(problems, "Guardian łączy się wyłącznie z poczta.o2.pl na szyfrowanym porcie 993")
 	}
 	if c.Folders.Inbox == "" || c.Folders.ServerSpam == "" {
@@ -231,8 +246,8 @@ func (c Config) Validate() error {
 	if c.Rspamd.SpamScore <= c.Rspamd.HamScore {
 		problems = append(problems, "próg spamu musi być wyższy od progu wiadomości prawidłowej")
 	}
-	if c.Rspamd.SpamScore < 12 {
-		problems = append(problems, "próg pewnego spamu nie może być niższy niż 12")
+	if c.Rspamd.SpamScore < 6 {
+		problems = append(problems, "próg spamu nie może być niższy niż 6; próg poniżej 12 wymaga odrębnej oceny jakości")
 	}
 	if c.Rspamd.HamScore > -2 {
 		problems = append(problems, "próg automatycznego ratowania nie może być wyższy niż -2")
@@ -262,7 +277,9 @@ func Save(path string, cfg Config) error {
 	if path == "" {
 		path = DefaultPath()
 	}
-	if err := cfg.Validate(); err != nil {
+	var err error
+	cfg, err = cfg.Resolve()
+	if err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {

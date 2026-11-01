@@ -1,0 +1,16 @@
+[Unit]
+Description=Guardian-aware stable Ubuntu package updates and activation
+Wants=network-online.target
+After=network-online.target docker.service vps-ubuntu-update-recover.service
+OnFailure=vps-ubuntu-update-recover.service
+RequiresMountsFor=/var/lib/vps-ubuntu-update /var/backups/mail-guardian/pilot /etc/mail-guardian/pilot
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 -I /opt/vps-maintenance/security-maintenance/simple-updates/ubuntu/updater.py
+TimeoutStartSec=3h
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal

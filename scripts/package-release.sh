@@ -12,7 +12,9 @@ ARCHIVE_TMP="${STAGE_ROOT}/O2-Mail-Guardian-${VERSION}-macos-arm64.zip"
 ARCHIVE="${DIST_DIR}/O2-Mail-Guardian-${VERSION}-macos-arm64.zip"
 
 source "${PROJECT_DIR}/scripts/release-common.sh"
+source "${PROJECT_DIR}/scripts/swift-common.sh"
 GO="${GO:-go}"
+safe_go_version "$(cd "$PROJECT_DIR"; "$GO" env GOVERSION)" || { release_error 'wymagane Go 1.26.10 lub 1.27.3 albo nowsze'; exit 1; }
 
 cleanup() {
   case "${STAGE_ROOT}" in
@@ -76,8 +78,8 @@ PREBUILT="${PAYLOAD}/prebuilt"
 APP="${PREBUILT}/O2 Mail Guardian.app"
 mkdir -p "${APP}/Contents/MacOS" "${APP}/Contents/Resources"
 (cd "$PROJECT_DIR"; CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 "$GO" build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "${PREBUILT}/guardian" ./cmd/guardian)
-MACOSX_DEPLOYMENT_TARGET=13.0 /usr/bin/swift build --package-path "$PROJECT_DIR/macos" --configuration release --arch arm64 --product O2MailGuardianApp >&2
-SWIFT_BIN_DIR="$(/usr/bin/swift build --package-path "$PROJECT_DIR/macos" --configuration release --arch arm64 --show-bin-path)"
+MACOSX_DEPLOYMENT_TARGET=13.0 guardian_swift build --package-path "$PROJECT_DIR/macos" --configuration release --arch arm64 --product O2MailGuardianApp >&2
+SWIFT_BIN_DIR="$(guardian_swift build --package-path "$PROJECT_DIR/macos" --configuration release --arch arm64 --show-bin-path)"
 cp "${SWIFT_BIN_DIR}/O2MailGuardianApp" "${APP}/Contents/MacOS/O2MailGuardianApp"
 cp "$PROJECT_DIR/macos/Info.plist" "$APP/Contents/Info.plist"
 # Validate deployment metadata at build time, without requiring Xcode on the recipient Mac.

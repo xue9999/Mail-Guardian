@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/o2-mail-guardian/guardian/internal/store"
@@ -12,7 +13,7 @@ import (
 
 // Runs without user configuration, Keychain, IMAP, or services.
 func (a *application) selfTest() error {
-	root, err := os.MkdirTemp("", "guardian-self-test-")
+	root, err := os.MkdirTemp(selfTestTempParent(runtime.GOOS), "guardian-self-test-")
 	if err != nil {
 		return err
 	}
@@ -27,4 +28,13 @@ func (a *application) selfTest() error {
 	}
 	fmt.Fprintln(a.out, "Samokontrola silnika: OK")
 	return nil
+}
+
+func selfTestTempParent(goos string) string {
+	if goos == "linux" {
+		// The synthetic self-test must not honor TMPDIR pointing into an
+		// instance while an administrator is publishing a migration.
+		return "/tmp"
+	}
+	return ""
 }

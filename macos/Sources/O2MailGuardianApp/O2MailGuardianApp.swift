@@ -325,7 +325,8 @@ enum Backend {
     }
 
     static func timeoutSeconds(for arguments: [String]) -> TimeInterval {
-        arguments.contains("run") ? 20 * 60.0 : 5 * 60.0
+        if arguments.contains("qualify") { return 30 * 60.0 }
+        return arguments.contains("run") ? 20 * 60.0 : 5 * 60.0
     }
 }
 
@@ -514,6 +515,13 @@ final class GuardianModel: ObservableObject {
         await perform("Sprawdzam połączenie i naprawiam lokalną ochronę…") {
             let result: CompletionResult = try await Backend.call(["repair"])
             return result.completed ? "Naprawa zakończyła się pomyślnie." : nil
+        }
+    }
+
+    func qualifyFilter() async {
+        await perform("Sprawdzam jakość filtra na oddzielonych przykładach…") {
+            let result: CompletionResult = try await Backend.call(["qualify"])
+            return result.completed ? "Ocena filtra zakończona. Warunki porządkowania zostały sprawdzone ponownie." : nil
         }
     }
 

@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -30,9 +31,16 @@ var rspamdPingURLs = []string{
 type Manager struct {
 	ComposeFile string
 	RuntimeDir  string
+	// Instance is the administrator-provisioned Linux instance slug. Linux
+	// workers never pass Compose or runtime paths across the privilege boundary.
+	Instance string
 }
 
 func (m Manager) Up() error {
+	if runtime.GOOS == "linux" {
+		_, err := m.linuxMaintenance("up")
+		return err
+	}
 	if err := m.validate(); err != nil {
 		return err
 	}
@@ -62,6 +70,9 @@ func (m Manager) Up() error {
 	if err := waitForDocker(docker, healthTimeout); err != nil {
 		return err
 	}
+	if err := m.CheckStorage(); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), composeTimeout)
 	defer cancel()
 	if err := m.compose(ctx, "up", "-d", "--remove-orphans", "--wait"); err != nil {
@@ -79,6 +90,10 @@ func (m Manager) Up() error {
 }
 
 func (m Manager) Down() error {
+	if runtime.GOOS == "linux" {
+		_, err := m.linuxMaintenance("down")
+		return err
+	}
 	if err := m.validate(); err != nil {
 		return err
 	}
@@ -99,6 +114,10 @@ func (m Manager) Down() error {
 }
 
 func (m Manager) Status() (string, error) {
+	if runtime.GOOS == "linux" {
+		out, err := m.linuxMaintenance("status")
+		return string(out), err
+	}
 	if err := m.validate(); err != nil {
 		return "", err
 	}
@@ -139,6 +158,10 @@ func (m Manager) Status() (string, error) {
 // DeepCheck verifies the individual stateful and network dependencies used by
 // Guardian. It is intentionally read-only and never restarts containers.
 func (m Manager) DeepCheck() error {
+	if runtime.GOOS == "linux" {
+		_, err := m.linuxMaintenance("deep-check")
+		return err
+	}
 	if _, err := m.Status(); err != nil {
 		return err
 	}

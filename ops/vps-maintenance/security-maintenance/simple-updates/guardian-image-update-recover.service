@@ -1,0 +1,17 @@
+[Unit]
+Description=Recover interrupted Guardian image update
+Wants=network-online.target
+After=network-online.target docker.service guardian-image-update.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 -I /opt/vps-maintenance/security-maintenance/simple-updates/guardian_images.py --recover
+TimeoutStartSec=45min
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily Docker and Guardian security review
+
+[Timer]
+OnCalendar=*-*-* 06:50:00 UTC
+RandomizedDelaySec=2min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

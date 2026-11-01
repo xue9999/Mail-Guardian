@@ -192,9 +192,11 @@ func TestMoveWithRawResolvesMissingCopyUID(t *testing.T) {
 		NewSession: func(*imapserver.Conn) (imapserver.Session, *imapserver.GreetingData, error) {
 			return backend.NewSession(), nil, nil
 		},
-		Caps: imap.CapSet{imap.CapIMAP4rev1: {}, imap.CapMove: {}},
+		Caps:         imap.CapSet{imap.CapIMAP4rev1: {}, imap.CapMove: {}},
+		InsecureAuth: true, // The fixture wraps the TLS connection.
 	})
-	go func() { _ = server.Serve(tls.NewListener(ln, serverTLS)) }()
+	withoutMapping := &noCopyUIDListener{Listener: tls.NewListener(ln, serverTLS)}
+	go func() { _ = server.Serve(withoutMapping) }()
 	t.Cleanup(func() { _ = server.Close(); _ = ln.Close() })
 	_, portText, _ := net.SplitHostPort(ln.Addr().String())
 	port, _ := strconv.Atoi(portText)
@@ -213,6 +215,9 @@ func TestMoveWithRawResolvesMissingCopyUID(t *testing.T) {
 	moved, err := client.MoveWithRaw("INBOX", validity, msgUIDs[0], "Review", false, hex.EncodeToString(sum[:]))
 	if err != nil || moved.UID == 0 || moved.UIDValidity == 0 {
 		t.Fatalf("unresolved move: %+v %v", moved, err)
+	}
+	if withoutMapping.omitted.Load() != 1 {
+		t.Fatal("test did not omit the server's COPYUID response")
 	}
 	if got, err := client.Fetch("Review", moved.UID, true); err != nil || !bytes.Equal(got.Raw, raw) {
 		t.Fatalf("wrong destination: %+v %v", got, err)

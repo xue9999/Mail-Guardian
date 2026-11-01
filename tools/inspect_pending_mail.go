@@ -7,8 +7,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -18,6 +20,7 @@ import (
 	"time"
 
 	"github.com/o2-mail-guardian/guardian/internal/config"
+	"github.com/o2-mail-guardian/guardian/internal/engine"
 	"github.com/o2-mail-guardian/guardian/internal/imapmail"
 	"github.com/o2-mail-guardian/guardian/internal/keychain"
 	"github.com/o2-mail-guardian/guardian/internal/store"
@@ -168,6 +171,12 @@ func probe(folder string, uid uint32) error {
 		out["body_error"] = fullErr.Error()
 	} else {
 		out["body_bytes"] = len(full.Raw)
+		out["raw_sha256"] = fmt.Sprintf("%x", sha256.Sum256(full.Raw))
+		mimeErr := engine.ValidateMessageMIME(full.Raw)
+		out["mime_valid"] = mimeErr == nil
+		if mimeErr != nil {
+			out["mime_problem"] = safeMIMEProblem(mimeErr)
+		}
 	}
 	if metaErr != nil || fullErr != nil {
 		checks, err := mail.ProbeFetch(folder, uid)
@@ -176,6 +185,31 @@ func probe(folder string, uid uint32) error {
 		}
 	}
 	return json.NewEncoder(os.Stdout).Encode(out)
+}
+
+func safeMIMEProblem(err error) string {
+	var badBase64 base64.CorruptInputError
+	if errors.As(err, &badBase64) {
+		return fmt.Sprintf("invalid_base64_at_byte_%d", badBase64)
+	}
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return "unexpected_eof"
+	}
+	message := err.Error()
+	for _, problem := range []struct{ fragment, code string }{
+		{"RFC822:", "invalid_rfc822_headers"},
+		{"Content-Type:", "invalid_content_type"},
+		{"Content-Disposition:", "invalid_content_disposition"},
+		{"bez granicy", "missing_multipart_boundary"},
+		{"pusty multipart", "empty_multipart"},
+		{"zagnieżdżona", "excessive_mime_depth"},
+		{"Content-Transfer-Encoding", "unknown_transfer_encoding"},
+	} {
+		if strings.Contains(message, problem.fragment) {
+			return problem.code
+		}
+	}
+	return "invalid_mime_structure"
 }
 
 func findRemaining(ackTrash, resolveDestination bool) error {

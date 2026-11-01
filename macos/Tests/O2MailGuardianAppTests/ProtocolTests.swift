@@ -48,6 +48,7 @@ struct ProtocolTests {
     @Test func backendOperationsHaveBoundedTimeouts() {
         #expect(Backend.timeoutSeconds(for: ["api", "snapshot"]) == 300)
         #expect(Backend.timeoutSeconds(for: ["api", "run"]) == 1_200)
+        #expect(Backend.timeoutSeconds(for: ["api", "qualify"]) == 1_800)
     }
 
     @Test func embeddedInstallerSelfTestCoversOfflineSafetyContract() throws {

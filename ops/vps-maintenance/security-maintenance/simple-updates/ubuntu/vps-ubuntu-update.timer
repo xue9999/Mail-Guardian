@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily signed stable Ubuntu updates
+After=vps-ubuntu-update-recover.service
+
+[Timer]
+OnCalendar=*-*-* 04:30:00 UTC
+RandomizedDelaySec=2min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

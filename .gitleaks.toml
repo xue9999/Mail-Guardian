@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Source-file checksum fixture: only SHA-256 values in this exact manifest"
+condition = "AND"
+paths = ['''^ops/vps-maintenance/security-maintenance/simple-updates/application/testdata/approved-source-manifest\.json$''']
+regexTarget = "secret"
+regexes = ['''^[a-f0-9]{64}$''']

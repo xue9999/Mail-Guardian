@@ -17,6 +17,7 @@ source "${PROJECT_DIR}/scripts/install-lock.sh"
 install_lock_acquire || exit 1
 trap install_lock_release EXIT
 source "${PROJECT_DIR}/scripts/release-common.sh"
+source "${PROJECT_DIR}/scripts/swift-common.sh"
 source "${PROJECT_DIR}/scripts/install-runtime.sh"
 DISTRIBUTION=source
 if [[ "$(basename "$PROJECT_DIR")" == .payload || -e "$PROJECT_DIR/DISTRIBUTION" || -e "$PROJECT_DIR/prebuilt" ]]; then
@@ -73,16 +74,6 @@ inject_failure() {
     red "Test instalatora: wymuszona awaria w punkcie $1."
     return 97
   fi
-}
-safe_go_version() {
-  local value="$1" major minor patch
-  [[ "${value}" =~ ^go([0-9]+)\.([0-9]+)\.([0-9]+) ]] || return 1
-  major="${BASH_REMATCH[1]}"
-  minor="${BASH_REMATCH[2]}"
-  patch="${BASH_REMATCH[3]}"
-  (( major > 1 || (major == 1 && minor > 26) ||
-     (major == 1 && minor == 26 && patch >= 6) ||
-     (major == 1 && minor == 25 && patch >= 13) ))
 }
 pause_at_end() {
   if [[ "${GUARDIAN_SKIP_PAUSE:-0}" != "1" && -t 0 ]]; then
@@ -460,13 +451,13 @@ BUILD_TMP="$(/usr/bin/mktemp "${INSTALL_DIR}/.guardian-build.XXXXXX")"
 chmod 755 "${BUILD_TMP}"
 BUILD_GO_VERSION="$(go version -m "${BUILD_TMP}" | /usr/bin/awk 'NR==1 {print $2}')"
 safe_go_version "${BUILD_GO_VERSION}" \
-  || fail "Guardian został zbudowany podatną wersją ${BUILD_GO_VERSION:-nieznaną}; wymagane jest poprawione Go 1.25.13, 1.26.6 albo nowsza seria."
+  || fail "Guardian został zbudowany podatną wersją ${BUILD_GO_VERSION:-nieznaną}; wymagane Go 1.26.10 lub 1.27.3 albo nowsze."
 "${BUILD_TMP}" version | /usr/bin/grep -F "O2 Mail Guardian ${GUARDIAN_VERSION}" >/dev/null \
   || fail "zbudowany program nie zgłasza oczekiwanej wersji ${GUARDIAN_VERSION}."
 
 blue "Przygotowuję okno aplikacji…"
-/usr/bin/swift build --package-path "${PROJECT_DIR}/macos" --configuration release --product O2MailGuardianApp
-SWIFT_BIN_DIR="$(/usr/bin/swift build --package-path "${PROJECT_DIR}/macos" --configuration release --show-bin-path)"
+guardian_swift build --package-path "${PROJECT_DIR}/macos" --configuration release --product O2MailGuardianApp
+SWIFT_BIN_DIR="$(guardian_swift build --package-path "${PROJECT_DIR}/macos" --configuration release --show-bin-path)"
 [[ -x "${SWIFT_BIN_DIR}/O2MailGuardianApp" ]] \
   || fail "nie znaleziono zbudowanej aplikacji SwiftUI."
 "${SWIFT_BIN_DIR}/O2MailGuardianApp" --self-test \

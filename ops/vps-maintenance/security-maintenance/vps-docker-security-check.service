@@ -1,0 +1,13 @@
+[Unit]
+Description=Review Docker and Guardian security update candidates
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/libexec/vps-security-review
+SuccessExitStatus=2
+KillMode=control-group
+UMask=0077
+TimeoutStartSec=20min
+

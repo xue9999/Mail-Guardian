@@ -61,7 +61,7 @@ func TestValidateRejectsWeakenedSafetyGates(t *testing.T) {
 		func(c *Config) { c.Safety.ArchiveDays = 34 },
 		func(c *Config) { c.Safety.MinLearnSpam = 199 },
 		func(c *Config) { c.Safety.RequireAuthForRescue = false },
-		func(c *Config) { c.Rspamd.SpamScore = 11.9 },
+		func(c *Config) { c.Rspamd.SpamScore = 5.9 },
 		func(c *Config) { c.Rspamd.HamScore = -1.9 },
 		func(c *Config) { c.Safety.PurgeEnabled = true },
 		func(c *Config) { c.Account.TLS = false },

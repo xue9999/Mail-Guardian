@@ -5,6 +5,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_infra-common.sh"
+source "${SCRIPT_DIR}/storage-health.sh"
 
 trap 'fail "uruchamianie silnika zostało przerwane (wiersz ${LINENO})."' ERR
 
@@ -27,6 +28,7 @@ if ! colima status >/dev/null 2>&1; then
 fi
 
 wait_for_docker
+guardian_check_guest_storage || fail "kontrola dysku Colimy zablokowała restart; model i pliki silnika nie zostały zmienione."
 choose_compose
 
 mkdir -p "${RUNTIME_DIR}/rspamd"

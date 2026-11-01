@@ -1,5 +1,15 @@
 #!/bin/bash
 # Shared release contract. No Python, Go, Swift or Xcode needed to verify a ZIP.
+safe_go_version() {
+  local value="$1" major minor patch
+  [[ "$value" =~ ^go([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || return 1
+  major="${BASH_REMATCH[1]}"
+  minor="${BASH_REMATCH[2]}"
+  patch="${BASH_REMATCH[3]}"
+  (( major > 1 || (major == 1 && minor > 27) ||
+     (major == 1 && minor == 27 && patch >= 3) ||
+     (major == 1 && minor == 26 && patch >= 10) ))
+}
 release_error() { printf 'Nieprawidłowa paczka: %s\n' "$*" >&2; return 1; }
 release_hashes() (
   cd "$1" || exit 1
@@ -28,7 +38,7 @@ verify_release() {
   [[ "$actual" == "$expected" ]] || { release_error 'niezgodne sumy, lista plików lub metadane'; return 1; }
 }
 verify_prebuilt() {
-  local root="$1" version="$2" app="$1/prebuilt/O2 Mail Guardian.app" binary
+  local root="$1" version="$2" app="$1/prebuilt/O2 Mail Guardian.app" binary build_info
   for binary in "$root/prebuilt/guardian" "$app/Contents/MacOS/O2MailGuardianApp"; do
     /usr/bin/file "$binary" | /usr/bin/grep -Eq 'Mach-O 64-bit executable arm64$' || return 1
     /usr/bin/codesign --verify --strict "$binary" || return 1
@@ -36,7 +46,9 @@ verify_prebuilt() {
   [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" == "$version" ]] || return 1
   [[ "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" == 13.0 ]] || return 1
   /usr/bin/codesign --verify --deep --strict "$app" || return 1
-  "$root/prebuilt/guardian" version | /usr/bin/grep -F "O2 Mail Guardian $version (" || return 1
+  build_info="$("$root/prebuilt/guardian" version)" || return 1
+  printf '%s\n' "$build_info" | /usr/bin/grep -F "O2 Mail Guardian $version (" || return 1
+  safe_go_version "$(printf '%s\n' "$build_info" | /usr/bin/awk '/^Go: / {print $2}')" || { release_error 'podatna lub nieznana wersja Go w gotowym programie'; return 1; }
   "$root/prebuilt/guardian" self-test || return 1
   "$app/Contents/MacOS/O2MailGuardianApp" --self-test || return 1
 }

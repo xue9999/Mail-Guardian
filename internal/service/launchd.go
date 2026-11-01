@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +37,10 @@ func (m Manager) PlistPath() (string, error) {
 // definition. An unloaded plist can still start at the next login, so it must
 // count as installed while an account is being reconfigured.
 func (m Manager) Installed() bool {
+	if runtime.GOOS == "linux" {
+		_, err := m.systemdStatus()
+		return err == nil
+	}
 	path, err := m.PlistPath()
 	if err != nil {
 		return false
@@ -45,6 +50,9 @@ func (m Manager) Installed() bool {
 }
 
 func (m Manager) Install() error {
+	if runtime.GOOS == "linux" {
+		return errors.New("Linux scheduling must be enabled by the administrator after server acceptance")
+	}
 	if err := m.validate(); err != nil {
 		return err
 	}
@@ -114,6 +122,9 @@ func (m Manager) Install() error {
 }
 
 func (m Manager) Uninstall() error {
+	if runtime.GOOS == "linux" {
+		return errors.New("Linux scheduling must be paused by the administrator through systemd")
+	}
 	path, err := m.PlistPath()
 	if err != nil {
 		return err
@@ -129,6 +140,9 @@ func (m Manager) Uninstall() error {
 }
 
 func (m Manager) Status() (string, error) {
+	if runtime.GOOS == "linux" {
+		return m.systemdStatus()
+	}
 	domain := "gui/" + strconv.Itoa(os.Getuid())
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -165,6 +179,13 @@ func plist(runner, executable, dataDir, logFile string) string {
 		_ = xml.EscapeText(&b, []byte(s))
 		return b.String()
 	}
+	// StartInterval drops a firing while macOS sleeps. Calendar triggers
+	// coalesce missed firings into one run on wake, so a short awake session
+	// can still catch up instead of leaving mail unchecked for another two hours.
+	var schedule strings.Builder
+	for hour := 0; hour < 24; hour += 2 {
+		fmt.Fprintf(&schedule, "    <dict><key>Hour</key><integer>%d</integer><key>Minute</key><integer>0</integer></dict>\n", hour)
+	}
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -181,8 +202,9 @@ func plist(runner, executable, dataDir, logFile string) string {
   </array>
   <key>RunAtLoad</key>
   <true/>
-  <key>StartInterval</key>
-  <integer>7200</integer>
+  <key>StartCalendarInterval</key>
+  <array>
+` + schedule.String() + `  </array>
   <key>ThrottleInterval</key>
   <integer>300</integer>
   <key>ProcessType</key>

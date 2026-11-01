@@ -1,0 +1,31 @@
+[Unit]
+Description=Mail Guardian mailbox worker (%i)
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+ConditionPathExists=/etc/mail-guardian/%i/config.toml
+
+[Service]
+Type=oneshot
+User=mg-%i
+Group=mg-%i
+WorkingDirectory=/var/lib/mail-guardian/%i
+ExecStart=/opt/mail-guardian/current/guardian --config /etc/mail-guardian/%i/config.toml service-run
+LoadCredential=imap-password:/etc/mail-guardian/%i/credentials/imap-password
+LoadCredential=rspamd-password:/etc/mail-guardian/%i/credentials/rspamd-password
+LoadCredential=archive-identity:/etc/mail-guardian/%i/credentials/archive-identity
+UMask=0077
+TimeoutStartSec=2h
+TimeoutStopSec=45s
+KillMode=control-group
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# The only elevated operation is the fixed, validated maintenance dispatcher.
+# NoNewPrivileges would disable sudo and break the required storage gate.
+NoNewPrivileges=no
+StandardOutput=journal
+StandardError=journal
+

@@ -9,9 +9,14 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/o2-mail-guardian/guardian/internal/secrets"
 )
 
-var ErrNotFound = errors.New("sekret nie istnieje w pęku kluczy")
+// ErrNotFound remains an alias for compatibility with existing callers.
+var ErrNotFound = secrets.ErrNotFound
+
+var _ secrets.Store = Store{}
 
 type Store struct {
 	SecurityPath string

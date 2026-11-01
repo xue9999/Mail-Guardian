@@ -1,0 +1,15 @@
+[Unit]
+Description=Candidate Docker package update for Guardian (not yet qualified)
+Wants=network-online.target
+After=network-online.target
+OnFailure=vps-docker-update-recover.service
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/vps-maintenance/security-maintenance/simple-updates/docker/updater.py
+TimeoutStartSec=4h
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal

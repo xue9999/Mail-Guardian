@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Guardian dependency and vulnerability checks
+
+[Timer]
+OnCalendar=*-*-* 06:00:00 UTC
+RandomizedDelaySec=5min
+Persistent=true
+Unit=guardian-application-update.service
+
+[Install]
+WantedBy=timers.target
