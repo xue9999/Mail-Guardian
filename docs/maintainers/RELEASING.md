@@ -70,7 +70,11 @@ Use [maintenance](../../ops/vps-maintenance/README.md) for the installed owners.
 A server release is immutable under `/opt/mail-guardian/releases`. Its manifest
 covers runtime helpers, Compose pins, binaries and embedded `application-source`.
 The private root-owned source channel records a file-hash allowlist, parent tree,
-compiler, qualification configuration and applied binary hashes.
+compiler, qualification configuration and applied binary hashes. This bounded
+application-source snapshot is sufficient for its approved Go build/recovery;
+it is not a complete public-repository checkout. The separate operations tree
+and contributor-only root files may be absent. Clone the matching public tag
+when running the full contributor/package/operations checks.
 
 A published commit does not replace that channel automatically. Public source
 may include documentation, packaging/host-checker improvements or Mac UI changes
