@@ -14,7 +14,7 @@ fi
 if "${GUARDIAN_BIN}" status --since 24h; then
   result=0
 else
-  launcher_red "Nie udało się odczytać stanu. Żadna wiadomość nie została zmieniona."
+  launcher_red "Could not read status. No message was changed."
   if offer_guardian_repair; then
     "${GUARDIAN_BIN}" status --since 24h
     result=$?

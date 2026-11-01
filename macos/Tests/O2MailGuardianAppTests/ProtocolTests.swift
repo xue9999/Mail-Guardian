@@ -7,16 +7,14 @@ struct ProtocolTests {
     private final class OperationToken {}
 
     @Test func setupCommitEncodesBackendFieldNames() throws {
-        struct Request: Encodable {
-            let email: String
-            let password: String
-            let spamFolder: String
-            let acceptExistingTraining: Bool
-        }
-        let data = try Backend.encodeInput(Request(
-            email: "test@o2.pl", password: "synthetic", spamFolder: "Spam", acceptExistingTraining: true
+        let data = try Backend.encodeInput(SetupConnectionRequest(
+            email: "test@example.org", password: "synthetic", provider: "custom", host: "imap.example.org", port: 993,
+            username: "separate-login", spamFolder: "Spam", acceptExistingTraining: true
         ))
         let fields = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(fields["host"] as? String == "imap.example.org")
+        #expect(fields["username"] as? String == "separate-login")
+        #expect(fields["auth_method"] as? String == "password")
         #expect(fields["spam_folder"] as? String == "Spam")
         #expect(fields["accept_existing_training"] as? Bool == true)
         #expect(fields["spamFolder"] == nil)
@@ -24,21 +22,32 @@ struct ProtocolTests {
     }
 
     @Test func snapshotEnvelopeDecodesSnakeCaseWithoutMailContent() throws {
-        let json = #"{"protocol":1,"ok":true,"data":{"configured":true,"health":"healthy","health_label":"Wszystko działa","recommendation":"OK","automation":"on","mode":"protect","purge_enabled":false,"summary":{},"trained_spam":2,"trained_ham":3,"required_spam":200,"required_ham":200,"first_dry_run":true,"app_autostart":true,"version":"0.3.0"}}"#
+        let json = #"{"protocol":1,"ok":true,"data":{"configured":true,"health":"healthy","health_label":"Everything works","recommendation":"OK","automation":"on","mode":"protect","purge_enabled":false,"summary":{},"trained_spam":2,"trained_ham":3,"required_spam":200,"required_ham":200,"first_dry_run":true,"app_autostart":true,"version":"0.3.0"}}"#
         let envelope = try ProtocolContract.decodeSnapshot(json)
         #expect(envelope.ok)
-        #expect(envelope.data?.healthLabel == "Wszystko działa")
+        #expect(envelope.data?.healthLabel == "Everything works")
         #expect(envelope.data?.trainedHam == 3)
+        #expect(envelope.data?.folders.review == "AI-Do-sprawdzenia")
+        #expect(envelope.data?.connection == nil)
     }
 
-    @Test func errorEnvelopeDoesNotRequireData() throws {
-        let json = #"{"protocol":1,"ok":false,"error":{"code":"IMAP_AUTH","severity":"attention","message":"Błąd","recovery":"Sprawdź hasło"}}"#
+    @Test func snapshotUsesConfiguredFoldersWithoutSecretMetadata() throws {
+        let json = #"{"protocol":1,"ok":true,"data":{"configured":true,"health":"healthy","health_label":"Everything works","recommendation":"OK","automation":"off","mode":"protect","purge_enabled":false,"summary":{},"trained_spam":0,"trained_ham":0,"required_spam":200,"required_ham":200,"first_dry_run":true,"app_autostart":false,"version":"0.7.0","connection":{"email":"fixture@example.org","provider":"custom","host":"imap.example.org","port":1993,"username":"separate-login"},"mailbox_folders":{"quarantine":"Safe/Hold","review":"Safe/Review","train_spam":"Safe/Spam","train_ham":"Safe/Ham"}}}"#
+        let snapshot = try #require(ProtocolContract.decodeSnapshot(json).data)
+        #expect(snapshot.connection?.host == "imap.example.org")
+        #expect(snapshot.connection?.username == "separate-login")
+        #expect(snapshot.folders.review == "Safe/Review")
+        #expect(snapshot.folders.trainHam == "Safe/Ham")
+    }
+
+    @Test func errorEnvelopeToesNotRequireData() throws {
+        let json = #"{"protocol":1,"ok":false,"error":{"code":"IMAP_AUTH","severity":"attention","message":"Error","recovery":"Check your password"}}"#
         let envelope = try ProtocolContract.decodeEmpty(json)
         #expect(envelope.error?.code == "IMAP_AUTH")
     }
 
     @Test func commonFailuresOfferOneUsefulAction() {
-        #expect(failureQuickAction(for: "IMAP_AUTH") == .o2Instructions)
+        #expect(failureQuickAction(for: "IMAP_AUTH") == .accountSettings)
         #expect(failureQuickAction(for: "RSPAMD_UNAVAILABLE") == .repair)
         #expect(failureQuickAction(for: "SERVICE_STALE") == .repair)
         #expect(failureQuickAction(for: "CONFIG_INVALID") == .none)
@@ -134,14 +143,14 @@ struct ProtocolTests {
             code: "CONFIG_INVALID",
             severity: "critical",
             message: "Konfiguracja jest nieczytelna.",
-            recovery: "Uruchom Napraw."
+            recovery: "Run Repair."
         ))
 
         #expect(model.initialRefreshCompleted)
         #expect(!model.onboardingRequired)
         #expect(model.snapshot.health == "critical")
-        #expect(model.snapshot.healthLabel == "Nie działa")
-        #expect(model.snapshot.recommendation == "Uruchom Napraw.")
+        #expect(model.snapshot.healthLabel == "Not working")
+        #expect(model.snapshot.recommendation == "Run Repair.")
     }
 
     @MainActor
@@ -191,9 +200,9 @@ struct ProtocolTests {
         }
 
         var snapshot = GuardianSnapshot()
-        snapshot.healthLabel = "Wymaga uwagi"
-        snapshot.recommendation = "Uruchom Napraw."
-        #expect(statusAccessibilityLabel(snapshot) == "Stan ochrony: Wymaga uwagi. Uruchom Napraw.")
+        snapshot.healthLabel = "Needs attention"
+        snapshot.recommendation = "Run Repair."
+        #expect(statusAccessibilityLabel(snapshot) == "Protection status: Needs attention. Run Repair.")
     }
 
     @Test func menuContainsOnlySafeQuickActions() {
@@ -219,9 +228,9 @@ struct ProtocolTests {
     }
 
     @Test func safetyModesUsePlainLanguage() {
-        #expect(safetyModeLabel("protect") == "Tylko obserwacja")
-        #expect(safetyModeLabel("active") == "Przenoszenie włączone")
-        #expect(safetyModeLabel("unexpected") == "Nieznane — uruchom Napraw")
+        #expect(safetyModeLabel("protect") == "Observation only")
+        #expect(safetyModeLabel("active") == "Moves enabled")
+        #expect(safetyModeLabel("unexpected") == "Unknown — run Repair")
     }
 
     @Test func archiveRestoreRequiresPreviewOfTheSameSelection() {
@@ -232,11 +241,11 @@ struct ProtocolTests {
     }
 
     @Test func archiveUsesFriendlyLabelsInsteadOfBackendCodes() {
-        #expect(archiveVerdictLabel("ham") == "ważna")
-        #expect(archiveVerdictLabel("uncertain") == "niepewna")
-        #expect(archiveStatusLabel("quarantined") == "kwarantanna")
-        #expect(archiveStatusLabel("pending_restore") == "bezpieczne uzgadnianie")
-        #expect(archiveStatusLabel("unexpected") == "stan techniczny")
+        #expect(archiveVerdictLabel("ham") == "legitimate")
+        #expect(archiveVerdictLabel("uncertain") == "uncertain")
+        #expect(archiveStatusLabel("quarantined") == "quarantine")
+        #expect(archiveStatusLabel("pending_restore") == "safe reconciliation")
+        #expect(archiveStatusLabel("unexpected") == "technical status")
     }
 
     @Test func localMockExercisesTheRealProcessAndJSONBridge() async throws {
@@ -250,6 +259,6 @@ struct ProtocolTests {
         #expect(page.hasNext)
 
         let preview: ArchivePreview = try await Backend.call(["archive", "preview", "104"])
-        #expect(preview.subject == "Przykładowy oczyszczony temat")
+        #expect(preview.subject == "Sample sanitized subject")
     }
 }

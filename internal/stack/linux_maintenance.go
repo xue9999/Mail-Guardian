@@ -8,12 +8,12 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/platform"
+	"github.com/xue9999/Mail-Guardian/internal/platform"
 )
 
 const linuxMaintenanceHelper = "/usr/local/libexec/mail-guardian-maintenance"
 
-var errMaintenanceOutputLimit = errors.New("odpowiedź operacji administratora przekracza limit")
+var errMaintenanceOutputLimit = errors.New("administrator response exceeds limit")
 
 // No executable, Compose file, output path, environment setting or arbitrary
 // command crosses this boundary. The helper resolves its administrator-owned
@@ -25,7 +25,7 @@ func linuxMaintenanceCommand(ctx context.Context, instance, operation string) (*
 	switch operation {
 	case "up", "down", "status", "deep-check", "check-storage", "check-persistence", "export-redis":
 	default:
-		return nil, errors.New("nieobsługiwana operacja administratora Linux")
+		return nil, errors.New("unsupported Linux administrator operation")
 	}
 	cmd := exec.CommandContext(ctx, "/usr/bin/sudo", "-n", "--", linuxMaintenanceHelper, instance, operation)
 	cmd.Env = []string{"PATH=/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL=C"}
@@ -78,7 +78,7 @@ func captureLinuxMaintenance(ctx context.Context, cmd *exec.Cmd, maxOutput int) 
 		return nil, errMaintenanceOutputLimit
 	}
 	if err != nil {
-		return nil, &redisExportProcessError{fmt.Errorf("operacja administratora Linux nie powiodła się: %w", errors.Join(err, ctx.Err()))}
+		return nil, &redisExportProcessError{fmt.Errorf("Linux administrator operation failed: %w", errors.Join(err, ctx.Err()))}
 	}
 	return output.buffer.Bytes(), nil
 }

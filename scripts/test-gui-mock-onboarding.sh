@@ -15,7 +15,7 @@ require_json() {
   local document="$1"
   local fragment="$2"
   if [[ "${document}" != *"${fragment}"* ]]; then
-    printf 'Brak oczekiwanego fragmentu JSON: %s\nOdpowiedź: %s\n' "${fragment}" "${document}" >&2
+    printf 'Missing expected JSON fragment: %s\nResponse: %s\n' "${fragment}" "${document}" >&2
     exit 1
   fi
 }
@@ -42,7 +42,7 @@ snapshot="$("${MOCK}" api snapshot)"
 require_json "${snapshot}" '"automation":"on"'
 
 if rg -q 'secret-only-for-local-mock|test@o2.pl' "${STATE_FILE}"; then
-  printf 'Atrapa zapisała dane konta lub sekret w pliku stanu.\n' >&2
+  printf 'Mock saved account data or secret in state file.\n' >&2
   exit 1
 fi
 

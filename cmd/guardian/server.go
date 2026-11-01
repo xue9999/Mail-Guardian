@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/platform"
-	"github.com/o2-mail-guardian/guardian/internal/service"
-	"github.com/o2-mail-guardian/guardian/internal/stack"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/platform"
+	"github.com/xue9999/Mail-Guardian/internal/service"
+	"github.com/xue9999/Mail-Guardian/internal/stack"
 )
 
 // Linux supports the existing protect/active policies. Active mailbox work
@@ -137,6 +137,10 @@ func (a *application) serverCommandWithConfigWriter(args []string, writer func(s
 		return errors.New("use: guardian server init-config|validate-config|adopt-policy")
 	}
 	email := fs.String("email", "", "mailbox email")
+	profile := fs.String("provider", "custom", "custom or o2 connection profile")
+	host := fs.String("host", "", "IMAP hostname; required for custom")
+	port := fs.Int("port", 993, "implicit TLS IMAP port")
+	username := fs.String("username", "", "IMAP login; defaults to email")
 	mode := fs.String("mode", "protect", "filtering policy: protect or active (activation history and fresh dry-run remain required)")
 	spam := fs.String("server-spam", "", "confirmed server spam folder")
 	output := fs.String("output", "", "new configuration file (never overwritten)")
@@ -144,7 +148,7 @@ func (a *application) serverCommandWithConfigWriter(args []string, writer func(s
 		return err
 	}
 	if fs.NArg() != 0 || *output == "" {
-		return errors.New("use: guardian server init-config --instance NAME --email EMAIL --server-spam FOLDER --output NEW-FILE")
+		return errors.New("use: guardian server init-config --instance NAME --email EMAIL --provider custom --host IMAP-HOST --server-spam FOLDER --output NEW-FILE")
 	}
 	paths, err := platform.LinuxPaths(*instance)
 	if err != nil {
@@ -154,7 +158,12 @@ func (a *application) serverCommandWithConfigWriter(args []string, writer func(s
 	if err != nil {
 		return err
 	}
-	cfg.Account.Email, cfg.Account.Username = *email, *email
+	cfg.Account.Email, cfg.Account.Username = *email, *username
+	cfg.Account.Provider, cfg.Account.Host, cfg.Account.Port = *profile, *host, *port
+	cfg, err = cfg.ResolveIdentity()
+	if err != nil {
+		return err
+	}
 	cfg.Safety.Mode = *mode
 	cfg.Folders.ServerSpam = *spam
 	cfg.Runtime.DataDir, cfg.Runtime.Database = paths.Data, paths.Database

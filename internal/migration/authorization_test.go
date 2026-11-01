@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func authorizationFixture(t *testing.T) (string, string) {

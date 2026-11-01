@@ -16,12 +16,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/apperror"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/engine"
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/apperror"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/engine"
+	"github.com/xue9999/Mail-Guardian/internal/keychain"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 type memorySecrets struct {

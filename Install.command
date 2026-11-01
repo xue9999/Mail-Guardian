@@ -31,12 +31,12 @@ green() { printf '\033[1;32m%s\033[0m\n' "$*"; }
 pause_at_end() {
   if [[ "${GUARDIAN_SKIP_PAUSE:-0}" != "1" && -t 0 ]]; then
     printf '\n'
-    read -r -p "Naciśnij Enter, aby zamknąć to okno…" _
+    read -r -p "Press Enter to close this window…" _
   fi
 }
 
 [[ -f "${CORE}" ]] || {
-  red "W paczce brakuje części instalatora. Pobierz ponownie cały folder programu."
+  red "Installer components are missing. Download the complete application folder again."
   pause_at_end
   exit 1
 }
@@ -47,17 +47,17 @@ if [[ "${GUARDIAN_INSTALL_SELF_TEST:-0}" == "1" ]]; then
   exec /bin/bash "${CORE}"
 fi
 
-printf '\n\033[1;34mO2 Mail Guardian — łatwa instalacja\033[0m\n'
+printf '\n\033[1;34mMail Guardian — installation\033[0m\n'
 printf '%s\n' \
-  "Program przygotuje lokalną ochronę poczty i otworzy prosty kreator." \
-  "Na tym etapie nie podajesz adresu ani hasła do poczty." \
-  "Instalacja nie włączy trwałego usuwania wiadomości."
+  "This prepares local email protection and opens the setup wizard." \
+  "No email address or password is requested at this stage." \
+  "Installation will not enable permanent message deletion."
 
 if [[ "${GUARDIAN_INSTALL_CONFIRMED:-0}" != "1" && "${GUARDIAN_LAUNCHED_FROM_SHORTCUT:-0}" != "1" ]]; then
   printf '\n'
-  read -r -p "Naciśnij Enter, aby rozpocząć, albo wpisz N i Enter, aby anulować: " answer
+  read -r -p "Press Enter to start, or type N and Enter to cancel: " answer
   case "${answer:-}" in
-    [Nn]*) printf '%s\n' "Instalacja anulowana — niczego nie zmieniono."; pause_at_end; exit 0 ;;
+    [Nn]*) printf '%s\n' "Installation cancelled — nothing changed."; pause_at_end; exit 0 ;;
   esac
 fi
 
@@ -75,7 +75,7 @@ stop_install() {
 trap stop_install HUP INT TERM
 umask 077
 /bin/mkdir -p "${LOG_DIR}" || {
-  red "Nie udało się przygotować prywatnego logu instalacji."
+  red "Could not prepare a private installation log."
   pause_at_end
   exit 1
 }
@@ -85,8 +85,8 @@ umask 077
 : > "${RESULT_FILE}"
 /bin/chmod 600 "${LOG_FILE}" "${STATUS_FILE}" 2>/dev/null || true
 
-printf '\n%s\n' "Możesz pozostawić to okno otwarte. Instalacja zwykle trwa kilka–kilkanaście minut."
-printf '%s\n\n' "macOS może jeden raz poprosić o hasło administratora przy instalacji bezpłatnych narzędzi."
+printf '\n%s\n' "You may leave this window open. Installation usually takes several minutes."
+printf '%s\n\n' "macOS may request an administrator password once while installing supporting tools."
 
 # Deskryptor 3 służy wyłącznie do krótkich komunikatów dla użytkownika.
 # Pełny zapis techniczny trafia do prywatnego pliku instalacja.log.
@@ -103,23 +103,23 @@ wait "$child_pid" || core_status=$?
 child_pid=""
 result="$(cat "$RESULT_FILE")"
 if [[ "$core_status" == 0 && "$result" == attention ]]; then
-  printf '\n%s\n' "Program zainstalowany — ochrona wymaga uwagi." "Otwórz aplikację i wybierz Sprawdź i napraw. Szczegóły: ${LOG_FILE}"
+  printf '\n%s\n' "Application installed — protection needs attention." "Open the application and choose Check and repair. Details: ${LOG_FILE}"
   exit 0
 fi
 if [[ "$core_status" == 0 && "$result" == success ]]; then
   printf '\n'
-  green "Gotowe. O2 Mail Guardian został zainstalowany."
-  printf '%s\n' "Dalsza konfiguracja odbywa się w aplikacji prostymi krokami."
+  green "Done. Mail Guardian is installed."
+  printf '%s\n' "Continue setup in the application."
   exit 0
 fi
 
 printf '\n'
-red "Nie potwierdzono ukończenia instalacji. Sprawdź komunikat poniżej i wynik przywracania w logu."
+red "Installation completion was not confirmed. Read the message below and the rollback result in the log."
 if [[ -s "${STATUS_FILE}" ]]; then
   while IFS= read -r line; do red "${line}"; done < "${STATUS_FILE}"
 fi
-printf '%s\n' "Przeczytaj wskazówkę powyżej. Jeśli przywracanie nie powiodło się, zachowaj kopie i przekaż poniższy log osobie pomagającej." >&2
-printf '%s\n' "Szczegóły dla pomocy technicznej zapisano tutaj:" "${LOG_FILE}" >&2
+printf '%s\n' "Read the guidance above. If rollback failed, retain backups and share the log with your support contact." >&2
+printf '%s\n' "Technical support details saved here:" "${LOG_FILE}" >&2
 if [[ "${GUARDIAN_INSTALL_WRAPPER_TEST:-0}" != "1" ]]; then
   /usr/bin/open -R "${LOG_FILE}" >/dev/null 2>&1 || true
 fi

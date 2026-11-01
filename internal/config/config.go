@@ -11,11 +11,13 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/o2-mail-guardian/guardian/internal/provider"
+	"github.com/xue9999/Mail-Guardian/internal/provider"
 )
 
 const (
-	AppName = "O2 Mail Guardian"
+	AppName = "Mail Guardian"
+	// LegacyDataName is a persisted installation path, not the product name.
+	LegacyDataName = "O2 Mail Guardian"
 )
 
 type Config struct {
@@ -137,7 +139,7 @@ func DefaultDataDir() string {
 	if err != nil {
 		return filepath.Join(".", ".guardian")
 	}
-	return filepath.Join(home, "Library", "Application Support", AppName)
+	return filepath.Join(home, "Library", "Application Support", LegacyDataName)
 }
 
 func DefaultRuntimeDir() string {
@@ -161,7 +163,7 @@ func Load(path string) (Config, error) {
 		path = DefaultPath()
 	}
 	if _, err := toml.DecodeFile(path, &cfg); err != nil {
-		return Config{}, fmt.Errorf("nie mogę odczytać konfiguracji %q: %w", path, err)
+		return Config{}, fmt.Errorf("cannot read configuration %q: %w", path, err)
 	}
 	return cfg.Resolve()
 }
@@ -169,30 +171,30 @@ func Load(path string) (Config, error) {
 func (c Config) Validate() error {
 	var problems []string
 	if c.Version != 1 && c.Version != 2 {
-		problems = append(problems, "nieobsługiwana wersja konfiguracji")
+		problems = append(problems, "unsupported configuration version")
 	}
 	if c.Version == 2 {
 		if !validID(c.InstanceID) || !validID(c.Account.ID) {
-			problems = append(problems, "brakuje prawidłowej tożsamości instancji lub konta")
+			problems = append(problems, "missing valid instance or account identity")
 		}
 		if _, err := provider.Resolve(c.Account.Provider, c.Account.Host, c.Account.Port, c.Account.Username, c.Account.Email, c.Account.AuthMethod); err != nil {
 			problems = append(problems, err.Error())
 		}
 	}
 	if !strings.Contains(c.Account.Email, "@") {
-		problems = append(problems, "adres konta e-mail jest nieprawidłowy")
+		problems = append(problems, "invalid account email address")
 	}
 	if c.Account.Host == "" || c.Account.Port < 1 || c.Account.Port > 65535 {
-		problems = append(problems, "brakuje adresu lub portu IMAP")
+		problems = append(problems, "missing IMAP hostname or port")
 	}
 	if !c.Account.TLS {
-		problems = append(problems, "połączenie IMAP musi używać TLS")
+		problems = append(problems, "IMAP connection must use TLS")
 	}
 	if c.Version == 1 && (!strings.EqualFold(c.Account.Host, "poczta.o2.pl") || c.Account.Port != 993) {
-		problems = append(problems, "Guardian łączy się wyłącznie z poczta.o2.pl na szyfrowanym porcie 993")
+		problems = append(problems, "The legacy o2 profile requires poczta.o2.pl on encrypted port 993")
 	}
 	if c.Folders.Inbox == "" || c.Folders.ServerSpam == "" {
-		problems = append(problems, "nie wybrano folderu Odebrane lub SPAM")
+		problems = append(problems, "Inbox or spam folder not selected")
 	}
 	folderValues := []string{
 		c.Folders.Inbox, c.Folders.ServerSpam, c.Folders.Quarantine,
@@ -201,62 +203,62 @@ func (c Config) Validate() error {
 	seen := map[string]bool{}
 	for _, folder := range folderValues {
 		if strings.TrimSpace(folder) == "" {
-			problems = append(problems, "nazwa folderu robota nie może być pusta")
+			problems = append(problems, "Guardian folder name must not be empty")
 			continue
 		}
 		key := strings.ToLower(folder)
 		if seen[key] {
-			problems = append(problems, "folder Odebrane, SPAM i foldery robota muszą mieć różne nazwy")
+			problems = append(problems, "Inbox, spam and Guardian folders must have different names")
 		}
 		seen[key] = true
 	}
 	if c.Safety.Mode != "protect" && c.Safety.Mode != "active" {
-		problems = append(problems, "tryb musi mieć wartość protect albo active")
+		problems = append(problems, "mode must be protect or active")
 	}
 	if c.Safety.QuarantineDays < 30 {
-		problems = append(problems, "kwarantanna nie może być krótsza niż 30 dni")
+		problems = append(problems, "quarantine must last at least 30 days")
 	}
 	if c.Safety.ArchiveDays < c.Safety.QuarantineDays {
-		problems = append(problems, "lokalna kopia musi być przechowywana co najmniej tak długo jak kwarantanna")
+		problems = append(problems, "local backup retention must be at least as long as quarantine")
 	}
 	if c.Safety.ArchiveDays < 35 {
-		problems = append(problems, "lokalna kopia nie może być przechowywana krócej niż 35 dni")
+		problems = append(problems, "local backup retention must be at least 35 days")
 	}
 	if c.Safety.ProtectDays < 14 {
-		problems = append(problems, "tryb ochronny nie może być krótszy niż 14 dni")
+		problems = append(problems, "protect mode must last at least 14 days")
 	}
 	if c.Safety.MinLearnSpam < 200 || c.Safety.MinLearnHam < 200 {
-		problems = append(problems, "trwałe usuwanie wymaga progów uczenia co najmniej 200 spam i 200 ważnych")
+		problems = append(problems, "permanent deletion requires training thresholds of at least 200 spam and 200 ham")
 	}
 	if !c.Safety.RequireAuthForRescue {
-		problems = append(problems, "automatyczne ratowanie wymaga uwierzytelnienia nadawcy")
+		problems = append(problems, "automatic rescue requires authenticated sender")
 	}
 	if c.Safety.PurgeEnabled && c.Safety.Mode != "active" {
-		problems = append(problems, "trwałe usuwanie wymaga trybu aktywnego")
+		problems = append(problems, "permanent deletion requires active mode")
 	}
 	if c.Safety.MaxMessageMiB < 1 || c.Safety.MaxMessageMiB > 100 {
-		problems = append(problems, "limit rozmiaru musi mieścić się między 1 a 100 MiB")
+		problems = append(problems, "size limit must be between 1 and 100 MiB")
 	}
 	if c.Safety.ScanLookbackDays < 1 || c.Safety.ScanLookbackDays > 90 {
-		problems = append(problems, "okres skanowania musi mieścić się między 1 a 90 dni")
+		problems = append(problems, "scan lookback must be between 1 and 90 days")
 	}
 	if c.Safety.MaxMessagesPerFolder < 1 || c.Safety.MaxMessagesPerFolder > 5000 {
-		problems = append(problems, "limit wiadomości na przebieg musi mieścić się między 1 a 5000")
+		problems = append(problems, "per-run message limit must be between 1 and 5000")
 	}
 	if c.Rspamd.SpamScore <= c.Rspamd.HamScore {
-		problems = append(problems, "próg spamu musi być wyższy od progu wiadomości prawidłowej")
+		problems = append(problems, "spam threshold must exceed ham threshold")
 	}
 	if c.Rspamd.SpamScore < 6 {
-		problems = append(problems, "próg spamu nie może być niższy niż 6; próg poniżej 12 wymaga odrębnej oceny jakości")
+		problems = append(problems, "spam threshold must be at least 6; below 12 requires independent quality evaluation")
 	}
 	if c.Rspamd.HamScore > -2 {
-		problems = append(problems, "próg automatycznego ratowania nie może być wyższy niż -2")
+		problems = append(problems, "automatic rescue threshold must not exceed -2")
 	}
 	if !localRspamdURL(c.Rspamd.ScanURL, "11333", "/checkv2") {
-		problems = append(problems, "adres skanowania Rspamd musi wskazywać lokalny http://127.0.0.1:11333/checkv2")
+		problems = append(problems, "Rspamd scan URL must be local http://127.0.0.1:11333/checkv2")
 	}
 	if !localRspamdURL(c.Rspamd.LearnURL, "11334", "") {
-		problems = append(problems, "adres uczenia Rspamd musi wskazywać lokalny http://127.0.0.1:11334")
+		problems = append(problems, "Rspamd learning URL must be local http://127.0.0.1:11334")
 	}
 	if len(problems) > 0 {
 		return errors.New(strings.Join(problems, "; "))
@@ -332,7 +334,7 @@ func ParseSince(s string) (time.Duration, error) {
 		n := strings.TrimSuffix(s, "d")
 		d, err := time.ParseDuration(n + "h")
 		if err != nil {
-			return 0, fmt.Errorf("nieprawidłowy okres %q", s)
+			return 0, fmt.Errorf("invalid period %q", s)
 		}
 		return d * 24, nil
 	}

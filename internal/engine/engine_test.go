@@ -3,8 +3,8 @@ package engine
 import (
 	"testing"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
 )
 
 func TestMIMEValidationRejectsMalformedStructureAndEncoding(t *testing.T) {

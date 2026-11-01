@@ -12,9 +12,9 @@ if ! ensure_guardian_installed; then
 fi
 
 if ! "${GUARDIAN_BIN}" stack status >/dev/null 2>&1; then
-  launcher_yellow "Lokalny silnik nie jest gotowy. Próbuję bezpiecznie go uruchomić…"
+  launcher_yellow "Local engine is not ready. Attempting a safe start…"
   if ! "${GUARDIAN_BIN}" stack up; then
-    launcher_red "Nie udało się uruchomić lokalnego silnika."
+    launcher_red "Could not start the local engine."
     if ! offer_guardian_repair; then
       launcher_pause
       exit 1
@@ -23,17 +23,17 @@ if ! "${GUARDIAN_BIN}" stack status >/dev/null 2>&1; then
 fi
 
 if "${GUARDIAN_BIN}" run; then
-  launcher_green "Sprawdzanie skrzynki zakończyło się pomyślnie."
+  launcher_green "Mailbox check completed successfully."
   result=0
 else
-  launcher_red "Sprawdzanie nie powiodło się. Program zachował zasadę „najpierw nie szkodzić”."
+  launcher_red "Mailbox check failed. Safety guards remain in effect."
   if offer_guardian_repair; then
     launcher_yellow "Ponawiam sprawdzanie po udanej naprawie…"
     if "${GUARDIAN_BIN}" run; then
-      launcher_green "Ponowne sprawdzanie zakończyło się pomyślnie."
+      launcher_green "Repeated check completed successfully."
       result=0
     else
-      launcher_red "Ponowna próba także się nie udała. Otwórz aplikację O2 Mail Guardian i wybierz Sprawdź i napraw."
+      launcher_red "Retry also failed. Open Mail Guardian and choose Check and repair."
       result=1
     fi
   else

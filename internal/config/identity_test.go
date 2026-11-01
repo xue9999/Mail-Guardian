@@ -99,3 +99,28 @@ func TestV1CannotSmuggleV2EndpointOrLogin(t *testing.T) {
 		t.Fatal("v2 login silently migrated as legacy")
 	}
 }
+
+func TestFreshProfileRequiresEndpointAndKeepsLegacyPaths(t *testing.T) {
+	cfg, err := NewInstance()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Account.Email, cfg.Folders.ServerSpam = "fixture@example.org", "Junk"
+	if cfg.Account.Provider != "custom" || cfg.Account.Host != "" || cfg.Folders.Review != "Guardian-Review" {
+		t.Fatal("fresh installation inherited a provider or legacy folder names")
+	}
+	if _, err := cfg.Resolve(); err == nil {
+		t.Fatal("missing explicit endpoint accepted")
+	}
+	cfg.Account.Host = "imap.example.org"
+	resolved, err := cfg.Resolve()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.LegacyCompatible() || resolved.Safety.PurgeEnabled || resolved.Account.LoginUsername() != cfg.Account.Email {
+		t.Fatal("fresh account inherited legacy authorization or unsafe defaults")
+	}
+	if cfg.Runtime.DataDir != Default().Runtime.DataDir || filepath.Base(DefaultDataDir()) != "O2 Mail Guardian" {
+		t.Fatal("product rename changed persisted storage paths")
+	}
+}

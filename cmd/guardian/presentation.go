@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 // Read-only presentation of the existing activation rules. modeCommand and
@@ -30,7 +30,7 @@ type apiProtection struct {
 
 func protectionProgress(cfg config.Config, db *store.DB, now time.Time) *apiProtection {
 	p := &apiProtection{RequiredDays: cfg.Safety.ProtectDays, RemainingDays: cfg.Safety.ProtectDays,
-		Message: "Nie można jeszcze potwierdzić gotowości. Sprawdź i napraw ochronę."}
+		Message: "Readiness cannot yet be confirmed. Check and repair protection."}
 	ctx := context.Background()
 	installed, err := db.GetSetting(ctx, "installed_at")
 	if err != nil {
@@ -56,7 +56,7 @@ func protectionProgress(cfg config.Config, db *store.DB, now time.Time) *apiProt
 	p.PeriodComplete = remaining <= 0
 	qualified, qualificationErr := db.CurrentQualification(ctx, cfg, now)
 	if qualificationErr != nil {
-		p.Message = "Aktualna ocena filtra jest nieważna. Uruchom ponowną ocenę jakości."
+		p.Message = "The current filter qualification is invalid. Run quality evaluation again."
 		return p
 	}
 	if qualified != nil {
@@ -64,15 +64,15 @@ func protectionProgress(cfg config.Config, db *store.DB, now time.Time) *apiProt
 		p.QualityReady = true
 		p.Ready = p.PeriodComplete
 		p.QualityChecks = []apiQualityCheck{
-			{"disjoint", "Oddzielna nauka i sprawdzenie", "Wiadomości testowe i podobne tematy były wyłączone z nauki oraz doboru progu.", true},
-			{"accuracy", "Rozpoznanie nowego spamu", fmt.Sprintf("W oddzielonym teście: %d z %d wiadomości spamu. Wymagane co najmniej 90%%.", m.SpamDetected, m.SpamTested), true},
-			{"important", "Ważna poczta bez błędnego zatrzymania", fmt.Sprintf("Błędnie zatrzymane: %d z %d ważnych wiadomości. Wymagane zero.", m.FalsePositives, m.HamTested), true},
-			{"rescues", "Spam bez błędnego ratowania", fmt.Sprintf("Błędnie ratowane wiadomości spamu: %d. Wymagane zero.", m.FalseRescues), true},
-			{"model", "Model Bayesa sprawdzony w teście", fmt.Sprintf("Minimalna liczba przykładów statystycznych w obu klasach: %d. Trwałe usuwanie ma osobne wymagania.", qualified.MinLearns), true},
+			{"disjoint", "Separate training and evaluation", "Test messages and similar subjects were excluded from training and threshold selection.", true},
+			{"accuracy", "New spam recognition", fmt.Sprintf("In held-out evaluation: %d of %d spam messages. At least 90%% required.", m.SpamDetected, m.SpamTested), true},
+			{"important", "Legitimate mail without false holds", fmt.Sprintf("Incorrectly held: %d of %d legitimate messages. Required: zero.", m.FalsePositives, m.HamTested), true},
+			{"rescues", "Spam without false rescues", fmt.Sprintf("Spam messages incorrectly rescued: %d. Required: zero.", m.FalseRescues), true},
+			{"model", "Bayes model tested", fmt.Sprintf("Minimum statistical examples in each class: %d. Permanent deletion has separate requirements.", qualified.MinLearns), true},
 		}
-		p.Message = "Aktualny filtr przeszedł oddzielny test. Historyczne pomyłki pozostały w ewidencji."
+		p.Message = "The current filter passed a separate test. Historical mistakes remain recorded."
 		if !p.PeriodComplete {
-			p.Message = "Filtr przeszedł test; trwa jeszcze okres obserwacji."
+			p.Message = "The filter passed qualification; the observation period is still running."
 		}
 		return p
 	}
@@ -85,15 +85,15 @@ func protectionProgress(cfg config.Config, db *store.DB, now time.Time) *apiProt
 	p.Ready = p.PeriodComplete && p.QualityReady
 	switch {
 	case p.Ready:
-		p.Message = "Warunki spełnione. Możesz włączyć przenoszenie spamu z Odebranych do kwarantanny."
+		p.Message = "Requirements met. You may enable moving spam from Inbox to quarantine."
 	case quality.SpamFeedback == 0:
-		p.Message = "Potrzebne jest Twoje potwierdzenie spamu. Przenieś rozpoznany spam do AI-Naucz-spam i przetwórz korekty. Nie oznaczaj prawidłowych wiadomości tylko po to, by zakończyć obserwację."
+		p.Message = "Your spam confirmation is required. Move recognized spam to the configured spam-training folder and process corrections. Do not label legitimate messages merely to finish observation."
 	case p.PeriodComplete && (quality.FalsePositives > 0 || quality.FalseRescues > 0 || quality.SpamUnexplained > 0):
-		p.Message = "Okres obserwacji zakończony, ale historyczne pomyłki blokują porządkowanie Odebranych. Samo czekanie ani dalsza nauka nie usuną tych blokad. Potrzebna jest naprawa i nowa niezależna ocena filtra."
+		p.Message = "Observation has ended, but historical errors block Inbox cleanup. Waiting or further training will not clear these blocks. Repair and a new independent filter evaluation are required."
 	case !p.QualityReady:
-		p.Message = "Korekty wskazują, że filtr wymaga dalszej nauki. Przenoszenie z Odebranych pozostaje wyłączone."
+		p.Message = "Corrections show the filter needs more training. Inbox moves remain disabled."
 	default:
-		p.Message = "Jakość decyzji potwierdzona. Poczekaj do końca okresu obserwacji."
+		p.Message = "Decision quality confirmed. Wait until the observation period ends."
 	}
 	return p
 }
@@ -114,10 +114,10 @@ func apiRunResult(run *store.Run, err error) map[string]any {
 
 func qualityChecks(q store.ActivationQuality) []apiQualityCheck {
 	return []apiQualityCheck{
-		{"sample", "Potwierdzony spam", fmt.Sprintf("Wiadomości oznaczone przez Ciebie jako spam w tym okresie: %d. Potrzebna jest co najmniej jedna.", q.SpamFeedback), q.SpamFeedback > 0},
-		{"accuracy", "Trafne rozpoznanie spamu", fmt.Sprintf("Guardian wcześniej rozpoznał jako spam %d z %d potwierdzonych wiadomości. Wymagane co najmniej 90%%.", q.SpamPreviouslySpam, q.SpamFeedback), q.SpamFeedback > 0 && q.SpamPreviouslySpam*100 >= q.SpamFeedback*90},
-		{"important", "Ważne wiadomości bez błędnego oznaczenia jako spam", fmt.Sprintf("Potwierdzone przez Ciebie pomyłki: %d. Wymagane zero w tym okresie obserwacji.", q.FalsePositives), q.FalsePositives == 0},
-		{"rescues", "Spam bez błędnego uznania za ważną wiadomość", fmt.Sprintf("Potwierdzone przez Ciebie pomyłki: %d. Wymagane zero w tym okresie obserwacji.", q.FalseRescues), q.FalseRescues == 0},
-		{"history", "Znana wcześniejsza decyzja", fmt.Sprintf("Potwierdzony spam bez wcześniejszej decyzji „spam” lub „do sprawdzenia”: %d. Wymagane zero.", q.SpamUnexplained), q.SpamUnexplained == 0},
+		{"sample", "Confirmed spam", fmt.Sprintf("Messages you marked as spam during this period: %d. At least one required.", q.SpamFeedback), q.SpamFeedback > 0},
+		{"accuracy", "Correct spam recognition", fmt.Sprintf("Guardian previously recognized %d of %d confirmed spam messages. At least 90%% required.", q.SpamPreviouslySpam, q.SpamFeedback), q.SpamFeedback > 0 && q.SpamPreviouslySpam*100 >= q.SpamFeedback*90},
+		{"important", "Legitimate messages without false spam classification", fmt.Sprintf("Errors confirmed by you: %d. Required: zero during this observation period.", q.FalsePositives), q.FalsePositives == 0},
+		{"rescues", "Spam without false ham classification", fmt.Sprintf("Errors confirmed by you: %d. Required: zero during this observation period.", q.FalseRescues), q.FalseRescues == 0},
+		{"history", "Known earlier decision", fmt.Sprintf("Confirmed spam without an earlier spam or review decision: %d. Required: zero.", q.SpamUnexplained), q.SpamUnexplained == 0},
 	}
 }

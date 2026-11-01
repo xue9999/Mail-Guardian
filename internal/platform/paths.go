@@ -16,7 +16,7 @@ type Paths struct {
 // them or grant the worker access to Docker or administrator credentials.
 func LinuxPaths(instance string) (Paths, error) {
 	if instance == "" || len(instance) > 64 || strings.Trim(instance, "abcdefghijklmnopqrstuvwxyz0123456789-") != "" || strings.HasPrefix(instance, "-") {
-		return Paths{}, errors.New("nieprawidłowa nazwa instancji Linux")
+		return Paths{}, errors.New("invalid Linux instance name")
 	}
 	configRoot := filepath.Join("/etc/mail-guardian", instance)
 	data := filepath.Join("/var/lib/mail-guardian", instance)

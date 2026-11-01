@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/o2-mail-guardian/guardian/internal/secrets"
+	"github.com/xue9999/Mail-Guardian/internal/secrets"
 )
 
 // ErrNotFound remains an alias for compatibility with existing callers.
@@ -32,7 +32,7 @@ func (s Store) Available() bool {
 
 func (s Store) Get(service, account string) (string, error) {
 	if !s.Available() {
-		return "", errors.New("pęk kluczy macOS jest niedostępny")
+		return "", errors.New("macOS Keychain unavailable")
 	}
 	cmd := exec.Command(s.SecurityPath, "find-generic-password", "-s", service, "-a", account, "-w")
 	var stderr bytes.Buffer
@@ -43,7 +43,7 @@ func (s Store) Get(service, account string) (string, error) {
 			strings.Contains(stderr.String(), "SecKeychainSearchCopyNext") {
 			return "", ErrNotFound
 		}
-		return "", fmt.Errorf("odczyt z pęku kluczy: %w", err)
+		return "", fmt.Errorf("reading Keychain: %w", err)
 	}
 	return strings.TrimSpace(string(out)), nil
 }
@@ -53,10 +53,10 @@ func (s Store) Get(service, account string) (string, error) {
 // twice on standard input when -w is the final option.
 func (s Store) Set(service, account, value, label string) error {
 	if !s.Available() {
-		return errors.New("pęk kluczy macOS jest niedostępny")
+		return errors.New("macOS Keychain unavailable")
 	}
 	if value == "" || strings.ContainsAny(value, "\r\n\x00") {
-		return errors.New("sekret do zapisania ma niedozwolony format")
+		return errors.New("invalid secret format for storage")
 	}
 	args := []string{"add-generic-password", "-s", service, "-a", account, "-U"}
 	if label != "" {
@@ -68,7 +68,7 @@ func (s Store) Set(service, account, value, label string) error {
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("zapis do pęku kluczy: %w", err)
+		return fmt.Errorf("writing Keychain: %w", err)
 	}
 	return nil
 }
@@ -76,7 +76,7 @@ func (s Store) Set(service, account, value, label string) error {
 // PromptAndSet delegates hidden password input to the macOS security utility.
 func (s Store) PromptAndSet(service, account, label string) error {
 	if !s.Available() {
-		return errors.New("pęk kluczy macOS jest niedostępny")
+		return errors.New("macOS Keychain unavailable")
 	}
 	args := []string{"add-generic-password", "-s", service, "-a", account, "-U"}
 	if label != "" {
@@ -88,7 +88,7 @@ func (s Store) PromptAndSet(service, account, label string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("zapis hasła do pęku kluczy: %w", err)
+		return fmt.Errorf("saving password in Keychain: %w", err)
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func (s Store) PromptAndSet(service, account, label string) error {
 func (s Store) Delete(service, account string) error {
 	cmd := exec.Command(s.SecurityPath, "delete-generic-password", "-s", service, "-a", account)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("usunięcie z pęku kluczy: %w", err)
+		return fmt.Errorf("deleting from Keychain: %w", err)
 	}
 	return nil
 }

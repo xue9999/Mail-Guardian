@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/qualification"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/qualification"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func policyAdoptionReviewFixture(t *testing.T) (config.Config, *store.DB, time.Time) {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func TestSetupResolutionKeepsLegacyProtocolAndCustomIdentity(t *testing.T) {
@@ -26,6 +26,9 @@ func TestSetupResolutionKeepsLegacyProtocolAndCustomIdentity(t *testing.T) {
 	cfg, _, err = a.resolveSetupConfiguration(custom)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if cfg.LegacyCompatible() || cfg.Folders.Review != "Guardian-Review" {
+		t.Fatal("custom setup inherited legacy installation")
 	}
 	cfg.Folders.ServerSpam = "Junk"
 	if err := config.Save(path, cfg); err != nil {

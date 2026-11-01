@@ -14,7 +14,7 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/o2-mail-guardian/guardian/internal/secrets"
+	"github.com/xue9999/Mail-Guardian/internal/secrets"
 )
 
 type Manager struct {
@@ -27,7 +27,7 @@ func EnsureIdentity(kc secrets.Store, service, account string) (*age.X25519Ident
 	if err == nil {
 		id, parseErr := age.ParseX25519Identity(value)
 		if parseErr != nil {
-			return nil, fmt.Errorf("zapisany klucz archiwum jest uszkodzony: %w", parseErr)
+			return nil, fmt.Errorf("stored archive key is corrupt: %w", parseErr)
 		}
 		return id, nil
 	}
@@ -38,7 +38,7 @@ func EnsureIdentity(kc secrets.Store, service, account string) (*age.X25519Ident
 	if err != nil {
 		return nil, fmt.Errorf("generowanie klucza archiwum: %w", err)
 	}
-	if err := kc.Set(service, account, id.String(), "O2 Mail Guardian - klucz archiwum"); err != nil {
+	if err := kc.Set(service, account, id.String(), "Mail Guardian - archive key"); err != nil {
 		return nil, err
 	}
 	return id, nil
@@ -51,14 +51,14 @@ func LoadIdentity(kc secrets.Reader, service, account string) (*age.X25519Identi
 	}
 	id, err := age.ParseX25519Identity(value)
 	if err != nil {
-		return nil, fmt.Errorf("nieprawidłowy klucz archiwum: %w", err)
+		return nil, fmt.Errorf("invalid archive key: %w", err)
 	}
 	return id, nil
 }
 
 func New(root string, identity *age.X25519Identity) (*Manager, error) {
 	if identity == nil {
-		return nil, errors.New("brakuje klucza szyfrowania archiwum")
+		return nil, errors.New("missing archive encryption key")
 	}
 	if err := os.MkdirAll(root, 0o700); err != nil {
 		return nil, fmt.Errorf("tworzenie katalogu archiwum: %w", err)
@@ -68,7 +68,7 @@ func New(root string, identity *age.X25519Identity) (*Manager, error) {
 		return nil, err
 	}
 	if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
-		return nil, errors.New("katalog archiwum nie może być dowiązaniem ani zwykłym plikiem")
+		return nil, errors.New("archive directory must not be a symlink or regular file")
 	}
 	if err := os.Chmod(root, 0o700); err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func HasEncryptedFiles(root string) (bool, error) {
 			return walkErr
 		}
 		if entry.Type()&os.ModeSymlink != 0 {
-			return fmt.Errorf("archiwum zawiera dowiązanie symboliczne %q", path)
+			return fmt.Errorf("archive contains a symbolic link %q", path)
 		}
 		if entry.Type().IsRegular() && strings.HasSuffix(strings.ToLower(entry.Name()), ".eml.age") {
 			found = true
@@ -110,11 +110,11 @@ func HasEncryptedFiles(root string) (bool, error) {
 
 func (m *Manager) Save(raw []byte, hash string, now time.Time) (string, error) {
 	if len(raw) == 0 {
-		return "", errors.New("nie można zarchiwizować pustej wiadomości")
+		return "", errors.New("cannot archive an empty message")
 	}
 	actual := SHA256(raw)
 	if hash != "" && actual != hash {
-		return "", errors.New("skrót wiadomości zmienił się przed archiwizacją")
+		return "", errors.New("message hash changed before archival")
 	}
 	if hash == "" {
 		hash = actual
@@ -124,12 +124,12 @@ func (m *Manager) Save(raw []byte, hash string, now time.Time) (string, error) {
 		return "", err
 	}
 	if !within(m.Root, dir) {
-		return "", errors.New("katalog docelowy kopii wychodzi poza archiwum")
+		return "", errors.New("backup destination escapes the archive")
 	}
 	path := filepath.Join(dir, hash+".eml.age")
 	if _, err := os.Stat(path); err == nil {
 		if err := m.Verify(path, hash); err != nil {
-			return "", fmt.Errorf("istniejąca kopia jest uszkodzona: %w", err)
+			return "", fmt.Errorf("existing backup is corrupt: %w", err)
 		}
 		return path, nil
 	}
@@ -179,7 +179,7 @@ func (m *Manager) Save(raw []byte, hash string, now time.Time) (string, error) {
 
 func (m *Manager) Read(path string) ([]byte, error) {
 	if !within(m.Root, path) {
-		return nil, errors.New("ścieżka kopii jest poza katalogiem archiwum")
+		return nil, errors.New("backup path is outside archive directory")
 	}
 	f, err := os.Open(path)
 	if err != nil {
@@ -188,7 +188,7 @@ func (m *Manager) Read(path string) ([]byte, error) {
 	defer f.Close()
 	r, err := age.Decrypt(f, m.Identity)
 	if err != nil {
-		return nil, fmt.Errorf("odszyfrowanie kopii: %w", err)
+		return nil, fmt.Errorf("decrypting backup: %w", err)
 	}
 	raw, err := io.ReadAll(r)
 	if err != nil {
@@ -203,7 +203,7 @@ func (m *Manager) Verify(path, expectedHash string) error {
 		return err
 	}
 	if SHA256(raw) != expectedHash {
-		return errors.New("suma kontrolna odszyfrowanej kopii nie pasuje")
+		return errors.New("decrypted backup checksum mismatch")
 	}
 	return nil
 }
@@ -213,7 +213,7 @@ func (m *Manager) Delete(path, expectedHash string) error {
 		return err
 	}
 	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("usunięcie wygasłej kopii: %w", err)
+		return fmt.Errorf("removing expired backup: %w", err)
 	}
 	return syncDirectory(filepath.Dir(path))
 }
@@ -272,7 +272,7 @@ func ensureArchiveDir(root string, components ...string) (string, error) {
 			return "", err
 		}
 		if info.Mode()&os.ModeSymlink != 0 || !info.IsDir() {
-			return "", fmt.Errorf("element katalogu archiwum %q nie jest bezpiecznym katalogiem", current)
+			return "", fmt.Errorf("archive entry %q is not a safe directory", current)
 		}
 		if err := os.Chmod(current, 0o700); err != nil {
 			return "", err

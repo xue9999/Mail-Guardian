@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 type cancelingFetchMail struct {

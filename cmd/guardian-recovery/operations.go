@@ -18,11 +18,11 @@ import (
 
 	"filippo.io/age"
 	"github.com/BurntSushi/toml"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/migration"
-	"github.com/o2-mail-guardian/guardian/internal/recoverybundle"
-	"github.com/o2-mail-guardian/guardian/internal/redismodel"
-	"github.com/o2-mail-guardian/guardian/internal/stack"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/migration"
+	"github.com/xue9999/Mail-Guardian/internal/recoverybundle"
+	"github.com/xue9999/Mail-Guardian/internal/redismodel"
+	"github.com/xue9999/Mail-Guardian/internal/stack"
 	"golang.org/x/sys/unix"
 )
 

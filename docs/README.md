@@ -1,7 +1,7 @@
 # Documentation map
 
-Start here when taking over Guardian. User-facing documentation is in Polish;
-maintainer and server procedures are in English. Commands in the server guides
+Start here when taking over Guardian. Current user and maintainer documentation
+is in English. Commands in the server guides
 can affect real mail: run tests in an isolated checkout and identify the current
 mailbox owner before operating a deployment.
 
@@ -16,18 +16,22 @@ mailbox owner before operating a deployment.
 | Capture/restore encrypted bundles | [Backup format and procedure](../deploy/linux/BACKUP.md) |
 | Transfer ownership safely | [Migration fence](../deploy/linux/MIGRATION_FENCE.md) |
 | Report a vulnerability and avoid disclosing secrets | [Security](../SECURITY.md) |
-| Understand changes since 0.5.1 | [Changelog](../CHANGELOG.md) |
+| Understand release history | [Changelog](../CHANGELOG.md) |
 
 ## User guides
 
-[Installation](INSTALACJA.md), [GUI and first steps](GUI-I-PIERWSZE-KROKI.md),
-[daily operation](OBSLUGA.md), [privacy](ARCHITEKTURA-I-PRYWATNOSC.md),
-[safety and recovery](BEZPIECZENSTWO-I-ODZYSKIWANIE.md), and
-[troubleshooting](ROZWIAZYWANIE-PROBLEMOW.md).
+[Installation](INSTALLATION.md), [GUI and first steps](DESKTOP-GUIDE.md),
+[daily operation](USER-GUIDE.md), [privacy](ARCHITECTURE-AND-PRIVACY.md),
+[safety and recovery](SECURITY-AND-RECOVERY.md), and
+[troubleshooting](TROUBLESHOOTING.md).
+
+[Provider support and upgrade compatibility](PROVIDERS.md) documents the IMAP
+contract, fresh defaults and preserved legacy identifiers.
 
 ## Source and deployment status
 
-The 0.6.1 public source includes macOS fixes after the last public 0.5.1 release,
+Version 0.7.0 adds English interfaces/documentation and explicit custom IMAP setup;
+see [the provider contract](PROVIDERS.md). The preceding 0.6.1 public source includes macOS fixes after the last public 0.5.1 release,
 a Linux worker, model/database handover tools, backup/recovery, monitoring,
 configuration/provider boundaries and the missing-COPYUID hardening.
 The reference server's reviewed application release on 1 November 2026 is

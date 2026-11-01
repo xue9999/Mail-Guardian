@@ -10,7 +10,7 @@ safe_go_version() {
      (major == 1 && minor == 27 && patch >= 3) ||
      (major == 1 && minor == 26 && patch >= 10) ))
 }
-release_error() { printf 'Nieprawidłowa paczka: %s\n' "$*" >&2; return 1; }
+release_error() { printf 'Invalid package: %s\n' "$*" >&2; return 1; }
 release_hashes() (
   cd "$1" || exit 1
   # Payloads contain regular files only. Newlines/backslashes are disallowed.
@@ -30,12 +30,12 @@ release_manifest() {
 }
 verify_release() {
   local root="$1" version="$2" actual expected
-  [[ "$(cat "$root/DISTRIBUTION" 2>/dev/null)" == prebuilt ]] || { release_error 'brak typu dystrybucji'; return 1; }
-  [[ -f "$root/RELEASE-MANIFEST" ]] || { release_error 'brak manifestu'; return 1; }
-  [[ -x "$root/prebuilt/guardian" && -x "$root/prebuilt/O2 Mail Guardian.app/Contents/MacOS/O2MailGuardianApp" ]] || { release_error 'brak gotowych programów'; return 1; }
-  actual="$(release_manifest "$root" "$version")" || { release_error 'nieprawidłowe pliki payloadu'; return 1; }
+  [[ "$(cat "$root/DISTRIBUTION" 2>/dev/null)" == prebuilt ]] || { release_error 'missing distribution type'; return 1; }
+  [[ -f "$root/RELEASE-MANIFEST" ]] || { release_error 'missing manifest'; return 1; }
+  [[ -x "$root/prebuilt/guardian" && -x "$root/prebuilt/O2 Mail Guardian.app/Contents/MacOS/O2MailGuardianApp" ]] || { release_error 'missing prebuilt programs'; return 1; }
+  actual="$(release_manifest "$root" "$version")" || { release_error 'invalid payload files'; return 1; }
   expected="$(cat "$root/RELEASE-MANIFEST")" || return 1
-  [[ "$actual" == "$expected" ]] || { release_error 'niezgodne sumy, lista plików lub metadane'; return 1; }
+  [[ "$actual" == "$expected" ]] || { release_error 'checksum, file-list or metadata mismatch'; return 1; }
 }
 verify_prebuilt() {
   local root="$1" version="$2" app="$1/prebuilt/O2 Mail Guardian.app" binary build_info
@@ -47,8 +47,8 @@ verify_prebuilt() {
   [[ "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$app/Contents/Info.plist")" == 13.0 ]] || return 1
   /usr/bin/codesign --verify --deep --strict "$app" || return 1
   build_info="$("$root/prebuilt/guardian" version)" || return 1
-  printf '%s\n' "$build_info" | /usr/bin/grep -F "O2 Mail Guardian $version (" || return 1
-  safe_go_version "$(printf '%s\n' "$build_info" | /usr/bin/awk '/^Go: / {print $2}')" || { release_error 'podatna lub nieznana wersja Go w gotowym programie'; return 1; }
+  printf '%s\n' "$build_info" | /usr/bin/grep -F "Mail Guardian $version (" || return 1
+  safe_go_version "$(printf '%s\n' "$build_info" | /usr/bin/awk '/^Go: / {print $2}')" || { release_error 'vulnerable or unknown Go version in prebuilt program'; return 1; }
   "$root/prebuilt/guardian" self-test || return 1
   "$app/Contents/MacOS/O2MailGuardianApp" --self-test || return 1
 }

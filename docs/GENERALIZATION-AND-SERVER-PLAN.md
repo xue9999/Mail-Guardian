@@ -1,3 +1,8 @@
+> **1 November 2026 source update:** the Mail Guardian 0.7.0 source now exposes
+> custom IMAP setup in the desktop, CLI and Linux configuration command.
+> See [the current provider contract](PROVIDERS.md). Provider certification and
+> production promotion remain separate; the design below retains its history.
+
 # Mail Guardian generalization and server hosting plan
 
 > Historical design note. Statements such as “not deployed” describe the original design stage. For current maintenance, start with [the operations runbook](maintainers/OPERATIONS.md) and [release process](maintainers/RELEASING.md). Private audit paths are deliberately omitted.

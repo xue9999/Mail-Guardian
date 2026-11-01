@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/config"
 )
 
 func bindingFixture(t *testing.T) (*DB, config.Config) {

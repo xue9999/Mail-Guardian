@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/platform"
+	"github.com/xue9999/Mail-Guardian/internal/platform"
 )
 
 func (m Manager) systemdStatus() (string, error) {

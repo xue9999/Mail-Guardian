@@ -26,7 +26,7 @@ type redisBackupInfo struct {
 
 func validateRedisRDB(data []byte) error {
 	if len(data) < 18 || !bytes.HasPrefix(data, []byte("REDIS")) || data[len(data)-9] != 0xff {
-		return errors.New("nieprawidłowy zrzut Redis")
+		return errors.New("invalid Redis snapshot")
 	}
 	var table [256]uint64
 	for i := range table {
@@ -45,7 +45,7 @@ func validateRedisRDB(data []byte) error {
 		checksum = table[byte(checksum)^b] ^ (checksum >> 8)
 	}
 	if checksum != binary.LittleEndian.Uint64(data[len(data)-8:]) {
-		return errors.New("błędna suma kontrolna kopii Redis")
+		return errors.New("Redis backup checksum mismatch")
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func redisRDBPayload(data []byte) ([]byte, error) {
 			}
 		}
 	}
-	return nil, errors.New("otrzymano uszkodzoną lub niepełną kopię Redis")
+	return nil, errors.New("received corrupt or incomplete Redis backup")
 }
 
 // Do not embed bytes.Buffer: its promoted ReadFrom method would let io.Copy
@@ -77,7 +77,7 @@ func (b *rdbBuffer) Bytes() []byte { return b.buffer.Bytes() }
 
 func (b *rdbBuffer) Write(p []byte) (int, error) {
 	if b.buffer.Len()+len(p) > 128<<20 {
-		return 0, errors.New("kopia Redis przekracza 128 MiB")
+		return 0, errors.New("Redis backup exceeds 128 MiB")
 	}
 	return b.buffer.Write(p)
 }
@@ -117,10 +117,10 @@ func (m Manager) backupRedis(dataDir string, spam, ham uint64) error {
 		}
 		hash := sha256.Sum256(data)
 		if hex.EncodeToString(hash[:]) != old.SHA256 {
-			return errors.New("kopia Redis nie zgadza się z metadanymi")
+			return errors.New("Redis backup does not match metadata")
 		}
 		if spam < old.Spam || ham < old.Ham {
-			return errors.New("model Bayesa cofnął się; poprzednia kopia została zachowana")
+			return errors.New("Bayes model rolled back; previous backup retained")
 		}
 		if spam == old.Spam && ham == old.Ham && time.Since(old.Created) < 12*time.Hour {
 			return nil
@@ -145,7 +145,7 @@ func (m Manager) backupRedis(dataDir string, spam, ham uint64) error {
 		}
 		docker := commandPath("docker")
 		if docker == "" {
-			return nil, errors.New("brakuje Dockera do zabezpieczenia modelu")
+			return nil, errors.New("Docker unavailable for model backup")
 		}
 		cmd := stackCommand(ctx, docker, m.dockerComposeArgs("exec", "-T", "redis", "redis-cli", "--rdb", "-")...)
 		cmd.Env = append(cmd.Env, "GUARDIAN_RUNTIME_DIR="+m.RuntimeDir)
@@ -174,7 +174,7 @@ func retryRedisRDBExport(export func(context.Context) ([]byte, error)) ([]byte, 
 		if !errors.As(err, &processErr) {
 			return nil, err
 		}
-		failures = errors.Join(failures, fmt.Errorf("próba %d: %w", attempt, err))
+		failures = errors.Join(failures, fmt.Errorf("attempt %d: %w", attempt, err))
 	}
 	return nil, failures
 }
@@ -190,7 +190,7 @@ func captureRedisRDBExport(ctx context.Context, cmd *exec.Cmd) ([]byte, error) {
 	if err := cmd.Run(); err != nil {
 		// A transfer-success diagnostic or even valid captured bytes cannot
 		// substitute for successful termination of the exporting process.
-		return nil, &redisExportProcessError{fmt.Errorf("eksport modelu Redis: %w (%s)", errors.Join(err, ctx.Err()), safeOutput(diagnostic.Bytes()))}
+		return nil, &redisExportProcessError{fmt.Errorf("Redis model export: %w (%s)", errors.Join(err, ctx.Err()), safeOutput(diagnostic.Bytes()))}
 	}
 	return redisRDBPayload(output.Bytes())
 }
@@ -201,7 +201,7 @@ func publishRedisBackup(root string, payload []byte, info redisBackupInfo) error
 	}
 	hash := sha256.Sum256(payload)
 	if info.SHA256 != hex.EncodeToString(hash[:]) {
-		return errors.New("metadane nie zgadzają się z kopią Redis")
+		return errors.New("metadata does not match Redis backup")
 	}
 	current, previous := filepath.Join(root, "current"), filepath.Join(root, "previous")
 	meta, _ := json.Marshal(info)
@@ -256,11 +256,11 @@ func validateRedisPersistence(output string) error {
 	}
 	for _, key := range []string{"aof_last_write_status", "rdb_last_bgsave_status"} {
 		if fields[key] != "ok" {
-			return errors.New("Redis nie potwierdza poprawnego zapisu danych; filtr wymaga sprawdzenia dysku Colimy")
+			return errors.New("Redis cannot confirm persistence; check the Colima disk")
 		}
 	}
 	if fields["aof_enabled"] != "1" {
-		return errors.New("dziennik trwałego zapisu Redis jest wyłączony")
+		return errors.New("Redis persistence journal is disabled")
 	}
 	return nil
 }
@@ -305,23 +305,23 @@ func checkRedisPersistenceCommands(timeout time.Duration, command func(context.C
 			if err == nil {
 				return output, nil
 			}
-			failures = errors.Join(failures, fmt.Errorf("próba %d: %w", attempt, err))
+			failures = errors.Join(failures, fmt.Errorf("attempt %d: %w", attempt, err))
 		}
 		return nil, failures
 	}
 	output, err := read("INFO", "persistence")
 	if err != nil {
-		return fmt.Errorf("kontrola trwałości Redis: %w", err)
+		return fmt.Errorf("Redis persistence check: %w", err)
 	}
 	if err := validateRedisPersistence(string(output)); err != nil {
 		return err
 	}
 	config, err := read("CONFIG", "GET", "appendfsync")
 	if err != nil {
-		return fmt.Errorf("kontrola fsync Redis: %w", err)
+		return fmt.Errorf("Redis fsync check: %w", err)
 	}
 	if strings.Join(strings.Fields(string(config)), " ") != "appendfsync always" {
-		return errors.New("Redis nie potwierdza synchronicznego zapisu AOF; wymagane appendfsync always")
+		return errors.New("Redis cannot confirm synchronous AOF persistence; appendfsync always required")
 	}
 	return nil
 }

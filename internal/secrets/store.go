@@ -4,8 +4,8 @@ package secrets
 import "errors"
 
 var (
-	ErrNotFound = errors.New("sekret nie istnieje")
-	ErrReadOnly = errors.New("magazyn sekretów jest tylko do odczytu")
+	ErrNotFound = errors.New("secret does not exist")
+	ErrReadOnly = errors.New("secret store is read-only")
 )
 
 type Reader interface {

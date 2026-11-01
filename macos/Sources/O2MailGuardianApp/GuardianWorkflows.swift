@@ -5,28 +5,30 @@ struct LearningView: View {
     @ObservedObject var model: GuardianModel
     @State private var copiedFolder: String?
     var body: some View {
-        GuardianPage(eyebrow: "Ocena wiadomości", title: "Sprawdź i popraw", subtitle: "Trzy kroki: otwórz pocztę, przenieś wiadomość, przetwórz korektę.") {
+        GuardianPage(eyebrow: "Message review", title: "Review and correct", subtitle: "Three steps: open your email client, move a message, process the correction.") {
             GuardianCard {
-                Label("1. Otwórz wiadomości do sprawdzenia", systemImage: "tray.full").font(.headline)
-                Text("Otwórz folder AI-Do-sprawdzenia w poczcie o2. Gdy rozpoznasz wiadomość, przenieś ją do jednego z folderów poniżej. Jeśli nie masz pewności, pozostaw ją do późniejszej oceny.")
+                Label("1. Open messages for review", systemImage: "tray.full").font(.headline)
+                Text("Open \(model.snapshot.folders.review) in your email client. Move recognized messages to one of the folders below. Leave uncertain messages for later review.")
                     .foregroundStyle(.secondary)
                 HStack {
-                    Link("Otwórz pocztę o2", destination: URL(string: "https://poczta.o2.pl/")!)
-                        .buttonStyle(.borderedProminent).controlSize(.large)
-                    Button("Przetwórz już przeniesione korekty") { Task { await model.runNow() } }.disabled(model.busy)
+                    if model.snapshot.connection?.provider == "o2" {
+                        Link("Open o2 webmail", destination: URL(string: "https://poczta.o2.pl/")!)
+                            .buttonStyle(.borderedProminent).controlSize(.large)
+                    }
+                    Button("Process corrections already moved") { Task { await model.runNow() } }.disabled(model.busy)
                 }
-                Text("Poczta otworzy się w przeglądarce. Wybierz folder AI-Do-sprawdzenia. Przetwarzanie uruchamia pełne sprawdzenie zgodnie z bieżącym trybem.").font(.callout).foregroundStyle(.secondary)
+                Text("Use your usual email client. Processing starts a full check under the current protection mode.").font(.callout).foregroundStyle(.secondary)
             }
             HStack {
-                Text("2. Wybierz właściwy folder w poczcie o2").font(.headline)
+                Text("2. Choose the appropriate folder in your email client").font(.headline)
             }
-            correctionCard("To ważna wiadomość", symbol: "hand.thumbsup", folder: "AI-Naucz-wazne", detail: "Użyj, gdy prawidłowa wiadomość trafiła do SPAM-u, kwarantanny lub folderu Do sprawdzenia.", result: "Po udanej nauce Guardian przeniesie ją do Odebranych. Twoja korekta blokuje jej automatyczne usunięcie.", count: model.snapshot.trainedHam)
-            correctionCard("To jest spam", symbol: "hand.thumbsdown", folder: "AI-Naucz-spam", detail: "Użyj, gdy niechciana wiadomość pozostała w Odebranych lub czeka na Twoją ocenę.", result: "Po udanej nauce Guardian przeniesie ją do kwarantanny.", count: model.snapshot.trainedSpam)
+            correctionCard("This is a legitimate message", symbol: "hand.thumbsup", folder: model.snapshot.folders.trainHam, detail: "Use when a legitimate message ended up in spam, quarantine or review.", result: "After successful learning, Guardian moves it to Inbox. Your correction blocks automatic deletion.", count: model.snapshot.trainedHam)
+            correctionCard("This is spam", symbol: "hand.thumbsdown", folder: model.snapshot.folders.trainSpam, detail: "Use when unwanted mail remains in Inbox or awaits your assessment.", result: "After successful learning, Guardian moves it to quarantine.", count: model.snapshot.trainedSpam)
             GuardianCard {
-                Text("3. Przetwórz korekty").font(.headline)
-                Text(model.snapshot.automation == "on" ? "Korekty zostaną przetworzone przy następnym automatycznym sprawdzeniu. Możesz też uruchomić je teraz." : "Automat jest wyłączony. Po przeniesieniu wiadomości uruchom sprawdzanie przyciskiem poniżej.").foregroundStyle(.secondary)
-                Button("Sprawdź pocztę i przetwórz korekty") { Task { await model.runNow() } }.buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy)
-                Text("Sprawdzanie obejmuje także pozostałą pocztę, zgodnie z bieżącym trybem ochrony.").font(.caption).foregroundStyle(.secondary)
+                Text("3. Process corrections").font(.headline)
+                Text(model.snapshot.automation == "on" ? "Corrections are processed during the next automatic check. You may also run it now." : "Automation is off. After moving messages, start a check with the button below.").foregroundStyle(.secondary)
+                Button("Check mail and process corrections") { Task { await model.runNow() } }.buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy)
+                Text("This also checks other mail under the current protection mode.").font(.caption).foregroundStyle(.secondary)
             }
             if let scan = model.lastScan { ScanOutcomeView(outcome: scan) }
             PrivacyNote()
@@ -42,18 +44,18 @@ struct LearningView: View {
             HStack {
                 Label(title, systemImage: symbol).font(.title3.weight(.semibold))
                 Spacer()
-                Text("Korekty: \(count)").font(.caption).foregroundStyle(.secondary)
+                Text("Corrections: \(count)").font(.caption).foregroundStyle(.secondary)
             }
             Text(detail).foregroundStyle(.secondary)
             HStack {
                 Text(folder).font(.system(.body, design: .monospaced)).textSelection(.enabled)
                 Spacer()
-                Button(copiedFolder == folder ? "Skopiowano" : "Kopiuj nazwę", systemImage: copiedFolder == folder ? "checkmark" : "doc.on.doc") {
+                Button(copiedFolder == folder ? "Copied" : "Copy name", systemImage: copiedFolder == folder ? "checkmark" : "doc.on.doc") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(folder, forType: .string)
                     copiedFolder = folder
-                }.help("Kopiuj nazwę folderu do schowka")
-                .accessibilityLabel(copiedFolder == folder ? "Skopiowano nazwę folderu \(folder)" : "Kopiuj nazwę folderu \(folder)")
+                }.help("Copy folder name to clipboard")
+                .accessibilityLabel(copiedFolder == folder ? "Copied folder name \(folder)" : "Copy folder name \(folder)")
             }.padding(12).background(GuardianStyle.accent.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
             Text(result).font(.callout).foregroundStyle(.secondary)
         }
@@ -74,65 +76,65 @@ struct ArchiveView: View {
         ArchiveRestoreGate.canRestore(selectedID: selected?.id, previewedID: previewedID, busy: model.busy)
     }
     var body: some View {
-        GuardianPage(eyebrow: "Bezpieczny powrót", title: "Odzyskiwanie wiadomości", subtitle: "Znajdź kopię, sprawdź nadawcę i temat, a potem przywróć wiadomość.") {
+        GuardianPage(eyebrow: "Safe recovery", title: "Recover messages", subtitle: "Find a backup, check sender and subject, then restore the message.") {
             HStack {
-                Picker("Pokaż", selection: $model.archiveFilter) {
-                    Text("Wszystkie kopie").tag("all")
-                    Text("Kwarantanna").tag("quarantined")
-                    Text("Do sprawdzenia").tag("review")
-                    Text("Przywrócone").tag("restored")
+                Picker("Show", selection: $model.archiveFilter) {
+                    Text("All backups").tag("all")
+                    Text("Quarantine").tag("quarantined")
+                    Text("Review").tag("review")
+                    Text("Restored").tag("restored")
                 }.frame(maxWidth: 280).disabled(model.busy)
                 Spacer()
-                Button("Odśwież", systemImage: "arrow.clockwise") { Task { await reload() } }.disabled(model.busy)
+                Button("Refresh", systemImage: "arrow.clockwise") { Task { await reload() } }.disabled(model.busy)
             }
             VStack(alignment: .leading, spacing: 12) {
-                Toggle("Zawęź datę pierwszego zapisu", isOn: $useDateRange).disabled(model.busy)
+                Toggle("Filter by first-backup date", isOn: $useDateRange).disabled(model.busy)
                 if useDateRange {
                     HStack {
-                        DatePicker("Od", selection: $fromDate, displayedComponents: .date)
-                            .environment(\.locale, Locale(identifier: "pl_PL"))
+                        DatePicker("From", selection: $fromDate, displayedComponents: .date)
+                            .environment(\.locale, Locale(identifier: "en"))
                             .disabled(model.busy)
-                        DatePicker("Do", selection: $throughDate, displayedComponents: .date)
-                            .environment(\.locale, Locale(identifier: "pl_PL"))
+                        DatePicker("To", selection: $throughDate, displayedComponents: .date)
+                            .environment(\.locale, Locale(identifier: "en"))
                             .disabled(model.busy)
-                        Button("Zastosuj daty") { Task { await applyDateRange() } }
+                        Button("Apply dates") { Task { await applyDateRange() } }
                             .disabled(model.busy || Calendar.current.startOfDay(for: fromDate) > Calendar.current.startOfDay(for: throughDate))
                     }
                     if Calendar.current.startOfDay(for: fromDate) > Calendar.current.startOfDay(for: throughDate) {
-                        Text("Data Od nie może być późniejsza niż Do.").foregroundStyle(.red).font(.callout)
+                        Text("From must not be later than To.").foregroundStyle(.red).font(.callout)
                     }
-                    Text(model.archiveDateRange.isEmpty ? "Wybierz daty i zastosuj filtr. Lista nadal pokazuje wszystkie daty." : "Lista dla okresu: \(appliedDateLabel). Po zmianie dat kliknij Zastosuj daty.")
+                    Text(model.archiveDateRange.isEmpty ? "Choose dates and apply the filter. The list still shows all dates." : "Showing period: \(appliedDateLabel). After changing dates, click Apply dates.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
-            Text("Lista pokazuje datę pierwszego zapisu. Wybierz wpis i odsłoń nagłówki, aby rozpoznać wiadomość.")
+            Text("The list shows the first-backup date. Select an entry and reveal headers to identify it.")
                 .font(.callout).foregroundStyle(.secondary)
             if !model.archiveLoaded {
                 GuardianCard {
-                    EmptyState(symbol: "tray", title: model.busy ? "Wczytuję kopie…" : "Nie udało się odczytać kopii", detail: model.busy ? "Odczytujemy tylko listę. Treść wiadomości pozostaje zaszyfrowana." : "Spróbuj ponownie. Twoje kopie nie zostały zmienione.")
-                    if !model.busy { Button("Spróbuj ponownie") { Task { await reload() } } }
+                    EmptyState(symbol: "tray", title: model.busy ? "Loading backups…" : "Could not read backups", detail: model.busy ? "Only the list is loaded. Message content remains encrypted." : "Retry. Your backups are unchanged.")
+                    if !model.busy { Button("Retry") { Task { await reload() } } }
                 }
             } else if model.archivePage.items.isEmpty {
                 GuardianCard {
                     if model.archivePage.page > 1 {
-                        EmptyState(symbol: "tray", title: "Na tej stronie nie ma już kopii", detail: "Zawartość archiwum mogła się zmienić. Wróć do początku listy, zachowując wybrane filtry.")
-                        Button("Wróć do pierwszej strony") { Task { await changePage(1) } }.disabled(model.busy)
+                        EmptyState(symbol: "tray", title: "No more backups on this page", detail: "The archive may have changed. Return to the first page with your selected filters.")
+                        Button("Return to first page") { Task { await changePage(1) } }.disabled(model.busy)
                     } else {
-                    EmptyState(symbol: "tray", title: !model.archiveDateRange.isEmpty ? "Brak kopii w wybranym okresie" : (model.archiveFilter == "all" ? "Nie ma jeszcze kopii" : "Brak kopii w tej kategorii"), detail: !model.archiveDateRange.isEmpty ? "Zmień daty lub wyłącz filtr dat, aby poszukać pozostałych kopii." : (model.archiveFilter == "all" ? "Kopie pojawią się tutaj, gdy Guardian zabezpieczy wiadomości. Niczego nie musisz teraz odzyskiwać." : "Wybierz inną kategorię, aby zobaczyć pozostałe kopie."))
+                    EmptyState(symbol: "tray", title: !model.archiveDateRange.isEmpty ? "No backups in this period" : (model.archiveFilter == "all" ? "No backups yet" : "No backups in this category"), detail: !model.archiveDateRange.isEmpty ? "Change the dates or disable the date filter to find other backups." : (model.archiveFilter == "all" ? "Backups appear when Guardian protects messages. No recovery is needed now." : "Choose another category to see other backups."))
                     }
                     HStack {
                         if !model.archiveDateRange.isEmpty {
-                            Button("Wyłącz filtr dat") { useDateRange = false }.disabled(model.busy)
+                            Button("Disable date filter") { useDateRange = false }.disabled(model.busy)
                         }
                         if model.archiveFilter != "all" {
-                            Button("Pokaż wszystkie kategorie") { model.archiveFilter = "all" }.disabled(model.busy)
+                            Button("Show all categories") { model.archiveFilter = "all" }.disabled(model.busy)
                         }
                     }
                 }
             } else {
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("ZAPISANE KOPIE").font(.system(size: 10, weight: .semibold)).tracking(1.2).foregroundStyle(.secondary).padding(.horizontal, 10)
+                        Text("SAVED BACKUPS").font(.system(size: 10, weight: .semibold)).tracking(1.2).foregroundStyle(.secondary).padding(.horizontal, 10)
                         ForEach(model.archivePage.items) { item in
                             Button {
                                 selected = item
@@ -142,59 +144,59 @@ struct ArchiveView: View {
                                 VStack(alignment: .leading, spacing: 7) {
                                     Text(friendlyDate(item.date)).font(.callout.weight(.semibold))
                                     Text(archiveStatusLabel(item.status).capitalized).font(.caption).foregroundStyle(.secondary)
-                                    Text("Kopia \(item.id) · \(archiveVerdictLabel(item.verdict))").font(.caption2).foregroundStyle(.secondary)
+                                    Text("Backup \(item.id) · \(archiveVerdictLabel(item.verdict))").font(.caption2).foregroundStyle(.secondary)
                                 }.frame(maxWidth: .infinity, alignment: .leading).padding(12)
                                     .background(selected?.id == item.id ? GuardianStyle.accent.opacity(0.12) : GuardianStyle.surface, in: RoundedRectangle(cornerRadius: 10))
                                     .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(selected?.id == item.id ? GuardianStyle.accent.opacity(0.4) : .clear))
                                     .contentShape(Rectangle())
                             }.buttonStyle(.plain).disabled(model.busy)
-                                .accessibilityHint("Wybierz kopię. Nadawcę i temat odsłonisz osobnym przyciskiem.")
+                                .accessibilityHint("Select a backup. Reveal sender and subject with a separate button.")
                                 .accessibilityAddTraits(selected?.id == item.id ? .isSelected : [])
                         }
                     }.frame(width: 220)
                     GuardianCard {
                         if let selected {
                             HStack {
-                                Text("Kopia \(selected.id)").font(.headline)
+                                Text("Backup \(selected.id)").font(.headline)
                                 Spacer()
-                                Label("Lokalna kopia", systemImage: "lock").font(.caption).foregroundStyle(.secondary)
+                                Label("Local backup", systemImage: "lock").font(.caption).foregroundStyle(.secondary)
                             }
                             if let preview, previewedID == selected.id {
-                                header("OD", value: preview.from)
-                                header("TEMAT", value: preview.subject)
-                                header("DATA WIADOMOŚCI", value: preview.date)
+                                header("FROM", value: preview.from)
+                                header("SUBJECT", value: preview.subject)
+                                header("MESSAGE DATE", value: preview.date)
                                 Divider()
-                                Text("Po przywróceniu znajdziesz wiadomość w folderze AI-Do-sprawdzenia w poczcie o2.").font(.callout).foregroundStyle(.secondary)
-                                Button("Przywróć wiadomość", systemImage: "tray.and.arrow.up") {
+                                Text("After restoration, find the message in \(model.snapshot.folders.review) in your email client.").font(.callout).foregroundStyle(.secondary)
+                                Button("Restore message", systemImage: "tray.and.arrow.up") {
                                     confirmationItem = selected
                                     showingRestoreConfirmation = true
                                 }.buttonStyle(.borderedProminent).controlSize(.large).disabled(!canRestore)
-                                    .accessibilityHint("Otwiera potwierdzenie przywrócenia wybranej kopii do folderu Do sprawdzenia.")
+                                    .accessibilityHint("Opens confirmation to restore the selected backup to the review folder.")
                             } else {
-                                Text("Odsłoń nadawcę, temat i datę, aby sprawdzić, czy to szukana wiadomość.").foregroundStyle(.secondary)
-                                Button("Pokaż nadawcę i temat") { Task { await loadPreview(selected) } }.buttonStyle(.borderedProminent).disabled(model.busy)
+                                Text("Reveal sender, subject and date to identify the message.").foregroundStyle(.secondary)
+                                Button("Show sender and subject") { Task { await loadPreview(selected) } }.buttonStyle(.borderedProminent).disabled(model.busy)
                             }
                             HStack {
-                                Button("Poprzednia kopia", systemImage: "chevron.up") { selectNeighbor(-1) }
+                                Button("Previous backup", systemImage: "chevron.up") { selectNeighbor(-1) }
                                     .disabled(model.busy || selectedIndex == nil || selectedIndex == 0)
-                                    .accessibilityHint("Wybiera poprzedni wpis na tej stronie i ukrywa nagłówki.")
-                                Button("Następna kopia", systemImage: "chevron.down") { selectNeighbor(1) }
+                                    .accessibilityHint("Selects the previous entry on this page and hides headers.")
+                                Button("Next backup", systemImage: "chevron.down") { selectNeighbor(1) }
                                     .disabled(model.busy || selectedIndex == nil || selectedIndex == model.archivePage.items.count - 1)
-                                    .accessibilityHint("Wybiera następny wpis na tej stronie i ukrywa nagłówki.")
+                                    .accessibilityHint("Selects the next entry on this page and hides headers.")
                             }
-                            Text("Bez otwierania treści, linków i załączników.").font(.caption).foregroundStyle(.secondary)
+                            Text("Message body, links and attachments stay closed.").font(.caption).foregroundStyle(.secondary)
                         } else {
-                            EmptyState(symbol: "sidebar.left", title: "Wybierz kopię z listy", detail: "Tutaj zobaczysz bezpieczny podgląd. Przywrócenie będzie wymagać Twojego potwierdzenia.")
+                            EmptyState(symbol: "sidebar.left", title: "Select a backup from the list", detail: "A safe preview appears here. Restoration requires your confirmation.")
                         }
                     }.frame(maxWidth: .infinity)
                 }
             }
             HStack {
-                Button("Poprzednia", systemImage: "chevron.left") { Task { await changePage(max(1, model.archivePage.page - 1)) } }.disabled(!model.archiveLoaded || model.archivePage.page <= 1 || model.busy)
+                Button("Previous", systemImage: "chevron.left") { Task { await changePage(max(1, model.archivePage.page - 1)) } }.disabled(!model.archiveLoaded || model.archivePage.page <= 1 || model.busy)
                 Spacer()
-                Text("Strona \(model.archivePage.page)").font(.caption).foregroundStyle(.secondary)
+                Text("Page \(model.archivePage.page)").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button("Następna", systemImage: "chevron.right") { Task { await changePage(model.archivePage.page + 1) } }.disabled(!model.archiveLoaded || !model.archivePage.hasNext || model.busy)
+                Button("Next", systemImage: "chevron.right") { Task { await changePage(model.archivePage.page + 1) } }.disabled(!model.archiveLoaded || !model.archivePage.hasNext || model.busy)
             }
             PrivacyNote()
         }
@@ -217,8 +219,8 @@ struct ArchiveView: View {
             }
         }
         .onDisappear { preview = nil; previewedID = nil }
-        .confirmationDialog("Przywrócić kopię \(confirmationItem?.id ?? 0)?", isPresented: $showingRestoreConfirmation) {
-            Button("Przywróć do AI-Do-sprawdzenia") {
+        .confirmationDialog("Restore backup \(confirmationItem?.id ?? 0)?", isPresented: $showingRestoreConfirmation) {
+            Button("Restore to \(model.snapshot.folders.review)") {
                 if let item = confirmationItem, item.id == previewedID, item.id == selected?.id {
                     Task {
                         await model.restoreArchive(id: item.id)
@@ -227,9 +229,9 @@ struct ArchiveView: View {
                     }
                 }
             }
-            Button("Anuluj", role: .cancel) { confirmationItem = nil }
+            Button("Cancel", role: .cancel) { confirmationItem = nil }
         } message: {
-            Text("Guardian utworzy kopię w folderze AI-Do-sprawdzenia. Sprawdzisz ją w poczcie o2. Żadna wiadomość nie zostanie wysłana.")
+            Text("Guardian creates a copy in \(model.snapshot.folders.review). Check it in your email client. No email is sent.")
         }
     }
     private var appliedDateLabel: String {
@@ -237,7 +239,7 @@ struct ArchiveView: View {
         let parser = ISO8601DateFormatter()
         guard let start = parser.date(from: model.archiveDateRange[0]), let end = parser.date(from: model.archiveDateRange[1]) else { return "" }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pl_PL")
+        formatter.locale = Locale(identifier: "en")
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         let through = Calendar.current.date(byAdding: .day, value: -1, to: end) ?? end
@@ -264,7 +266,7 @@ struct ArchiveView: View {
     private func header(_ label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label).font(.system(size: 10, weight: .semibold)).tracking(1).foregroundStyle(.secondary)
-            Text(value.isEmpty ? "Brak informacji" : value).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            Text(value.isEmpty ? "No information" : value).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
         }
     }
     private func reload() async { await changePage(model.archivePage.page) }
@@ -291,96 +293,96 @@ struct SettingsView: View {
     @State private var showActivation = false
     @State private var showObservationConfirmation = false
     var body: some View {
-        GuardianPage(eyebrow: "Na Twoich zasadach", title: "Ustawienia ochrony", subtitle: "Zdecyduj, kiedy Guardian sprawdza pocztę i co może z nią robić.") {
+        GuardianPage(eyebrow: "On your terms", title: "Protection settings", subtitle: "Choose when Guardian checks mail and what it may do.") {
             GuardianCard {
-                Label("Automatyczne sprawdzanie", systemImage: "clock.arrow.circlepath").font(.headline)
-                Toggle("Sprawdzaj pocztę co 2 godziny", isOn: Binding(get: { model.snapshot.automation == "on" }, set: { value in Task { await model.setAutomation(value) } }))
+                Label("Automatic checks", systemImage: "clock.arrow.circlepath").font(.headline)
+                Toggle("Check mail every 2 hours", isOn: Binding(get: { model.snapshot.automation == "on" }, set: { value in Task { await model.setAutomation(value) } }))
                     .toggleStyle(.switch).disabled(model.busy || !model.snapshot.firstDryRun)
-                Text("Zamknięcie okna nie zatrzymuje automatu. Wyłącz tę opcję, jeśli chcesz sprawdzać pocztę tylko na żądanie.").font(.callout).foregroundStyle(.secondary)
+                Text("Closing the window does not stop automation. Turn this off for checks on demand only.").font(.callout).foregroundStyle(.secondary)
             }
             GuardianCard {
-                Label("Przenoszenie wiadomości", systemImage: "tray.2").font(.headline)
+                Label("Message moves", systemImage: "tray.2").font(.headline)
                 if model.snapshot.mode == "active" {
-                    Text("Automatyczne porządkowanie włączone").font(.title3.weight(.semibold))
-                    Text("Pewny spam trafia do kwarantanny, a ważne wiadomości z folderu SPAM wracają do Odebranych. Przypadki niepewne czekają na Twoją ocenę.").foregroundStyle(.secondary)
-                    Button("Wróć do obserwacji") { showObservationConfirmation = true }.disabled(model.busy)
+                    Text("Automatic cleanup enabled").font(.title3.weight(.semibold))
+                    Text("Confident spam goes to quarantine, legitimate messages return from spam to Inbox, and uncertain cases await your review.").foregroundStyle(.secondary)
+                    Button("Return to observation") { showObservationConfirmation = true }.disabled(model.busy)
                 } else {
-                    Text("Odebrane pozostają bez zmian").font(.title3.weight(.semibold))
-                    Text("W okresie obserwacji wiadomości z folderu SPAM mogą trafiać do AI-Do-sprawdzenia. Twoje korekty nadal są przetwarzane.").foregroundStyle(.secondary)
+                    Text("Inbox remains unchanged").font(.title3.weight(.semibold))
+                    Text("During observation, messages from spam may move to the review folder. Your corrections are still processed.").foregroundStyle(.secondary)
                     Divider()
                     ProtectionProgressView(model: model)
                     HStack {
-                        Button("Włącz porządkowanie…") { activeConfirmation = ""; model.failure = nil; showActivation = true }
+                        Button("Enable cleanup…") { activeConfirmation = ""; model.failure = nil; showActivation = true }
                             .buttonStyle(.borderedProminent).disabled(model.busy || model.snapshotIsStale || model.snapshot.protection?.ready != true)
-                        Button("Przejdź do nauki") { model.section = .learning }
+                        Button("Open training") { model.section = .learning }
                     }
                 }
-                Button("Sprawdź ponownie jakość filtra") { Task { await model.qualifyFilter() } }.disabled(model.busy || model.snapshotIsStale)
-                Text("Ponowna ocena uczy osobny model i sprawdza go na innych wiadomościach. Zachowuje historię, a wynik nie włącza porządkowania bez Twojego potwierdzenia.").font(.caption).foregroundStyle(.secondary)
+                Button("Reevaluate filter quality") { Task { await model.qualifyFilter() } }.disabled(model.busy || model.snapshotIsStale)
+                Text("Reevaluation trains a separate model and tests it on different messages. History is retained; cleanup still requires your confirmation.").font(.caption).foregroundStyle(.secondary)
             }
             GuardianCard {
-                Label("Aplikacja i konto", systemImage: "person.crop.circle").font(.headline)
-                Toggle("Uruchamiaj panel po zalogowaniu do Maca", isOn: Binding(get: { model.snapshot.appAutostart }, set: { value in Task { await model.setAppAutostart(value) } })).toggleStyle(.switch).disabled(model.busy)
-                Text("Ta opcja dotyczy okna i ikony w pasku menu. Harmonogram sprawdzania ustawiasz osobno powyżej.").font(.callout).foregroundStyle(.secondary)
+                Label("Application and account", systemImage: "person.crop.circle").font(.headline)
+                Toggle("Start dashboard at Mac login", isOn: Binding(get: { model.snapshot.appAutostart }, set: { value in Task { await model.setAppAutostart(value) } })).toggleStyle(.switch).disabled(model.busy)
+                Text("This controls the window and menu-bar icon. The mail-check schedule is separate above.").font(.callout).foregroundStyle(.secondary)
                 Divider()
-                Button("Zmień dane konta lub hasło…") { model.reconfigure = true }.disabled(model.busy)
-                Text("Zmiana danych zatrzyma automat i będzie wymagać ponownej bezpiecznej próby. Hasło przechowujemy w pęku kluczy macOS.").font(.callout).foregroundStyle(.secondary)
+                Button("Change account settings or password…") { model.reconfigure = true }.disabled(model.busy)
+                Text("Changing settings pauses automation and requires another safe dry-run. The password is stored in macOS Keychain.").font(.callout).foregroundStyle(.secondary)
             }
             GuardianCard {
-                DisclosureGroup("Zaawansowane: trwałe usuwanie", isExpanded: $showAdvancedSafety) {
+                DisclosureGroup("Advanced: permanent deletion", isExpanded: $showAdvancedSafety) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Label(model.snapshot.purgeEnabled ? "Trwałe usuwanie włączone" : "Trwałe usuwanie wyłączone", systemImage: "trash").font(.headline)
-                        Text("To osobne uprawnienie. Zwykłe porządkowanie nie wymaga usuwania wiadomości. Włączenie nadal podlega okresom ochronnym i kontrolom jakości.").foregroundStyle(.secondary)
+                        Label(model.snapshot.purgeEnabled ? "Permanent deletion enabled" : "Permanent deletion disabled", systemImage: "trash").font(.headline)
+                        Text("This is a separate permission. Ordinary cleanup does not require deletion. Enabling it still requires protection periods and quality checks.").foregroundStyle(.secondary)
                         if model.snapshot.purgeEnabled {
-                            Button("Wyłącz trwałe usuwanie") { Task { await setPurge("disable", confirmation: "") } }.disabled(model.busy)
+                            Button("Disable permanent deletion") { Task { await setPurge("disable", confirmation: "") } }.disabled(model.busy)
                         } else {
-                            Text("Aby zezwolić na trwałe usuwanie po kontrolach, wpisz WLACZ.").font(.callout)
-                            TextField("Potwierdzenie WLACZ", text: $purgeConfirmation).textFieldStyle(.roundedBorder)
-                            Button("Włącz trwałe usuwanie", role: .destructive) { Task { await setPurge("enable", confirmation: purgeConfirmation) } }.disabled(purgeConfirmation != "WLACZ" || model.busy)
+                            Text("To authorize permanent deletion after qualification, type ENABLE.").font(.callout)
+                            TextField("Confirm ENABLE", text: $purgeConfirmation).textFieldStyle(.roundedBorder)
+                            Button("Enable permanent deletion", role: .destructive) { Task { await setPurge("enable", confirmation: purgeConfirmation) } }.disabled(purgeConfirmation != "ENABLE" || model.busy)
                         }
                     }.padding(.top, 14)
                 }
             }
             PrivacyNote()
         }
-        .confirmationDialog("Wrócić do obserwacji?", isPresented: $showObservationConfirmation) {
-            Button("Wróć do obserwacji") { Task { await setMode("protect", confirmation: "") } }
-            Button("Anuluj", role: .cancel) {}
+        .confirmationDialog("Return to observation?", isPresented: $showObservationConfirmation) {
+            Button("Return to observation") { Task { await setMode("protect", confirmation: "") } }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Guardian przestanie automatycznie przenosić wiadomości z Odebranych. Rozpocznie nowy okres obserwacji, a trwałe usuwanie zostanie wyłączone.")
+            Text("Guardian stops automatic Inbox moves. A new observation period starts and permanent deletion is disabled.")
         }
         .sheet(isPresented: $showActivation) {
             VStack(alignment: .leading, spacing: 20) {
-                Label("Włącz porządkowanie poczty", systemImage: "checkmark.shield").font(.title2.bold())
-                Text("Guardian będzie przenosić pewny spam z Odebranych do kwarantanny i ratować ważne wiadomości z folderu SPAM. Trwałe usuwanie pozostanie wyłączone.")
+                Label("Enable mail cleanup", systemImage: "checkmark.shield").font(.title2.bold())
+                Text("Guardian will quarantine confident Inbox spam and rescue legitimate messages from spam. Permanent deletion remains disabled.")
                 if let failure = model.failure {
                     Label(failure.message, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
                     if let recovery = failure.recovery { Text(recovery).font(.callout).foregroundStyle(.secondary) }
                 }
                 if model.snapshotIsStale {
-                    Text("Przed ponowieniem potwierdź aktualny stan ochrony.").font(.callout).foregroundStyle(.secondary)
-                    Button("Odśwież stan ochrony") { Task { await model.refresh() } }.disabled(model.busy)
+                    Text("Confirm the current protection status before retrying.").font(.callout).foregroundStyle(.secondary)
+                    Button("Refresh protection status") { Task { await model.refresh() } }.disabled(model.busy)
                 }
-                Text("Aby potwierdzić, wpisz AKTYWNY.").font(.callout)
-                TextField("Potwierdzenie AKTYWNY", text: $activeConfirmation).textFieldStyle(.roundedBorder)
+                Text("To confirm, type ACTIVE.").font(.callout)
+                TextField("Confirm ACTIVE", text: $activeConfirmation).textFieldStyle(.roundedBorder)
                 HStack {
-                    Button("Anuluj", role: .cancel) { showActivation = false }.keyboardShortcut(.cancelAction).disabled(model.busy)
+                    Button("Cancel", role: .cancel) { showActivation = false }.keyboardShortcut(.cancelAction).disabled(model.busy)
                     Spacer()
-                    Button("Włącz porządkowanie") {
+                    Button("Enable cleanup") {
                         Task {
                             if await setMode("active", confirmation: activeConfirmation) { showActivation = false }
                         }
-                    }.buttonStyle(.borderedProminent).disabled(activeConfirmation != "AKTYWNY" || model.busy || model.snapshotIsStale || model.snapshot.protection?.ready != true)
+                    }.buttonStyle(.borderedProminent).disabled(activeConfirmation != "ACTIVE" || model.busy || model.snapshotIsStale || model.snapshot.protection?.ready != true)
                 }
             }.padding(28).frame(width: 480).interactiveDismissDisabled(model.busy)
         }
     }
     @discardableResult
     private func setMode(_ value: String, confirmation: String) async -> Bool {
-        let completed = await model.perform("Zmieniam tryb ochrony…") {
+        let completed = await model.perform("Changing protection mode…") {
             let _: EmptyPayload = try await Backend.call(["mode"], input: ["value": value, "confirm": confirmation])
-            return value == "active" ? "Porządkowanie włączone. Trwałe usuwanie pozostaje wyłączone." : "Włączono nowy okres obserwacji."
+            return value == "active" ? "Cleanup enabled. Permanent deletion remains disabled." : "A new observation period started."
         }
         if completed { activeConfirmation = "" }
         return completed
@@ -388,7 +390,7 @@ struct SettingsView: View {
     private func setPurge(_ value: String, confirmation: String) async {
         let completed = await model.perform {
             let _: EmptyPayload = try await Backend.call(["purge"], input: ["value": value, "confirm": confirmation])
-            return "Zmieniono ustawienie trwałego usuwania."
+            return "Permanent-deletion setting changed."
         }
         if completed { purgeConfirmation = "" }
     }
@@ -397,29 +399,29 @@ struct SettingsView: View {
 struct HelpView: View {
     @ObservedObject var model: GuardianModel
     var body: some View {
-        GuardianPage(eyebrow: "Pomoc w codziennych sytuacjach", title: "Pomoc", subtitle: "Zacznij od sytuacji, którą chcesz rozwiązać.") {
+        GuardianPage(eyebrow: "Help with everyday situations", title: "Help", subtitle: "Start with the situation you want to resolve.") {
             GuardianCard {
-                Label("Ważny e-mail zniknął", systemImage: "envelope.badge").font(.headline)
-                Text("Sprawdź foldery SPAM, AI-Kwarantanna i AI-Do-sprawdzenia w poczcie o2. Ważną wiadomość przenieś do AI-Naucz-wazne. Jeśli jej nie ma, poszukaj lokalnej kopii.").foregroundStyle(.secondary)
-                Button("Przejdź do odzyskiwania", systemImage: "arrow.right") { model.section = .archive }
+                Label("An important email disappeared", systemImage: "envelope.badge").font(.headline)
+                Text("Check spam, \(model.snapshot.folders.quarantine) and \(model.snapshot.folders.review) in your email client. Move legitimate mail to \(model.snapshot.folders.trainHam). If missing, look for a local backup.").foregroundStyle(.secondary)
+                Button("Open recovery", systemImage: "arrow.right") { model.section = .archive }
             }
             GuardianCard {
-                Label("Spam nadal jest w Odebranych", systemImage: "hand.thumbsdown").font(.headline)
-                Text("W trybie obserwacji to zamierzone: Guardian nie przenosi automatycznie wiadomości z Odebranych. Możesz wskazać spam w folderze nauki.").foregroundStyle(.secondary)
-                Button("Pokaż instrukcję korekt", systemImage: "arrow.right") { model.section = .learning }
+                Label("Spam remains in Inbox", systemImage: "hand.thumbsdown").font(.headline)
+                Text("This is expected during observation: Guardian does not automatically move Inbox messages. Mark spam using the training folder.").foregroundStyle(.secondary)
+                Button("Show correction instructions", systemImage: "arrow.right") { model.section = .learning }
             }
             GuardianCard {
-                Label("Ochrona nie działa zgodnie z oczekiwaniami", systemImage: "wrench.and.screwdriver").font(.headline)
-                Text("Naprawa sprawdzi lokalny silnik i konfigurację. Pełna kontrola dodatkowo sprawdzi konto oraz foldery.").foregroundStyle(.secondary)
+                Label("Protection is not working as expected", systemImage: "wrench.and.screwdriver").font(.headline)
+                Text("Repair checks the local engine and configuration. A full check also inspects the account and folders.").foregroundStyle(.secondary)
                 HStack {
-                    Button("Sprawdź i napraw") { Task { await model.repair() } }.buttonStyle(.borderedProminent)
-                    Button("Pełna kontrola") { Task { await model.deepDoctor() } }
+                    Button("Check and repair") { Task { await model.repair() } }.buttonStyle(.borderedProminent)
+                    Button("Full check") { Task { await model.deepDoctor() } }
                 }.disabled(model.busy)
             }
             GuardianCard {
-                Label("Raport dla osoby pomagającej", systemImage: "doc.text").font(.headline)
-                Text("Bez wiadomości, adresów, tematów, załączników i haseł. Raport zostanie zapisany na Biurku; sam zdecydujesz, komu go przekażesz.").foregroundStyle(.secondary)
-                Button("Zapisz raport na Biurku") { Task { await model.exportDiagnostics() } }.disabled(model.busy)
+                Label("Support report", systemImage: "doc.text").font(.headline)
+                Text("Excludes messages, addresses, subjects, attachments and passwords. The report is saved to Desktop; you choose whom to share it with.").foregroundStyle(.secondary)
+                Button("Save report to Desktop") { Task { await model.exportDiagnostics() } }.disabled(model.busy)
             }
             PrivacyNote()
         }

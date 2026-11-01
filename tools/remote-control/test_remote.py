@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import unittest
 from unittest import mock
 
@@ -88,16 +89,32 @@ class RemoteProtocolTests(unittest.TestCase):
             os.close(read_fd)
             os.close(write_fd)
         read_fd, write_fd = os.pipe()
+        errors = []
+
+        def produce_oversize():
+            try:
+                # A macOS pipe may hold only 4096 bytes. Writing on the test
+                # thread before starting the reader can deadlock the fixture.
+                payload = b"x" * 4097
+                while payload:
+                    count = os.write(write_fd, payload)
+                    payload = payload[count:]
+            except OSError as error:
+                errors.append(error)
+            finally:
+                os.close(write_fd)
+
+        writer = threading.Thread(target=produce_oversize, daemon=True)
+        writer.start()
         try:
-            os.write(write_fd, b"x" * 4097)
-            os.close(write_fd)
-            write_fd = -1
-            with self.assertRaises(ValueError):
-                server.bounded_request(read_fd, timeout=1)
+            with self.assertRaisesRegex(ValueError, "request too large"):
+                server.bounded_request(read_fd, timeout=3)
         finally:
             os.close(read_fd)
-            if write_fd != -1:
-                os.close(write_fd)
+            writer.join(timeout=3)
+        self.assertFalse(writer.is_alive(), "fixture writer did not terminate")
+        self.assertEqual(errors, [])
+
 
 
 if __name__ == "__main__":

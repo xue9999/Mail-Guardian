@@ -29,14 +29,14 @@ func ReadHeartbeat(dataDir string) (Heartbeat, error) {
 		return Heartbeat{}, err
 	}
 	if len(body) > 32<<10 {
-		return Heartbeat{}, errors.New("plik heartbeat jest zbyt duży")
+		return Heartbeat{}, errors.New("heartbeat file too large")
 	}
 	var heartbeat Heartbeat
 	if err := json.Unmarshal(body, &heartbeat); err != nil {
 		return Heartbeat{}, err
 	}
 	if heartbeat.Protocol != 1 {
-		return Heartbeat{}, errors.New("nieobsługiwana wersja heartbeat")
+		return Heartbeat{}, errors.New("unsupported heartbeat version")
 	}
 	return heartbeat, nil
 }

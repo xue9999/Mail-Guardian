@@ -9,6 +9,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("guardian_backup", Path(__file__).with_name("backup.py"))
@@ -126,6 +127,7 @@ class BackupTests(unittest.TestCase):
 
         with patch.object(backup, "BASE", config), patch.object(backup, "BACKUPS", self.root / "backups"), \
                 patch.object(backup, "exclusive_locks", lock), \
+                patch.object(backup.os, "statvfs", return_value=SimpleNamespace(f_flag=0, f_bavail=100 << 30, f_frsize=1)), \
                 patch.object(backup, "capture", side_effect=backup.BackupError("fixture capture failed")):
             with self.assertRaises(backup.BackupError):
                 backup.backup("pilot", Maintenance())

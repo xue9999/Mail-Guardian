@@ -19,11 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/engine"
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/engine"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/keychain"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 	_ "modernc.org/sqlite"
 )
 
@@ -218,7 +218,7 @@ func findRemaining(ackTrash, resolveDestination bool) error {
 		return err
 	}
 	if resolveDestination && cfg.Safety.PurgeEnabled {
-		return fmt.Errorf("trwałe usuwanie jest włączone; uzgadnianie przerwane")
+		return fmt.Errorf("permanent deletion is enabled; reconciliation stopped")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -273,7 +273,7 @@ func findRemaining(ackTrash, resolveDestination bool) error {
 			uids, _, err := mail.SearchExactSize(box.Name, r.size)
 			if err != nil {
 				if resolveDestination {
-					return fmt.Errorf("niepełne sprawdzenie folderu %q: %w", box.Name, err)
+					return fmt.Errorf("incomplete scan of folder %q: %w", box.Name, err)
 				}
 				continue
 			}
@@ -329,7 +329,7 @@ func findRemaining(ackTrash, resolveDestination bool) error {
 			}
 			found := byID[r.id]
 			if len(found) != 1 || found[0].Folder != destination || destination == r.current || owners[fmt.Sprintf("%s:%d", found[0].Folder, found[0].UID)] != 1 {
-				return fmt.Errorf("ruch %d nie ma jednej dokładnej kopii w oczekiwanym folderze", r.id)
+				return fmt.Errorf("move %d has no single exact copy in the expected folder", r.id)
 			}
 			message, err := mail.Fetch(destination, found[0].UID, true)
 			if err != nil {
@@ -337,7 +337,7 @@ func findRemaining(ackTrash, resolveDestination bool) error {
 			}
 			sum := sha256.Sum256(message.Raw)
 			if hex.EncodeToString(sum[:]) != r.sha {
-				return fmt.Errorf("zawartość ruchu %d zmieniła się", r.id)
+				return fmt.Errorf("move %d content changed", r.id)
 			}
 			if err := writeDB.FinalizeMove(ctx, r.id, destination, message.UIDValidity, message.UID, status, time.Now().UTC(), cfg.Safety.QuarantineDays, cfg.Safety.ArchiveDays); err != nil {
 				return err
@@ -345,7 +345,7 @@ func findRemaining(ackTrash, resolveDestination bool) error {
 			if err := writeDB.DeleteReconcileProgress(ctx, r.id); err != nil {
 				return err
 			}
-			if err := writeDB.AddEvent(ctx, r.id, "move_reconciled", "potwierdzono jedną dokładną kopię po sprawdzeniu rozmiaru i SHA-256 we wszystkich folderach"); err != nil {
+			if err := writeDB.AddEvent(ctx, r.id, "move_reconciled", "one exact copy confirmed by size and SHA-256 across all folders"); err != nil {
 				return err
 			}
 		}
@@ -356,12 +356,12 @@ func findRemaining(ackTrash, resolveDestination bool) error {
 			byID[m.ID] = append(byID[m.ID], m)
 		}
 		if len(byID) != len(records) {
-			return fmt.Errorf("nie odnaleziono jednoznacznie wszystkich nierozstrzygniętych wiadomości")
+			return fmt.Errorf("not all unresolved messages were found unambiguously")
 		}
 		for _, r := range records {
 			found := byID[r.id]
 			if len(found) != 1 || !strings.EqualFold(found[0].Folder, "Trash") || strings.EqualFold(r.current, "Trash") {
-				return fmt.Errorf("ruch %d nie ma jednej potwierdzonej lokalizacji w Trash", r.id)
+				return fmt.Errorf("move %d has no single confirmed Trash location", r.id)
 			}
 		}
 		writeDB, err := store.Open(cfg.Runtime.Database)
@@ -377,12 +377,12 @@ func findRemaining(ackTrash, resolveDestination bool) error {
 			}
 			sum := sha256.Sum256(message.Raw)
 			if hex.EncodeToString(sum[:]) != r.sha {
-				return fmt.Errorf("zawartość ruchu %d zmieniła się", r.id)
+				return fmt.Errorf("move %d content changed", r.id)
 			}
 			if err := writeDB.UpdateLocation(ctx, r.id, m.Folder, message.UIDValidity, m.UID, "superseded"); err != nil {
 				return err
 			}
-			if err := writeDB.AddEvent(ctx, r.id, "external_move", "potwierdzono dokładną kopię w Trash bez zmiany wiadomości"); err != nil {
+			if err := writeDB.AddEvent(ctx, r.id, "external_move", "exact Trash copy confirmed without modifying message"); err != nil {
 				return err
 			}
 		}
@@ -399,7 +399,7 @@ func inspect(deep, apply bool) error {
 	defer cancel()
 	password, err := keychain.New().Get(cfg.Account.PasswordKeychainService, cfg.Account.Email)
 	if err != nil {
-		return fmt.Errorf("pęk kluczy: %w", err)
+		return fmt.Errorf("Keychain: %w", err)
 	}
 	mail, err := imapmail.Dial(ctx, cfg.Account.Host, cfg.Account.Port, cfg.Account.Email, password)
 	password = ""
@@ -481,7 +481,7 @@ func inspect(deep, apply bool) error {
 		return json.NewEncoder(os.Stdout).Encode(out)
 	}
 	if cfg.Safety.PurgeEnabled {
-		return fmt.Errorf("trwałe usuwanie jest włączone; uzgadnianie przerwane")
+		return fmt.Errorf("permanent deletion is enabled; reconciliation stopped")
 	}
 	owned := map[string]int{}
 	for _, found := range locations {

@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 source "${SCRIPT_DIR}/_infra-common.sh"
 source "${SCRIPT_DIR}/storage-health.sh"
 
-trap 'fail "uruchamianie silnika zostało przerwane (wiersz ${LINENO})."' ERR
+trap 'fail "engine startup interrupted (line ${LINENO})."' ERR
 
 KEYCHAIN_SERVICE="pl.o2.mail-guardian.rspamd"
 KEYCHAIN_ACCOUNT="controller"
@@ -15,7 +15,7 @@ RSPAMD_IMAGE="rspamd/rspamd:4.1.2@sha256:15dfe447f8913516c4ff24933a0727aff53d88b
 CONTROLLER_CONFIG="${RUNTIME_DIR}/rspamd/worker-controller.inc"
 CONTROLLER_TEMPLATE="${COMPOSE_CONFIG_DIR}/rspamd/worker-controller.inc.example"
 
-header "uruchamianie lokalnego silnika antyspamowego"
+header "starting the local spam engine"
 require_macos
 setup_homebrew_path
 require_command colima
@@ -28,25 +28,25 @@ if ! colima status >/dev/null 2>&1; then
 fi
 
 wait_for_docker
-guardian_check_guest_storage || fail "kontrola dysku Colimy zablokowała restart; model i pliki silnika nie zostały zmienione."
+guardian_check_guest_storage || fail "Colima disk check blocked restart; model and engine files unchanged."
 choose_compose
 
 mkdir -p "${RUNTIME_DIR}/rspamd"
 chmod 700 "${RUNTIME_DIR}" "${RUNTIME_DIR}/rspamd"
 
 if controller_password="$(security find-generic-password -a "${KEYCHAIN_ACCOUNT}" -s "${KEYCHAIN_SERVICE}" -w 2>/dev/null)"; then
-  green "Znaleziono istniejące hasło kontrolera w pęku kluczy."
+  green "Existing controller password found in Keychain."
 else
-  blue "Tworzę losowe hasło kontrolera i zapisuję je w pęku kluczy macOS…"
+  blue "Creating a random controller password and saving it in macOS Keychain…"
   controller_password="$(/usr/bin/openssl rand -hex 32)"
-  # security(1) prosi dwukrotnie, gdy -w jest ostatnią opcją. Wartość płynie
-  # przez stdin i nie pojawia się w argumentach procesu widocznych przez ps.
+  # security(1) prompts twice when -w is last. Send the value through stdin
+  # so it never appears in process arguments visible to ps.
   printf '%s\n%s\n' "${controller_password}" "${controller_password}" |
     security add-generic-password \
       -a "${KEYCHAIN_ACCOUNT}" \
       -s "${KEYCHAIN_SERVICE}" \
-      -l "O2 Mail Guardian — Rspamd" \
-      -j "Lokalny kontroler Rspamd; to nie jest hasło do poczty o2." \
+      -l "Mail Guardian — Rspamd" \
+      -j "Local Rspamd controller; this is not an email password." \
       -U \
       -w >/dev/null
 fi
@@ -55,15 +55,15 @@ blue "Pobieram zweryfikowany obraz Rspamd 4.1.2…"
 docker --context colima pull "${RSPAMD_IMAGE}" >/dev/null
 
 controller_hash="$(
-  # Rspamd 4.1.2 nie czyta hasła dla `pw` ze stdin. Przekaż je przez stdin do
-  # izolowanego kontenera, aby nie trafiło do argumentów procesu na Macu.
+  # Rspamd 4.1.2 pw does not read stdin. Pass the secret through stdin to an
+  # isolated container so it stays out of Mac process arguments.
   # Kontener nie ma sieci i znika po wygenerowaniu hasha.
   printf '%s\n' "${controller_password}" |
     docker --context colima run --rm --interactive --network none --read-only --cap-drop ALL \
       --entrypoint /bin/sh "${RSPAMD_IMAGE}" \
       -c 'IFS= read -r password; exec rspamadm pw --quiet --password "$password"'
 )"
-[[ "${controller_hash}" == \$* ]] || fail "Rspamd nie wygenerował poprawnego hasha kontrolera."
+[[ "${controller_hash}" == \$* ]] || fail "Rspamd did not generate a valid controller hash."
 
 runtime_tmp="${CONTROLLER_CONFIG}.tmp.$$"
 sed "s|__RSPAMD_PASSWORD_HASH__|${controller_hash}|g" \
@@ -72,7 +72,7 @@ chmod 600 "${runtime_tmp}"
 mv -f "${runtime_tmp}" "${CONTROLLER_CONFIG}"
 unset controller_password controller_hash
 
-blue "Sprawdzam konfigurację i pobieram pozostałe obrazy…"
+blue "Checking configuration and pulling remaining images…"
 compose config --quiet
 compose pull
 
@@ -81,13 +81,13 @@ compose up --detach --wait --force-recreate --remove-orphans
 
 wait_for_rspamd
 
-blue "Potwierdzam konfigurację uruchomionego Rspamd…"
+blue "Verifying running Rspamd configuration…"
 compose exec -T rspamd rspamadm configtest >/dev/null \
-  || fail "Rspamd uruchomił się, ale jego konfiguracja nie przeszła końcowej kontroli."
+  || fail "Rspamd started, but its configuration failed final checks."
 
-green "Silnik antyspamowy działa poprawnie."
+green "Spam protection engine works correctly."
 printf '%s\n' \
   "Panel diagnostyczny: http://127.0.0.1:11334" \
-  "Dane Bayesa są zachowywane po ponownym uruchomieniu."
-notify_user "Lokalny silnik antyspamowy działa."
+  "Trained Bayes data is retained across restarts."
+notify_user "Local spam protection engine works."
 pause_at_end

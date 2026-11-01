@@ -3,7 +3,7 @@ package apperror
 import (
 	"errors"
 
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
 )
 
 type Code string
@@ -57,17 +57,17 @@ func From(err error) *Error {
 		return typed
 	}
 	if errors.Is(err, imapmail.ErrAuthentication) {
-		return &Error{Code: IMAPAuth, Severity: "attention", Message: "o2 odrzuciło logowanie.", Recovery: "Sprawdź 2FA i wygeneruj nowe hasło aplikacyjne.", Cause: err}
+		return &Error{Code: IMAPAuth, Severity: "attention", Message: "The mail server rejected authentication.", Recovery: "Check your provider's account security and create a new app password where supported.", Cause: err}
 	}
 	if errors.Is(err, imapmail.ErrUIDValidityChanged) {
-		return &Error{Code: IMAPUIDValidity, Severity: "attention", Message: "Serwer zmienił identyfikację folderu; operacja została bezpiecznie zatrzymana.", Recovery: "Uruchom ponownie Sprawdź teraz albo Napraw.", Cause: err}
+		return &Error{Code: IMAPUIDValidity, Severity: "attention", Message: "The server changed the folder identity; the operation was stopped safely.", Recovery: "Run Check now or Repair again.", Cause: err}
 	}
 	if errors.Is(err, ErrCancelled) {
-		return &Error{Code: Cancelled, Severity: "info", Message: "Operacja została anulowana.", Recovery: "Nic nie zostało zmienione.", Cause: err}
+		return &Error{Code: Cancelled, Severity: "info", Message: "Operation cancelled.", Recovery: "Nothing was changed.", Cause: err}
 	}
 	return &Error{
 		Code: Unknown, Severity: "error", Message: err.Error(),
-		Recovery: "Wybierz „Sprawdź i napraw program”. Guardian pozostawił pocztę bezpiecznie na serwerze.",
+		Recovery: "Choose Check and repair. Guardian left mail safely on the server.",
 		Cause:    err,
 	}
 }

@@ -17,7 +17,9 @@ plans are labeled and do not supersede the current runbooks.
   exact checksum fixture; do not blanket-ignore test files.
 - Run the change-appropriate checks in CONTRIBUTING. Mail/state changes need
   meaningful regression coverage; Linux-only behavior needs native Linux checks.
-- Keep user documentation Polish and maintainer documentation English. Update
+- Keep user and maintainer documentation in English. Preserve legacy paths,
+  identifiers and command aliases for compatibility. Localized fixtures may
+  retain non-English text to test encoding and legacy behavior. Update
   the owning runbook/changelog when commands, state contracts or recovery change.
 - The current Docker coordinator imports libraries from `auto-updates/docker`.
   Consult `ops/vps-maintenance/README.md` before removing “legacy” files.

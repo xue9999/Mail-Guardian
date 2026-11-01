@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"filippo.io/age"
-	"github.com/o2-mail-guardian/guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/config"
 )
 
 func commandPrivateRoot(t *testing.T) string {

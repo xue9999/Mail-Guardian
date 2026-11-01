@@ -2,7 +2,7 @@
 """Create the separate VPS IMAP credential using hidden local input and pinned SSH.
 
 Preview is the default. Run --provision yourself in a real Terminal after
-creating an o2 application password for Guardian VPS-1. No service is started.
+creating a separate IMAP account/app password for Guardian VPS-1. No service is started.
 """
 
 import argparse
@@ -79,7 +79,7 @@ def prompt_password():
             os.close(tty)
         with warnings.catch_warnings():
             warnings.simplefilter("error", getpass.GetPassWarning)
-            first = validate_password(getpass.getpass("New Guardian VPS-1 o2 app password (hidden): "))
+            first = validate_password(getpass.getpass("New Guardian VPS-1 IMAP password (hidden): "))
             second = validate_password(getpass.getpass("Repeat the VPS app password (hidden): "))
         if first != second:
             raise ProvisionError("The two passwords differ; nothing was provisioned.")

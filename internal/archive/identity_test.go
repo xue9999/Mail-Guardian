@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"filippo.io/age"
-	"github.com/o2-mail-guardian/guardian/internal/secrets"
+	"github.com/xue9999/Mail-Guardian/internal/secrets"
 )
 
 type identityStore struct {

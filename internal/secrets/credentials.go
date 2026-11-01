@@ -42,7 +42,7 @@ func systemdCredentialDirectory(directory, goos, environment string) bool {
 func credentialDirectoryAccess(info os.FileInfo, access credentialAccess) (bool, error) {
 	metadata, ok := info.Sys().(*syscall.Stat_t)
 	if !ok || !info.IsDir() || info.Mode()&(os.ModeSymlink|os.ModeSetuid|os.ModeSetgid|os.ModeSticky) != 0 {
-		return false, errors.New("katalog poświadczeń musi być prywatnym katalogiem bez dowiązania")
+		return false, errors.New("credentials directory must be private and not a symlink")
 	}
 	if info.Mode().Perm()&0o077 == 0 && (metadata.Uid == 0 || metadata.Uid == access.uid) {
 		return false, nil
@@ -50,13 +50,13 @@ func credentialDirectoryAccess(info os.FileInfo, access credentialAccess) (bool,
 	if access.systemdView && metadata.Uid == 0 && (metadata.Gid == access.gid || metadata.Gid == 0) && info.Mode().Perm() == 0o550 {
 		return true, nil
 	}
-	return false, errors.New("katalog poświadczeń ma niebezpiecznego właściciela, grupę lub uprawnienia")
+	return false, errors.New("credentials directory has unsafe ownership, group or permissions")
 }
 
 func validateCredentialFile(info os.FileInfo, access credentialAccess, groupView bool) error {
 	metadata, ok := info.Sys().(*syscall.Stat_t)
 	if !ok || !info.Mode().IsRegular() || info.Mode()&(os.ModeSetuid|os.ModeSetgid|os.ModeSticky) != 0 || metadata.Nlink != 1 {
-		return errors.New("poświadczenie musi być zwykłym plikiem bez dowiązań")
+		return errors.New("credential must be a regular file without links")
 	}
 	if groupView {
 		if access.systemdView && metadata.Uid == 0 && (metadata.Gid == access.gid || metadata.Gid == 0) && info.Mode().Perm() == 0o440 {
@@ -65,7 +65,7 @@ func validateCredentialFile(info os.FileInfo, access credentialAccess, groupView
 	} else if info.Mode().Perm()&0o077 == 0 && (metadata.Uid == 0 || metadata.Uid == access.uid) {
 		return nil
 	}
-	return errors.New("poświadczenie ma niebezpiecznego właściciela, grupę lub uprawnienia")
+	return errors.New("credential has unsafe ownership, group or permissions")
 }
 
 // Linux systemd may expose root:root files with a POSIX ACL granting the
@@ -104,7 +104,7 @@ func validSystemdCredentialACL(raw []byte, uid uint32, directory bool) bool {
 func validateSystemdCredentialACL(raw []byte, info os.FileInfo, access credentialAccess, directory bool) error {
 	metadata, ok := info.Sys().(*syscall.Stat_t)
 	if !ok || !access.systemdView || metadata.Uid != 0 {
-		return errors.New("nie można potwierdzić dostępu systemd do poświadczenia")
+		return errors.New("cannot confirm systemd access to credential")
 	}
 	if len(raw) == 0 {
 		// Conventional root:service-group delivery has no extended ACL.
@@ -114,7 +114,7 @@ func validateSystemdCredentialACL(raw []byte, info os.FileInfo, access credentia
 	} else if metadata.Gid == 0 && validSystemdCredentialACL(raw, access.uid, directory) {
 		return nil
 	}
-	return errors.New("lista dostępu poświadczenia systemd ma niebezpieczne uprawnienia")
+	return errors.New("systemd credential access list has unsafe permissions")
 }
 
 func systemdCredentialACLSnapshot(fd int, info os.FileInfo, access credentialAccess, groupView, directory bool) ([]byte, error) {
@@ -129,7 +129,7 @@ func systemdCredentialACLSnapshot(fd int, info os.FileInfo, access credentialAcc
 	if errors.Is(err, unix.ENODATA) {
 		raw = nil
 	} else if err != nil || size <= 0 || size > len(buffer) {
-		return nil, errors.New("nie można sprawdzić listy dostępu poświadczenia systemd")
+		return nil, errors.New("cannot inspect systemd credential access list")
 	} else {
 		raw = buffer[:size]
 	}
@@ -153,11 +153,11 @@ func (s Credentials) Get(service, account string) (string, error) {
 		return "", ErrNotFound
 	}
 	if !filepath.IsAbs(s.Directory) || filepath.Clean(s.Directory) != s.Directory || name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\\\x00") {
-		return "", errors.New("nieprawidłowa lokalizacja poświadczeń")
+		return "", errors.New("invalid credentials location")
 	}
 	info, err := os.Lstat(s.Directory)
 	if err != nil {
-		return "", fmt.Errorf("katalog poświadczeń jest niedostępny: %w", err)
+		return "", fmt.Errorf("credentials directory unavailable: %w", err)
 	}
 	access := credentialAccess{uid: uint32(os.Geteuid()), gid: uint32(os.Getegid()),
 		systemdView: systemdCredentialDirectory(s.Directory, runtime.GOOS, os.Getenv("CREDENTIALS_DIRECTORY"))}
@@ -168,13 +168,13 @@ func (s Credentials) Get(service, account string) (string, error) {
 	directoryInfo := info
 	directoryFD, err := unix.Open(s.Directory, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
 	if err != nil {
-		return "", fmt.Errorf("otwarcie katalogu poświadczeń: %w", err)
+		return "", fmt.Errorf("opening credentials directory: %w", err)
 	}
 	directory := os.NewFile(uintptr(directoryFD), s.Directory)
 	defer directory.Close()
 	openedDirectory, err := directory.Stat()
 	if err != nil || !sameCredentialMetadata(directoryInfo, openedDirectory, false) {
-		return "", errors.New("katalog poświadczeń zmienił się podczas otwierania")
+		return "", errors.New("credentials directory changed while opening")
 	}
 	if _, err := credentialDirectoryAccess(openedDirectory, access); err != nil {
 		return "", err
@@ -189,14 +189,14 @@ func (s Credentials) Get(service, account string) (string, error) {
 		return "", ErrNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("odczyt poświadczenia: %w", err)
+		return "", fmt.Errorf("reading credential: %w", err)
 	}
 	if err := validateCredentialFile(info, access, groupView); err != nil {
 		return "", err
 	}
 	fd, err := unix.Openat(directoryFD, name, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_CLOEXEC|unix.O_NONBLOCK, 0)
 	if err != nil {
-		return "", fmt.Errorf("otwarcie poświadczenia: %w", err)
+		return "", fmt.Errorf("opening credential: %w", err)
 	}
 	f := os.NewFile(uintptr(fd), path)
 	defer f.Close()
@@ -205,7 +205,7 @@ func (s Credentials) Get(service, account string) (string, error) {
 		return "", err
 	}
 	if !sameCredentialMetadata(info, opened, true) {
-		return "", errors.New("plik poświadczenia zmienił się podczas odczytu")
+		return "", errors.New("credential file changed while reading")
 	}
 	if err := validateCredentialFile(opened, access, groupView); err != nil {
 		return "", err
@@ -216,10 +216,10 @@ func (s Credentials) Get(service, account string) (string, error) {
 	}
 	raw, err := io.ReadAll(io.LimitReader(f, 16<<10+1))
 	if err != nil {
-		return "", fmt.Errorf("odczyt poświadczenia: %w", err)
+		return "", fmt.Errorf("reading credential: %w", err)
 	}
 	if len(raw) > 16<<10 {
-		return "", errors.New("poświadczenie przekracza limit rozmiaru")
+		return "", errors.New("credential exceeds size limit")
 	}
 	finalFile, fileErr := f.Stat()
 	finalDirectory, directoryErr := directory.Stat()
@@ -230,7 +230,7 @@ func (s Credentials) Get(service, account string) (string, error) {
 		!sameCredentialMetadata(opened, namedFile, true) ||
 		!sameCredentialMetadata(openedDirectory, finalDirectory, false) ||
 		!sameCredentialMetadata(openedDirectory, namedDirectory, false) {
-		return "", errors.New("lokalizacja lub uprawnienia poświadczenia zmieniły się podczas odczytu")
+		return "", errors.New("credential location or permissions changed while reading")
 	}
 	finalDirectoryACL, err := systemdCredentialACLSnapshot(directoryFD, finalDirectory, access, groupView, true)
 	if err != nil {
@@ -241,13 +241,13 @@ func (s Credentials) Get(service, account string) (string, error) {
 		return "", err
 	}
 	if !bytes.Equal(directoryACL, finalDirectoryACL) || !bytes.Equal(fileACL, finalFileACL) {
-		return "", errors.New("lista dostępu poświadczenia systemd zmieniła się podczas odczytu")
+		return "", errors.New("systemd credential access list changed while reading")
 	}
 	// Credential files may have a single terminal newline. Preserve spaces in
 	// passwords; do not silently change them with TrimSpace.
 	value := strings.TrimSuffix(strings.TrimSuffix(string(raw), "\n"), "\r")
 	if value == "" || strings.ContainsAny(value, "\r\n\x00") {
-		return "", errors.New("nieprawidłowy format poświadczenia")
+		return "", errors.New("invalid credential format")
 	}
 	return value, nil
 }

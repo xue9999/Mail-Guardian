@@ -24,7 +24,7 @@ type QualificationSandbox struct {
 // to the production Redis volume, credentials or plaintext message files.
 func (m Manager) NewQualificationSandbox(ctx context.Context, dataDir string) (s *QualificationSandbox, retErr error) {
 	if runtime.GOOS == "linux" {
-		return nil, errors.New("kwalifikacja na Linux wymaga odrębnego środowiska administratora; worker nie ma dostępu do Dockera")
+		return nil, errors.New("Linux qualification requires a separate administrator environment; the worker has no Docker access")
 	}
 	if err := m.CheckStorage(); err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (m Manager) NewQualificationSandbox(ctx context.Context, dataDir string) (s
 	run := func(args ...string) error {
 		out, err := stackCommand(ctx, commandPath("docker"), append([]string{"--context", "colima"}, args...)...).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("nie udało się uruchomić odrębnego modelu: %w (%s)", err, safeOutput(out))
+			return fmt.Errorf("could not start separate model: %w (%s)", err, safeOutput(out))
 		}
 		return nil
 	}
@@ -106,7 +106,7 @@ func (m Manager) NewQualificationSandbox(ctx context.Context, dataDir string) (s
 		address := strings.TrimSpace(string(out))
 		host, _, err := net.SplitHostPort(address)
 		if err != nil || host != "127.0.0.1" {
-			return "", errors.New("silnik testowy nie jest ograniczony do localhost")
+			return "", errors.New("test engine is not restricted to localhost")
 		}
 		return "http://" + address, nil
 	}

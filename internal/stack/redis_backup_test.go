@@ -140,7 +140,7 @@ func TestRedisBackupPreservesLastGoodModelOnRollback(t *testing.T) {
 		t.Fatalf("fresh verified snapshot unexpectedly needs Docker: %v", err)
 	}
 	for _, revisions := range [][2]uint64{{0, 0}, {153, 137}, {154, 136}} {
-		if err := m.backupRedis(dir, revisions[0], revisions[1]); err == nil || !strings.Contains(err.Error(), "cofnął") {
+		if err := m.backupRedis(dir, revisions[0], revisions[1]); err == nil || !strings.Contains(err.Error(), "rolled back") {
 			t.Fatalf("rollback accepted: %v", err)
 		}
 	}

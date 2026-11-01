@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/config"
 )
 
 // BindDeployment revokes operational permission on the first server use or a

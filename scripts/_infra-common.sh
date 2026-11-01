@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Wspólne funkcje dla dwuklikalnych skryptów macOS.
+# Shared functions for macOS command scripts.
 # shellcheck disable=SC1111
 
 set -Eeuo pipefail
@@ -36,7 +36,7 @@ red() {
 
 header() {
   printf '\n'
-  blue "O2 Mail Guardian — $*"
+  blue "Mail Guardian — $*"
   printf '%s\n\n' "────────────────────────────────────────────"
 }
 
@@ -46,19 +46,19 @@ pause_at_end() {
   fi
   if [[ -t 0 ]]; then
     printf '\n'
-    read -r -p "Naciśnij Enter, aby zamknąć to okno…" _
+    read -r -p "Press Enter to close this window…" _
   fi
 }
 
 fail() {
-  red "Nie udało się: $*"
-  red "Nic nie zostało usunięte ze skrzynki ani z danych silnika."
+  red "Failed: $*"
+  red "No mailbox messages or engine data were deleted."
   pause_at_end
   exit 1
 }
 
 require_macos() {
-  [[ "$(uname -s)" == "Darwin" ]] || fail "ten instalator jest przeznaczony dla macOS."
+  [[ "$(uname -s)" == "Darwin" ]] || fail "this installer requires macOS."
 }
 
 setup_homebrew_path() {
@@ -71,7 +71,7 @@ setup_homebrew_path() {
 }
 
 require_command() {
-  command -v "$1" >/dev/null 2>&1 || fail "brakuje programu „$1”. Najpierw uruchom 01-zainstaluj-wymagania.command."
+  command -v "$1" >/dev/null 2>&1 || fail "missing $1. Run 01-zainstaluj-wymagania.command first."
 }
 
 choose_compose() {
@@ -80,21 +80,21 @@ choose_compose() {
   elif command -v docker-compose >/dev/null 2>&1; then
     COMPOSE=(docker-compose)
   else
-    fail "nie znaleziono Docker Compose. Uruchom ponownie instalator wymagań."
+    fail "Docker Compose not found. Run prerequisite installation again."
   fi
 }
 
 wait_for_docker() {
   local attempt
   for attempt in {1..60}; do
-    # Jawny kontekst nie zmienia globalnego ustawienia Dockera użytkownika.
+    # An explicit context preserves the user-wide Docker setting.
     if docker --context colima info >/dev/null 2>&1; then
       return 0
     fi
     : "${attempt}"
     sleep 2
   done
-  fail "silnik Docker nie uruchomił się w ciągu dwóch minut."
+  fail "Docker engine did not start within two minutes."
 }
 
 compose() {
@@ -118,10 +118,10 @@ wait_for_rspamd() {
     : "${attempt}"
     sleep 1
   done
-  fail "Rspamd nie odpowiedział na lokalnych portach 11333 i 11334 w ciągu minuty."
+  fail "Rspamd did not respond on local ports 11333 and 11334 within one minute."
 }
 
 notify_user() {
   local message="$1"
-  /usr/bin/osascript -e "display notification \"${message//\"/\\\"}\" with title \"O2 Mail Guardian\"" >/dev/null 2>&1 || true
+  /usr/bin/osascript -e "display notification \"${message//\"/\\\"}\" with title \"Mail Guardian\"" >/dev/null 2>&1 || true
 }

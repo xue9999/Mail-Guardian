@@ -12,11 +12,11 @@ import (
 
 	"filippo.io/age"
 
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func TestPendingMoveCrashBeforeMoveRetriesAndRefreshesRetention(t *testing.T) {
@@ -607,7 +607,7 @@ func TestRestoreBlocksWhenMultipleDestinationCopiesMatch(t *testing.T) {
 	mail.add(e.Config.Folders.Review, message)
 
 	err = e.Restore(context.Background(), id)
-	if err == nil || !strings.Contains(err.Error(), "wiele zgodnych kopii") {
+	if err == nil || !strings.Contains(err.Error(), "multiple matching copies") {
 		t.Fatalf("ambiguous restore was not blocked: %v", err)
 	}
 	if mail.appendCalls != 0 || mail.count(e.Config.Folders.Review) != 2 {
@@ -782,7 +782,7 @@ func TestActiveRunRequiresProtectionQualityGate(t *testing.T) {
 	}
 
 	_, err := e.Run(context.Background(), RunOptions{})
-	if err == nil || !strings.Contains(err.Error(), "kryteriów jakości") {
+	if err == nil || !strings.Contains(err.Error(), "quality criteria") {
 		t.Fatalf("active run was not blocked by quality gate: %v", err)
 	}
 	if mail.count("INBOX") != 1 || mail.count(e.Config.Folders.Quarantine) != 0 {
@@ -798,7 +798,7 @@ func TestPurgeQualityGatesAreEnforcedInsideEngine(t *testing.T) {
 		e.Config.Safety.MinLearnSpam = 0
 		e.Config.Safety.MinLearnHam = 0
 		_, err := e.Purge(context.Background(), false)
-		if err == nil || !strings.Contains(err.Error(), "30 pełnych dni") {
+		if err == nil || !strings.Contains(err.Error(), "30 full days") {
 			t.Fatalf("missing active-duration gate: %v", err)
 		}
 	})
@@ -811,7 +811,7 @@ func TestPurgeQualityGatesAreEnforcedInsideEngine(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, err := e.Purge(context.Background(), false)
-		if err == nil || !strings.Contains(err.Error(), "za mało unikalnych") {
+		if err == nil || !strings.Contains(err.Error(), "insufficient unique") {
 			t.Fatalf("missing training-count gate: %v", err)
 		}
 	})

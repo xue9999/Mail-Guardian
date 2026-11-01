@@ -10,8 +10,8 @@ install_lock_acquire() {
   umask 077
   mkdir -p "$(dirname "$INSTALL_LOCK_DIR")" || return 1
   if ! mkdir "$INSTALL_LOCK_DIR" 2>/dev/null; then
-    printf 'Inna instalacja trwa lub pozostawiła blokadę: %s\n' "$INSTALL_LOCK_DIR" >&2
-    printf 'Poczekaj na zamknięcie instalatora. Po awarii sprawdź w Monitorze aktywności, czy instalator i jego procesy zakończyły pracę; dopiero wtedy usuń katalog install.lock i spróbuj ponownie.\n' >&2
+    printf 'Another installation is running or left a lock: %s\n' "$INSTALL_LOCK_DIR" >&2
+    printf 'Wait for the installer to close. After a crash, verify in Activity Monitor that the installer and its children have exited before removing install.lock and retrying.\n' >&2
     return 1
   fi
   printf '%s\n' "$$" > "$INSTALL_LOCK_DIR/owner" || return 1

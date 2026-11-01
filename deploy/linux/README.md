@@ -345,7 +345,7 @@ The installer verifies the included SHA-256 manifest, target OS, systemd,
 Compose and sudo configuration. Generate a new configuration with:
 
 ```sh
-sudo ./guardian server init-config --instance pilot --email owner@example.invalid \
+sudo ./guardian server init-config --provider custom --host imap.example.invalid --instance pilot --email owner@example.invalid \
   --server-spam Spam --output /root/pilot-config.toml
 sudo ./install.sh --instance pilot --config /root/pilot-config.toml --check
 sudo ./install.sh --instance pilot --config /root/pilot-config.toml

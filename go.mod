@@ -1,4 +1,4 @@
-module github.com/o2-mail-guardian/guardian
+module github.com/xue9999/Mail-Guardian
 
 go 1.26.0
 

@@ -55,7 +55,7 @@ type BayesStats struct {
 
 // HTTP 204 is Rspamd's explicit refusal under its learning conditions. It
 // confirms neither a Bayes update nor an already learned message.
-var ErrLearningSkipped = errors.New("Rspamd pominął uczenie zgodnie z warunkami klasyfikatora")
+var ErrLearningSkipped = errors.New("Rspamd skipped learning under classifier conditions")
 
 func New(scanURL, learnURL, password string, timeout time.Duration) *Client {
 	if timeout <= 0 {
@@ -94,15 +94,15 @@ func (c *Client) Ping(ctx context.Context) error {
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return fmt.Errorf("Rspamd nie odpowiada: %w", err)
+		return fmt.Errorf("Rspamd not responding: %w", err)
 	}
 	defer resp.Body.Close()
 	body, err := readLimited(resp.Body, 1024)
 	if err != nil {
-		return fmt.Errorf("odczyt odpowiedzi Rspamd /ping: %w", err)
+		return fmt.Errorf("reading Rspamd /ping response: %w", err)
 	}
 	if resp.StatusCode/100 != 2 || !strings.Contains(strings.ToLower(string(body)), "pong") {
-		return fmt.Errorf("Rspamd zwrócił %s", resp.Status)
+		return fmt.Errorf("Rspamd returned %s", resp.Status)
 	}
 	return nil
 }
@@ -128,7 +128,7 @@ func (c *Client) Scan(ctx context.Context, raw []byte, recipient string) (Result
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return Result{}, fmt.Errorf("skanowanie Rspamd: %w", err)
+		return Result{}, fmt.Errorf("Rspamd scan: %w", err)
 	}
 	defer resp.Body.Close()
 	body, err := readLimited(resp.Body, 2<<20)
@@ -136,11 +136,11 @@ func (c *Client) Scan(ctx context.Context, raw []byte, recipient string) (Result
 		return Result{}, err
 	}
 	if resp.StatusCode/100 != 2 {
-		return Result{}, fmt.Errorf("Rspamd /checkv2 zwrócił %s", resp.Status)
+		return Result{}, fmt.Errorf("Rspamd /checkv2 returned %s", resp.Status)
 	}
 	var result Result
 	if err := json.Unmarshal(body, &result); err != nil {
-		return Result{}, fmt.Errorf("nieprawidłowa odpowiedź Rspamd: %w", err)
+		return Result{}, fmt.Errorf("invalid Rspamd response: %w", err)
 	}
 	return result, nil
 }
@@ -271,7 +271,7 @@ func (c *Client) Learn(ctx context.Context, raw []byte, spam bool) error {
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return fmt.Errorf("uczenie Rspamd: %w", err)
+		return fmt.Errorf("Rspamd learning: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNoContent {
@@ -282,7 +282,7 @@ func (c *Client) Learn(ctx context.Context, raw []byte, spam bool) error {
 		return err
 	}
 	if len(bytes.TrimSpace(body)) == 0 {
-		return errors.New("Rspamd nie zwrócił potwierdzenia uczenia")
+		return errors.New("Rspamd returned no learning acknowledgement")
 	}
 	var status struct {
 		Success bool   `json:"success"`
@@ -290,9 +290,9 @@ func (c *Client) Learn(ctx context.Context, raw []byte, spam bool) error {
 	}
 	if err := json.Unmarshal(body, &status); err != nil {
 		if resp.StatusCode/100 != 2 {
-			return fmt.Errorf("Rspamd %s zwrócił %s", endpoint, resp.Status)
+			return fmt.Errorf("Rspamd %s returned %s", endpoint, resp.Status)
 		}
-		return fmt.Errorf("nieprawidłowa odpowiedź Rspamd podczas uczenia: %w", err)
+		return fmt.Errorf("invalid Rspamd learning response: %w", err)
 	}
 	class := "ham"
 	if spam {
@@ -306,13 +306,13 @@ func (c *Client) Learn(ctx context.Context, raw []byte, spam bool) error {
 		return nil
 	}
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("Rspamd %s zwrócił %s", endpoint, resp.Status)
+		return fmt.Errorf("Rspamd %s returned %s", endpoint, resp.Status)
 	}
 	if status.Error != "" {
-		return errors.New("Rspamd odrzucił próbę uczenia")
+		return errors.New("Rspamd rejected learning")
 	}
 	if !status.Success {
-		return errors.New("Rspamd nie potwierdził uczenia")
+		return errors.New("Rspamd did not confirm learning")
 	}
 	return nil
 }
@@ -327,7 +327,7 @@ func (c *Client) Stats(ctx context.Context) (BayesStats, error) {
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return BayesStats{}, fmt.Errorf("statystyki Rspamd: %w", err)
+		return BayesStats{}, fmt.Errorf("Rspamd statistics: %w", err)
 	}
 	defer resp.Body.Close()
 	body, err := readLimited(resp.Body, 2<<20)
@@ -335,7 +335,7 @@ func (c *Client) Stats(ctx context.Context) (BayesStats, error) {
 		return BayesStats{}, err
 	}
 	if resp.StatusCode/100 != 2 {
-		return BayesStats{}, fmt.Errorf("Rspamd /stat zwrócił %s", resp.Status)
+		return BayesStats{}, fmt.Errorf("Rspamd /stat returned %s", resp.Status)
 	}
 	var payload struct {
 		Statfiles []struct {
@@ -344,7 +344,7 @@ func (c *Client) Stats(ctx context.Context) (BayesStats, error) {
 		} `json:"statfiles"`
 	}
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return BayesStats{}, fmt.Errorf("nieprawidłowe statystyki Rspamd: %w", err)
+		return BayesStats{}, fmt.Errorf("invalid Rspamd statistics: %w", err)
 	}
 	var stats BayesStats
 	var spamSeen, hamSeen bool
@@ -357,7 +357,7 @@ func (c *Client) Stats(ctx context.Context) (BayesStats, error) {
 		}
 	}
 	if !spamSeen || !hamSeen {
-		return BayesStats{}, errors.New("Rspamd /stat nie zawiera obu statystyk BAYES_SPAM i BAYES_HAM")
+		return BayesStats{}, errors.New("Rspamd /stat is missing BAYES_SPAM or BAYES_HAM statistics")
 	}
 	return stats, nil
 }
@@ -375,7 +375,7 @@ func readLimited(reader io.Reader, limit int64) ([]byte, error) {
 		return nil, err
 	}
 	if int64(len(body)) > limit {
-		return nil, fmt.Errorf("odpowiedź przekracza limit %d bajtów", limit)
+		return nil, fmt.Errorf("response exceeds %d bytes", limit)
 	}
 	return body, nil
 }

@@ -23,14 +23,14 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/engine"
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
-	"github.com/o2-mail-guardian/guardian/internal/qualification"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/stack"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/engine"
+	"github.com/xue9999/Mail-Guardian/internal/keychain"
+	"github.com/xue9999/Mail-Guardian/internal/qualification"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/stack"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 	_ "modernc.org/sqlite"
 )
 
@@ -49,7 +49,7 @@ func (a *application) qualifyCommand(args []string) error {
 		return err
 	}
 	if fs.NArg() != 0 {
-		return errors.New("użyj guardian qualify [--import raport.json]")
+		return errors.New("use guardian qualify [--import report.json]")
 	}
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
@@ -85,11 +85,11 @@ func (a *application) qualifyCommand(args []string) error {
 	deadlinePing := time.Now().Add(30 * time.Second)
 	for scanner.Ping(ctx) != nil {
 		if time.Now().After(deadlinePing) {
-			return errors.New("odrębny silnik testowy nie odpowiedział")
+			return errors.New("separate test engine did not respond")
 		}
 		time.Sleep(time.Second)
 	}
-	a.info("Oceniam odrębny, nowy model na oddzielonych przykładach. Poczta pozostaje w swoich folderach.")
+	a.info("Evaluating a separate fresh model on held-out examples. Messages remain in their folders.")
 	id, err := archive.LoadIdentity(keychain.New(), cfg.Runtime.ArchiveKeychainService, cfg.Account.Email)
 	if err != nil {
 		return err
@@ -366,6 +366,6 @@ func (a *application) installQualification(cfg config.Config, report qualificati
 		return errors.Join(err, rollback)
 	}
 	m := report.Metrics()
-	a.success(fmt.Sprintf("Ocena zapisana: spam %d/%d, ważne %d, błędny spam %d, błędne ratowanie %d. Próg kwarantanny %.2f.", m.SpamDetected, m.SpamTested, m.HamTested, m.FalsePositives, m.FalseRescues, report.SpamThreshold))
+	a.success(fmt.Sprintf("Qualification saved: spam %d/%d, ham %d, false spam %d, false rescues %d. Quarantine threshold %.2f.", m.SpamDetected, m.SpamTested, m.HamTested, m.FalsePositives, m.FalseRescues, report.SpamThreshold))
 	return nil
 }

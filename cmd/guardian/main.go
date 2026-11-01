@@ -24,18 +24,18 @@ import (
 	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 
-	"github.com/o2-mail-guardian/guardian/internal/apperror"
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/engine"
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
-	"github.com/o2-mail-guardian/guardian/internal/qualification"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/runlock"
-	"github.com/o2-mail-guardian/guardian/internal/service"
-	"github.com/o2-mail-guardian/guardian/internal/stack"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/apperror"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/engine"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/keychain"
+	"github.com/xue9999/Mail-Guardian/internal/qualification"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/runlock"
+	"github.com/xue9999/Mail-Guardian/internal/service"
+	"github.com/xue9999/Mail-Guardian/internal/stack"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 var (
@@ -59,8 +59,7 @@ type application struct {
 	errOut     io.Writer
 	color      bool
 
-	// Punkty wstrzykiwania używane przez testy polecenia naprawczego. W zwykłym
-	// programie pozostają nil i uruchamiane są prawdziwe, bezpieczne operacje.
+	// Repair test injection points. Nil in production selects real operations.
 	startFilter       func(config.Config) error
 	checkInstallation func() error
 	automationStatus  func(config.Config) error
@@ -113,7 +112,7 @@ func (a *application) execute(args []string) error {
 	}
 	if args[0] == "--config" {
 		if len(args) < 3 {
-			return errors.New("po --config podaj ścieżkę i polecenie")
+			return errors.New("provide a path and command after --config")
 		}
 		a.configPath = args[1]
 		args = args[2:]
@@ -150,7 +149,7 @@ func (a *application) execute(args []string) error {
 		a.help()
 		return nil
 	case "version", "wersja", "--version":
-		fmt.Fprintf(a.out, "O2 Mail Guardian %s (%s)\n", version, commit)
+		fmt.Fprintf(a.out, "Mail Guardian %s (%s)\n", version, commit)
 		fmt.Fprintf(a.out, "Go: %s\n", runtime.Version())
 		return nil
 	case "self-test":
@@ -189,7 +188,7 @@ func (a *application) execute(args []string) error {
 		return a.serviceRun()
 	default:
 		return fmt.Errorf(
-			"nie znam polecenia %q\nUruchom Guardian bez wpisywania polecenia — pojawi się proste menu",
+			"unknown command %q\nRun Guardian without a command to open the menu",
 			args[0],
 		)
 	}
@@ -197,7 +196,7 @@ func (a *application) execute(args []string) error {
 
 func (a *application) appServiceCommand(args []string) error {
 	if len(args) != 1 {
-		return errors.New("użyj: guardian app-service install|uninstall|status")
+		return errors.New("use: guardian app-service install|uninstall|status")
 	}
 	appPath, err := service.DefaultUIAppPath()
 	if err != nil {
@@ -211,11 +210,11 @@ func (a *application) appServiceCommand(args []string) error {
 		return manager.Uninstall()
 	case "status":
 		if !manager.Status() {
-			return errors.New("panel nie jest uruchamiany po zalogowaniu")
+			return errors.New("dashboard does not start at login")
 		}
 		return nil
 	default:
-		return errors.New("użyj: guardian app-service install|uninstall|status")
+		return errors.New("use: guardian app-service install|uninstall|status")
 	}
 }
 
@@ -223,7 +222,7 @@ func (a *application) doctorCommand(args []string) error {
 	deep := false
 	for _, arg := range args {
 		if arg != "--deep" {
-			return errors.New("użyj: guardian doctor [--deep]")
+			return errors.New("use: guardian doctor [--deep]")
 		}
 		deep = true
 	}
@@ -291,43 +290,18 @@ The administrator manages the systemd timer after pilot and recovery acceptance.
 Protect mode can move mail and process corrections. Read the Linux pilot runbook.`)
 		return
 	}
-	fmt.Fprintln(a.out, `
-O2 Mail Guardian — lokalny strażnik skrzynki o2.pl
-
-Najprościej:
-  guardian                     otwiera proste menu po polsku
-  guardian napraw              sprawdza i bezpiecznie naprawia instalację
-
-Polecenia dodatkowe:
-  guardian konfiguruj          kreator konfiguracji
-  guardian stan                czytelne podsumowanie
-  guardian uruchom --dry-run   próba bez przenoszenia wiadomości
-  guardian sprawdz             bezpieczne sprawdzenie skrzynki
-  guardian kontrola            kontrola bez naprawiania
-
-Bezpieczeństwo i odzyskiwanie:
-  guardian mode status         aktualny tryb ochrony
-  guardian archive list        lista zaszyfrowanych kopii
-  guardian archive show ID     bezpieczny podgląd nagłówków jednej kopii
-  guardian archive restore ID  odzyskanie kopii do AI-Do-sprawdzenia
-  guardian purge --dry-run     podgląd, co kwalifikuje się do usunięcia
-
-Automatyzacja i silnik:
-  guardian service install|status|uninstall
-  guardian stack up|status|down
-  guardian server init-config|validate-config
-
-Nie musisz zapamiętywać tych poleceń — wszystkie codzienne działania są w menu.
-Trwałe kasowanie jest domyślnie wyłączone i nie może zostać uruchomione przed
-zakończeniem okresu ochronnego.`)
+	fmt.Fprintln(a.out, "\nMail Guardian — a private IMAP mailbox guardian\n\nStart here:\n  guardian                     open the interactive menu\n  guardian repair              check and safely repair installation\n\nAccount and mail:\n  guardian setup               configuration wizard\n  guardian status              readable status summary\n  guardian run --dry-run       preview without moves or learning\n  guardian run                 check the mailbox safely\n  guardian doctor              diagnose without repairs\n\nSafety and recovery:\n  guardian mode status         current protection mode\n  guardian archive list        encrypted backup list\n  guardian archive show ID     safe header preview\n  guardian archive restore ID  restore to the configured review folder\n  guardian purge --dry-run     preview deletion eligibility\n\nAutomation and services:\n  guardian service install|status|uninstall\n  guardian stack up|status|down\n  guardian server init-config|validate-config\n\nDaily actions are also available in the menu. Permanent deletion is disabled by default and requires separate qualification and authorization.")
 }
 
 func (a *application) setup() (retErr error) {
-	a.header("Kreator pierwszej konfiguracji")
+	a.header("First-time setup wizard")
 	if runtime.GOOS != "darwin" {
-		return errors.New("kreator bezpiecznego pęku kluczy wymaga macOS")
+		return errors.New("secure Keychain wizard requires macOS")
 	}
-	cfg := config.Default()
+	cfg, newErr := config.NewInstance()
+	if newErr != nil {
+		return newErr
+	}
 	firstSetup := true
 	configurationSaved := false
 	identityCreated := false
@@ -341,18 +315,18 @@ func (a *application) setup() (retErr error) {
 		var rollbackErrors []error
 		if rollbackPassword != nil {
 			if err := rollbackPassword(); err != nil {
-				rollbackErrors = append(rollbackErrors, fmt.Errorf("przywrócenie poprzedniego hasła: %w", err))
+				rollbackErrors = append(rollbackErrors, fmt.Errorf("restoring previous password: %w", err))
 			}
 		}
 		if identityCreated {
 			kc := keychain.New()
 			if err := kc.Delete(cfg.Runtime.ArchiveKeychainService, cfg.Account.Email); err != nil && !errors.Is(err, keychain.ErrNotFound) {
-				rollbackErrors = append(rollbackErrors, fmt.Errorf("usunięcie nieukończonego klucza archiwum: %w", err))
+				rollbackErrors = append(rollbackErrors, fmt.Errorf("removing incomplete archive key: %w", err))
 			}
 		}
 		if scannerPaused {
 			if err := scannerManager.Install(); err != nil {
-				rollbackErrors = append(rollbackErrors, fmt.Errorf("wznowienie poprzedniego automatu: %w", err))
+				rollbackErrors = append(rollbackErrors, fmt.Errorf("resuming previous automation: %w", err))
 			}
 		}
 		retErr = errors.Join(retErr, errors.Join(rollbackErrors...))
@@ -361,18 +335,18 @@ func (a *application) setup() (retErr error) {
 		existing, err := config.Load(a.configPath)
 		if err != nil {
 			return fmt.Errorf(
-				"istniejąca konfiguracja jest nieczytelna i nie zostanie nadpisana: %w\nNapraw plik %s albo odtwórz go z kopii zapasowej",
+				"existing configuration is unreadable and will not be overwritten: %w\nRepair %s or restore it from backup",
 				err, a.configPath,
 			)
 		}
 		cfg = existing
 		firstSetup = false
-		a.info("Znaleziono istniejącą konfigurację. Kreator bezpiecznie ją zaktualizuje.")
+		a.info("Existing configuration found. The wizard will update it safely.")
 	} else if !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("nie mogę sprawdzić pliku konfiguracji %s: %w", a.configPath, err)
+		return fmt.Errorf("cannot check configuration file %s: %w", a.configPath, err)
 	}
 	if err := os.MkdirAll(cfg.Runtime.DataDir, 0o700); err != nil {
-		return fmt.Errorf("nie mogę przygotować prywatnego katalogu danych: %w", err)
+		return fmt.Errorf("cannot prepare private data directory: %w", err)
 	}
 	lock, err := acquireRunLock(cfg.Runtime.DataDir)
 	if err != nil {
@@ -380,16 +354,16 @@ func (a *application) setup() (retErr error) {
 	}
 	defer lock.Close()
 
-	email, err := a.ask("Adres e-mail o2.pl", cfg.Account.Email)
+	email, err := a.ask("Email address", cfg.Account.Email)
 	if err != nil {
 		return err
 	}
 	email = strings.TrimSpace(email)
 	if !strings.Contains(email, "@") {
-		return errors.New("adres e-mail wygląda na nieprawidłowy")
+		return errors.New("email address appears invalid")
 	}
 	if !firstSetup && !strings.EqualFold(email, cfg.Account.Email) {
-		return errors.New("istniejąca instalacja jest przypisana do innego konta; dla bezpieczeństwa utwórz osobną instalację zamiast mieszać bazy i zaszyfrowane kopie")
+		return errors.New("existing installation belongs to another account; create a separate installation to avoid mixing databases and encrypted backups")
 	}
 	if !firstSetup {
 		// Preserve the exact Keychain account identifier used during the first
@@ -397,12 +371,40 @@ func (a *application) setup() (retErr error) {
 		email = cfg.Account.Email
 	}
 	cfg.Account.Email = email
+	if firstSetup {
+		profile, err := a.ask("Connection profile (custom or o2)", "custom")
+		if err != nil {
+			return err
+		}
+		cfg.Account.Provider = strings.TrimSpace(profile)
+		if cfg.Account.Provider == "custom" {
+			cfg.Account.Host, err = a.ask("IMAP hostname (implicit TLS)", "")
+			if err != nil {
+				return err
+			}
+			port, err := a.ask("IMAP port", "993")
+			if err != nil {
+				return err
+			}
+			if cfg.Account.Port, err = strconv.Atoi(port); err != nil {
+				return err
+			}
+		}
+		cfg.Account.Username, err = a.ask("IMAP login", email)
+		if err != nil {
+			return err
+		}
+		cfg, err = cfg.ResolveIdentity()
+		if err != nil {
+			return err
+		}
+	}
 
 	kc := keychain.New()
 	identityExisted := true
 	if _, err := archive.LoadIdentity(kc, cfg.Runtime.ArchiveKeychainService, email); err != nil {
 		if !errors.Is(err, keychain.ErrNotFound) {
-			return fmt.Errorf("nie mogę sprawdzić klucza szyfrowania kopii w pęku kluczy: %w", err)
+			return fmt.Errorf("cannot check backup encryption key in Keychain: %w", err)
 		}
 		if err := validateNewArchiveIdentity(cfg.Runtime.ArchiveDir, cfg.Runtime.Database); err != nil {
 			return err
@@ -416,41 +418,36 @@ func (a *application) setup() (retErr error) {
 	var mail *imapmail.Client
 	savedPassword, savedPasswordErr := kc.Get(cfg.Account.PasswordKeychainService, email)
 	if savedPasswordErr != nil && !errors.Is(savedPasswordErr, keychain.ErrNotFound) {
-		return fmt.Errorf("nie mogę odczytać hasła o2 z pęku kluczy: %w", savedPasswordErr)
+		return fmt.Errorf("cannot read IMAP password from Keychain: %w", savedPasswordErr)
 	}
 	if !firstSetup && savedPasswordErr == nil {
-		a.info("Sprawdzam zapisane hasło aplikacyjne — nie musisz wpisywać go ponownie…")
+		a.info("Checking the saved password — no need to enter it again…")
 		mail, err = dialMailbox(ctx, cfg, savedPassword)
 		if err == nil {
-			a.success("Zapisane hasło aplikacyjne nadal działa.")
+			a.success("The saved password still works.")
 		} else if !isIMAPAuthenticationError(err) {
 			return fmt.Errorf(
-				"nie mogę teraz sprawdzić zapisanego hasła: %w\n"+
-					"Hasło w pęku kluczy nie zostało zmienione; sprawdź internet i spróbuj ponownie",
+				"cannot check saved password now: %w\n"+
+					"The Keychain password was not changed; check your connection and retry",
 				err,
 			)
 		} else {
-			a.warning("o2 odrzuciło zapisane hasło aplikacyjne. Dotychczasowe hasło pozostanie bez zmian, dopóki nowe nie zostanie sprawdzone.")
+			a.warning("Mail server rejected the saved password. It remains unchanged until a new one is verified.")
 		}
 	}
 
 	if mail == nil {
-		fmt.Fprintln(a.out, `
-Najpierw włącz logowanie dwustopniowe w o2 i utwórz osobne „hasło do
-aplikacji”. Nie podawaj tutaj głównego hasła do konta.
-
-Instrukcja: https://pomoc.o2.pl/wpkonto/hasla-do-aplikacji-zewnetrznej
-Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
-		if ok, confirmErr := a.confirm("Czy masz już hasło do aplikacji?", true); confirmErr != nil {
+		fmt.Fprintln(a.out, "\nEnable IMAP access with your email provider. Use a separate app password where supported, and follow your provider's account security instructions. Guardian supports password authentication over verified implicit TLS; accounts requiring OAuth are not supported. The secret is saved in Keychain only after successful authentication.")
+		if ok, confirmErr := a.confirm("Do you have the account or app password ready?", true); confirmErr != nil {
 			return confirmErr
 		} else if !ok {
-			return errors.New("konfiguracja zatrzymana; wróć po utworzeniu hasła do aplikacji")
+			return errors.New("setup stopped; return when the account/app password is ready")
 		}
-		password, passwordErr := a.readHiddenPassword("Hasło aplikacyjne o2")
+		password, passwordErr := a.readHiddenPassword("Account or app password")
 		if passwordErr != nil {
 			return passwordErr
 		}
-		a.info("Sprawdzam nowe hasło przez szyfrowane połączenie z o2…")
+		a.info("Checking the new password over encrypted IMAP…")
 		verify := func(candidate string) error {
 			var dialErr error
 			mail, dialErr = dialMailbox(ctx, cfg, candidate)
@@ -463,7 +460,7 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 				cfg.Account.PasswordKeychainService,
 				email,
 				candidate,
-				"O2 Mail Guardian - hasło IMAP",
+				"Mail Guardian - IMAP password",
 			)
 			return saveErr
 		}
@@ -472,11 +469,11 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 				_ = mail.Close()
 			}
 			return fmt.Errorf(
-				"%w\nNowe hasło nie zastąpiło dotychczasowego hasła w pęku kluczy",
+				"%w\nThe new password did not replace the existing Keychain password",
 				err,
 			)
 		}
-		a.success("Nowe hasło działa i zostało bezpiecznie zapisane w pęku kluczy.")
+		a.success("The new password works and was saved securely in Keychain.")
 	}
 	defer mail.Close()
 	boxes, err := mail.ListMailboxes()
@@ -485,7 +482,7 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 	}
 	spamFolder := imapmail.DetectSpamFolder(boxes)
 	if spamFolder != "" {
-		ok, err := a.confirm(fmt.Sprintf("Wykryto folder SPAM: %q. Użyć go?", spamFolder), true)
+		ok, err := a.confirm(fmt.Sprintf("Spam folder detected: %q. Use it?", spamFolder), true)
 		if err != nil {
 			return err
 		}
@@ -509,10 +506,10 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 	cfg.Folders.ServerSpam = spamFolder
 	enforceSetupProtection(&cfg)
 	if err := cfg.Validate(); err != nil {
-		return fmt.Errorf("wybrany układ folderów jest niebezpieczny i nie zostanie utworzony: %w", err)
+		return fmt.Errorf("selected folder layout is unsafe and will not be created: %w", err)
 	}
 	if !mail.SafeMoveSupported() {
-		return errors.New("o2 nie zgłosiło natywnego IMAP MOVE; robot nie wykona niebezpiecznego zastępczego przenoszenia")
+		return errors.New("server did not advertise native IMAP MOVE; refusing an unsafe fallback move")
 	}
 	var existingRobotFolders []string
 	existingRobotFolder := make(map[string]bool)
@@ -525,7 +522,7 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 			}
 			if strings.EqualFold(box.Name, target) {
 				return fmt.Errorf(
-					"istniejący folder %q różni się od wymaganej nazwy %q tylko wielkością liter; dla bezpieczeństwa zmień jego nazwę i uruchom kreator ponownie",
+					"existing folder %q differs from required name %q only by case; rename it and retry the wizard",
 					box.Name,
 					target,
 				)
@@ -533,12 +530,12 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 		}
 	}
 	if len(existingRobotFolders) > 0 {
-		ok, err := a.confirm("Foldery "+strings.Join(existingRobotFolders, ", ")+" już istnieją. Użyć ich ponownie?", false)
+		ok, err := a.confirm("Folders "+strings.Join(existingRobotFolders, ", ")+" already exist. Reuse them?", false)
 		if err != nil {
 			return err
 		}
 		if !ok {
-			return errors.New("konfiguracja zatrzymana; zmień nazwy folderów w istniejącej konfiguracji albo opróżnij konflikt")
+			return errors.New("setup stopped; rename conflicting folders in existing configuration or empty them")
 		}
 	}
 	if existingRobotFolder[cfg.Folders.TrainSpam] || existingRobotFolder[cfg.Folders.TrainHam] {
@@ -549,7 +546,7 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 			}
 			uids, _, err := mail.SearchSince(folder, time.Time{}, 0)
 			if err != nil {
-				return fmt.Errorf("nie mogę bezpiecznie sprawdzić zawartości folderu uczącego %q: %w", folder, err)
+				return fmt.Errorf("cannot safely inspect training folder %q: %w", folder, err)
 			}
 			trainingCounts[folder] = len(uids)
 		}
@@ -557,29 +554,29 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 		if totalTraining > 0 {
 			fmt.Fprintf(
 				a.out,
-				"\nUwaga: istniejące foldery uczące zawierają wiadomości:\n  %s: %d\n  %s: %d\n",
+				"\nWarning: existing training folders contain messages:\n  %s: %d\n  %s: %d\n",
 				cfg.Folders.TrainSpam,
 				trainingCounts[cfg.Folders.TrainSpam],
 				cfg.Folders.TrainHam,
 				trainingCounts[cfg.Folders.TrainHam],
 			)
 			ok, err := a.confirmDanger(
-				"Przy następnym przebiegu każda z tych wiadomości stanie się świadomą korektą filtra i zostanie przeniesiona.",
+				"On the next run, each message becomes an explicit filter correction and will be moved.",
 				"UCZ",
 			)
 			if err != nil || !ok {
-				return errors.New("konfiguracja zatrzymana; opróżnij istniejące foldery uczące albo uruchom kreator ponownie i świadomie potwierdź ich zawartość")
+				return errors.New("setup stopped; empty existing training folders or restart the wizard and explicitly accept their contents")
 			}
 		}
 	}
 	a.printFolderMapping(cfg)
 	if firstSetup {
-		ok, err := a.confirm("Czy ten układ folderów jest prawidłowy i mogę go utworzyć?", false)
+		ok, err := a.confirm("Is this folder layout correct, and may I create it?", false)
 		if err != nil {
 			return err
 		}
 		if !ok {
-			return errors.New("konfiguracja zatrzymana przed utworzeniem folderów; żaden folder Guardiana nie został dodany")
+			return errors.New("setup stopped before folder creation; no Guardian folders added")
 		}
 	}
 	if err := mail.EnsureMailboxes(cfg.Folders.Quarantine, cfg.Folders.Review, cfg.Folders.TrainSpam, cfg.Folders.TrainHam); err != nil {
@@ -594,17 +591,17 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 	}
 	identityCreated = !identityExisted
 	if _, err := archive.New(cfg.Runtime.ArchiveDir, archiveIdentity); err != nil {
-		return fmt.Errorf("katalog zaszyfrowanych kopii nie jest bezpieczny: %w", err)
+		return fmt.Errorf("encrypted-backup directory is unsafe: %w", err)
 	}
 	exe, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("nie mogę ustalić położenia programu przed zmianą konfiguracji: %w", err)
+		return fmt.Errorf("cannot locate executable before changing configuration: %w", err)
 	}
 	scannerManager = service.Manager{Executable: exe, DataDir: cfg.Runtime.DataDir, LogFile: cfg.Runtime.LogFile}
 	if scannerManager.Installed() {
 		scannerPaused = true
 		if err := scannerManager.Uninstall(); err != nil {
-			return fmt.Errorf("nie udało się bezpiecznie wstrzymać automatu przed zmianą konfiguracji: %w", err)
+			return fmt.Errorf("cannot safely pause automation before configuration change: %w", err)
 		}
 	}
 	if err := config.Save(a.configPath, cfg); err != nil {
@@ -619,7 +616,7 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 	settingsCtx := context.Background()
 	value, err := db.GetSetting(settingsCtx, "installed_at")
 	if err != nil {
-		return fmt.Errorf("nie udało się odczytać początku okresu ochronnego: %w", err)
+		return fmt.Errorf("cannot read protection-period start: %w", err)
 	}
 	if value == "" {
 		started := time.Now().UTC().Format(time.RFC3339)
@@ -630,71 +627,70 @@ Nowe hasło zostanie zapisane w pęku kluczy dopiero po poprawnym logowaniu.`)
 	if err := db.RequireFreshDryRun(settingsCtx, time.Now()); err != nil {
 		return err
 	}
-	a.success("Połączenie działa, foldery są gotowe, a kopie będą szyfrowane.")
-	// Instalacja usługi launchd może natychmiast uruchomić pierwszy przebieg.
-	// Konfiguracja i foldery są już spójne, więc zwolnij blokadę przed bootstrapem.
+	a.success("The connection works, folders are ready, and backups will be encrypted.")
+	// launchd installation may start a run immediately. Configuration and
+	// folders are coherent; release the lock before bootstrap.
 	if err := lock.Close(); err != nil {
-		return fmt.Errorf("konfiguracja jest gotowa, ale nie mogę bezpiecznie zwolnić blokady programu: %w", err)
+		return fmt.Errorf("configuration is ready, but the application lock could not be safely released: %w", err)
 	}
 
 	controller, err := kc.Get(cfg.Rspamd.PasswordKeychainService, "controller")
 	if err != nil {
-		a.warning("Lokalny filtr nie jest jeszcze gotowy. W menu wybierz „Sprawdź i napraw program”.")
+		a.warning("The local filter is not ready yet. Choose Check and repair in the menu.")
 	} else if pingErr := rspamd.New(cfg.Rspamd.ScanURL, cfg.Rspamd.LearnURL, controller, 5*time.Second).Ping(ctx); pingErr != nil {
-		a.warning("Lokalny filtr jeszcze nie odpowiada. W menu wybierz „Sprawdź i napraw program”.")
+		a.warning("The local filter is not responding yet. Choose Check and repair in the menu.")
 	} else {
-		a.success("Lokalny filtr antyspamowy odpowiada.")
+		a.success("Local spam filter responds.")
 	}
-	a.header("Obowiązkowa bezpieczna próba")
-	a.info("Guardian pokaże decyzje bez przenoszenia wiadomości i bez uczenia filtra.")
+	a.header("Required safe dry-run")
+	a.info("Guardian will preview decisions without moving messages or training the filter.")
 	if err := a.runCommand([]string{"--dry-run"}); err != nil {
 		return apperror.Wrap(
-			apperror.Rspamd, "attention", "Próba nie zakończyła się pomyślnie.",
-			"Napraw wskazany problem i ponów konfigurację; automatyzacja nie została włączona.", err,
+			apperror.Rspamd, "attention", "The dry-run did not complete successfully.",
+			"Fix the reported problem and retry setup; automation was not enabled.", err,
 		)
 	}
-	a.success("Próba zakończyła się pomyślnie. Skrzynka nie została zmieniona.")
+	a.success("The dry-run succeeded. The mailbox was unchanged.")
 	if _, statusErr := scannerManager.Status(); statusErr == nil {
-		a.success("Automatyczne sprawdzanie co 2 godziny jest już aktywne.")
-	} else if ok, confirmErr := a.confirm("Włączać automatyczne sprawdzanie co 2 godziny?", true); confirmErr != nil {
+		a.success("Automatic checks every 2 hours are already active.")
+	} else if ok, confirmErr := a.confirm("Enable automatic checks every 2 hours?", true); confirmErr != nil {
 		return confirmErr
 	} else if ok {
 		if err := scannerManager.Install(); err != nil {
-			a.warning("Nie udało się włączyć automatyzacji: " + err.Error())
+			a.warning("Could not enable automation: " + err.Error())
 		} else {
-			a.success("Automatyczne sprawdzanie jest aktywne.")
+			a.success("Automatic checks are active.")
 		}
 	} else {
-		a.info("Automatyczne sprawdzanie pozostało wyłączone zgodnie z Twoim wyborem.")
+		a.info("Automatic checks remain off as requested.")
 	}
-	fmt.Fprintln(a.out, "\nGotowe. Rozpoczął się nowy, co najmniej 14-dniowy tryb ochronny i nic nie będzie trwale usuwane.")
+	fmt.Fprintln(a.out, "\nDone. A new protection period of at least 14 days has started. Permanent deletion is disabled.")
 	return nil
 }
 
 func (a *application) chooseMailbox(boxes []imapmail.Mailbox, excludedNames ...string) (string, error) {
-	fmt.Fprintln(a.out, "\nNie rozpoznałem automatycznie folderu SPAM.")
-	fmt.Fprintln(a.out, "Wybierz folder, do którego poczta o2 sama odkłada niechciane wiadomości:")
+	fmt.Fprintln(a.out, "\nThe spam folder could not be detected automatically.")
+	fmt.Fprintln(a.out, "Select the folder where your email provider places unwanted mail:")
 	selectable := selectableMailboxes(boxes, excludedNames...)
 	for index, box := range selectable {
 		fmt.Fprintf(a.out, "  %d. %s\n", index+1, box.Name)
 	}
 	if len(selectable) == 0 {
-		return "", errors.New("na koncie nie ma folderu, który można bezpiecznie wskazać jako SPAM; utwórz folder SPAM w o2 i spróbuj ponownie")
+		return "", errors.New("no folder can safely be selected as spam; create a spam folder with your provider and retry")
 	}
-	value, err := a.ask("Wpisz numer folderu SPAM", "")
+	value, err := a.ask("Enter spam folder number", "")
 	if err != nil {
 		return "", err
 	}
 	n, err := strconv.Atoi(value)
 	if err != nil || n < 1 || n > len(selectable) {
-		return "", fmt.Errorf("nie ma folderu o numerze %q; wpisz jeden z numerów pokazanych na liście", value)
+		return "", fmt.Errorf("no folder numbered %q; enter one of the listed numbers", value)
 	}
 	return selectable[n-1].Name, nil
 }
 
-// selectableMailboxes centralizuje listę folderów, które wolno wskazać jako
-// systemowy SPAM. GUI i awaryjny kreator tekstowy muszą pokazywać identyczny,
-// bezpieczny wybór: bez INBOX, folderów Guardiana i kontenerów \Noselect.
+// selectableMailboxes gives both wizards the same safe spam-folder choices,
+// excluding Inbox, Guardian folders and \Noselect containers.
 func selectableMailboxes(boxes []imapmail.Mailbox, excludedNames ...string) []imapmail.Mailbox {
 	excluded := make(map[string]struct{}, len(excludedNames)+1)
 	excluded["inbox"] = struct{}{}
@@ -722,20 +718,20 @@ func selectableMailboxes(boxes []imapmail.Mailbox, excludedNames ...string) []im
 }
 
 func (a *application) printFolderMapping(cfg config.Config) {
-	fmt.Fprintln(a.out, "\nTak Guardian będzie używać folderów:")
-	fmt.Fprintf(a.out, "  Odebrane (INBOX):          %s\n", cfg.Folders.Inbox)
-	fmt.Fprintf(a.out, "  SPAM obsługiwany przez o2: %s\n", cfg.Folders.ServerSpam)
-	fmt.Fprintf(a.out, "  Pewny spam w kwarantannie: %s\n", cfg.Folders.Quarantine)
-	fmt.Fprintf(a.out, "  Do sprawdzenia ręcznego:   %s\n", cfg.Folders.Review)
-	fmt.Fprintf(a.out, "  Nauka — to jest spam:      %s\n", cfg.Folders.TrainSpam)
-	fmt.Fprintf(a.out, "  Nauka — to jest ważne:     %s\n", cfg.Folders.TrainHam)
+	fmt.Fprintln(a.out, "\nGuardian will use these folders:")
+	fmt.Fprintf(a.out, "  Inbox (INBOX):             %s\n", cfg.Folders.Inbox)
+	fmt.Fprintf(a.out, "  Provider spam folder:      %s\n", cfg.Folders.ServerSpam)
+	fmt.Fprintf(a.out, "  Confident spam in quarantine: %s\n", cfg.Folders.Quarantine)
+	fmt.Fprintf(a.out, "  Manual review:             %s\n", cfg.Folders.Review)
+	fmt.Fprintf(a.out, "  Training — spam:           %s\n", cfg.Folders.TrainSpam)
+	fmt.Fprintf(a.out, "  Training — ham:            %s\n", cfg.Folders.TrainHam)
 }
 
 func (a *application) doctor(verbose, deep bool) error {
-	a.header("Kontrola instalacji")
+	a.header("Installation check")
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
-		return apperror.Wrap(apperror.Config, "critical", "Konfiguracja Guardiana jest nieczytelna.", "Otwórz aplikację i uruchom Napraw albo pierwszą konfigurację.", err)
+		return apperror.Wrap(apperror.Config, "critical", "Guardian configuration is unreadable.", "Open the application and run Repair or first-time setup.", err)
 	}
 	failures := 0
 	var firstFailure error
@@ -754,52 +750,52 @@ func (a *application) doctor(verbose, deep bool) error {
 	if err == nil && runtime.GOOS == "linux" {
 		err = validateAdministratorPath(a.configPath)
 	} else if err == nil && info.Mode().Perm()&0o077 != 0 {
-		err = fmt.Errorf("uprawnienia %o są zbyt szerokie; oczekiwano 600", info.Mode().Perm())
+		err = fmt.Errorf("permissions %o are too broad; expected 600", info.Mode().Perm())
 	}
-	check("Konfiguracja jest prywatna", err)
+	check("Configuration is private", err)
 	kc := runtimeSecrets(cfg)
 	_, err = kc.Get(cfg.Account.PasswordKeychainService, cfg.Account.Email)
 	if err != nil {
-		err = apperror.Wrap(apperror.Keychain, "critical", "Nie można odczytać hasła o2 z pęku kluczy.", "Odblokuj pęk kluczy lub zapisz ponownie hasło aplikacyjne w ustawieniach.", err)
+		err = apperror.Wrap(apperror.Keychain, "critical", "Cannot read the IMAP password from Keychain.", "Unlock Keychain or save the account/app password again in settings.", err)
 	}
-	check("Hasło o2 jest w pęku kluczy", err)
+	check("The IMAP password is in Keychain", err)
 	controller, ctrlErr := kc.Get(cfg.Rspamd.PasswordKeychainService, "controller")
 	if ctrlErr != nil {
-		ctrlErr = apperror.Wrap(apperror.Keychain, "critical", "Nie można odczytać hasła lokalnego filtra.", "Uruchom Install.command, aby bezpiecznie naprawić silnik.", ctrlErr)
+		ctrlErr = apperror.Wrap(apperror.Keychain, "critical", "Cannot read the local filter password.", "Run Install.command to safely repair the engine.", ctrlErr)
 	}
-	check("Hasło lokalnego filtra jest w pęku kluczy", ctrlErr)
+	check("The local filter password is in Keychain", ctrlErr)
 	archiveIdentity, err := archive.LoadIdentity(kc, cfg.Runtime.ArchiveKeychainService, cfg.Account.Email)
 	if err != nil {
-		err = apperror.Wrap(apperror.ArchiveKey, "critical", "Nie można odczytać klucza zaszyfrowanych kopii.", "Nie usuwaj archiwum; odblokuj pęk kluczy i uruchom Napraw.", err)
+		err = apperror.Wrap(apperror.ArchiveKey, "critical", "Cannot read the encrypted-backup key.", "Do not delete the archive; unlock Keychain and run Repair.", err)
 	}
-	check("Klucz kopii jest w pęku kluczy", err)
+	check("The backup key is in Keychain", err)
 	db, err := store.Open(cfg.Runtime.Database)
-	check("Baza stanu działa", err)
+	check("The state database works", err)
 	if db != nil {
 		defer db.Close()
 		integrityErr := db.IntegrityCheck(context.Background())
-		check("Baza stanu ma prawidłową integralność", integrityErr)
+		check("The state database passes integrity checks", integrityErr)
 		if integrityErr == nil && archiveIdentity != nil {
 			archiver, archiveErr := archive.New(cfg.Runtime.ArchiveDir, archiveIdentity)
 			if archiveErr == nil {
 				archiveErr = (&engine.Engine{Config: cfg, Store: db, Archive: archiver}).CheckArchiveFiles(context.Background())
 			}
-			check("25 najnowszych zaszyfrowanych kopii przechodzi kontrolę integralności", archiveErr)
+			check("The 25 newest encrypted backups pass integrity checks", archiveErr)
 		}
 	}
 	free, diskErr := freeBytes(cfg.Runtime.DataDir)
 	if diskErr == nil && free < 1<<30 {
-		diskErr = fmt.Errorf("pozostało mniej niż 1 GiB wolnego miejsca")
+		diskErr = fmt.Errorf("less than 1 GiB disk space remains")
 	}
-	check("Na dysku jest miejsce na bezpieczne kopie", diskErr)
+	check("Disk space is available for safe backups", diskErr)
 	scanner := rspamd.New(cfg.Rspamd.ScanURL, cfg.Rspamd.LearnURL, controller, 8*time.Second)
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
 	pingErr := scanner.Ping(ctx)
 	if pingErr != nil {
-		pingErr = apperror.Wrap(apperror.Rspamd, "critical", "Lokalny filtr antyspamowy nie odpowiada.", "Uruchom Napraw.", pingErr)
+		pingErr = apperror.Wrap(apperror.Rspamd, "critical", "The local spam filter is not responding.", "Run Repair.", pingErr)
 	}
-	check("Lokalny filtr antyspamowy odpowiada", pingErr)
+	check("Local spam filter responds", pingErr)
 	if pingErr == nil {
 		testMessage := []byte(
 			"From: guardian@example.invalid\r\n" +
@@ -814,26 +810,26 @@ func (a *application) doctor(verbose, deep bool) error {
 		if scanErr == nil {
 			decision := rspamd.Classify(result, cfg.Rspamd.SpamScore, cfg.Rspamd.HamScore, cfg.Safety.RequireAuthForRescue)
 			if decision.Incomplete {
-				scanErr = errors.New("testowy skan Rspamd był niekompletny")
+				scanErr = errors.New("test Rspamd scan was incomplete")
 			}
 		}
-		check("Lokalny filtr wykonuje kompletny test", scanErr)
+		check("Local filter performs a complete test", scanErr)
 		if verbose {
 			stats, statsErr := scanner.Stats(ctx)
 			if statsErr == nil && db != nil {
 				statsErr = compareBayesHighWater(ctx, db, cfg.Account.Email, stats)
 			}
-			check("Statystyki Bayesa są dostępne i kompletne", statsErr)
+			check("Bayes statistics are available and complete", statsErr)
 		}
 	}
 	password, passErr := kc.Get(cfg.Account.PasswordKeychainService, cfg.Account.Email)
 	if passErr == nil {
 		mail, mailErr := dialMailbox(ctx, cfg, password)
-		check("Szyfrowane logowanie do o2 działa", mailErr)
+		check("Encrypted IMAP authentication works", mailErr)
 		if mailErr == nil {
 			defer mail.Close()
 			boxes, listErr := mail.ListMailboxes()
-			check("Lista folderów IMAP jest dostępna", listErr)
+			check("The IMAP folder list is available", listErr)
 			if listErr == nil {
 				required := []string{cfg.Folders.ServerSpam, cfg.Folders.Quarantine, cfg.Folders.Review, cfg.Folders.TrainSpam, cfg.Folders.TrainHam}
 				for _, name := range required {
@@ -846,18 +842,18 @@ func (a *application) doctor(verbose, deep bool) error {
 					}
 					if !found {
 						failures++
-						a.problem(fmt.Errorf("brakuje folderu %q", name))
+						a.problem(fmt.Errorf("missing folder %q", name))
 					}
 				}
 				caps := mail.Capabilities()
-				check("Natywne przenoszenie IMAP MOVE jest obsługiwane", boolError(mail.SafeMoveSupported(), "brak natywnego MOVE"))
+				check("Native IMAP MOVE is supported", boolError(mail.SafeMoveSupported(), "native MOVE unavailable"))
 				if !mail.SafeDeleteSupported() {
-					a.warning("Brak UIDPLUS: trwałe kasowanie będzie zablokowane.")
+					a.warning("UIDPLUS is unavailable: permanent deletion will be blocked.")
 				}
 				if verbose {
-					fmt.Fprintf(a.out, "\nFolder SPAM: %s\nSeparator folderów: %q\nIMAP: %s\n",
+					fmt.Fprintf(a.out, "\nSpam folder: %s\nFolder delimiter: %q\nIMAP: %s\n",
 						cfg.Folders.ServerSpam, delimiterOf(boxes), strings.Join(caps.Names, ", "))
-					fmt.Fprintln(a.out, "Program nie tworzy połączeń SMTP i nie wysyła wiadomości.")
+					fmt.Fprintln(a.out, "The application does not make SMTP connections or send email.")
 				}
 			}
 		}
@@ -865,22 +861,22 @@ func (a *application) doctor(verbose, deep bool) error {
 	if deep {
 		executable, _ := os.Executable()
 		manager := service.Manager{Executable: executable, DataDir: cfg.Runtime.DataDir, LogFile: cfg.Runtime.LogFile}
-		check("Automatyczna usługa jest aktywna", func() error { _, statusErr := manager.Status(); return statusErr }())
+		check("The automatic service is active", func() error { _, statusErr := manager.Status(); return statusErr }())
 		heartbeat, heartbeatErr := service.ReadHeartbeat(cfg.Runtime.DataDir)
 		if heartbeatErr == nil {
 			if stale := heartbeatFreshnessError(heartbeat, time.Now()); stale != nil {
 				heartbeatErr = stale
 			}
 		}
-		check("Heartbeat automatycznego sprawdzania jest aktualny", heartbeatErr)
+		check("The automatic-check heartbeat is current", heartbeatErr)
 		managerStack := runtimeStack(cfg)
 		stackErr := managerStack.DeepCheck()
-		check("Redis, DNS i Rspamd działają w lokalnym stosie", stackErr)
+		check("Redis, DNS and Rspamd work in the local stack", stackErr)
 	}
 	if failures > 0 {
 		return firstFailure
 	}
-	a.success("Wszystkie kontrole zakończone pomyślnie.")
+	a.success("All checks passed.")
 	return nil
 }
 
@@ -906,8 +902,8 @@ func compareBayesHighWater(ctx context.Context, db *store.DB, account string, st
 			parsed, parseErr := strconv.ParseUint(value, 10, 64)
 			if parseErr != nil {
 				return apperror.Wrap(
-					apperror.BayesRollback, "critical", "Zapis kontroli modelu Bayesa jest uszkodzony.",
-					"Pozostaw tryb ochronny i uruchom Napraw; nie włączaj purge.", parseErr,
+					apperror.BayesRollback, "critical", "The Bayes model check record is corrupt.",
+					"Remain in protect mode and run Repair; do not enable purge.", parseErr,
 				)
 			}
 			// Rspamd deduplicates statistical content, while SQLite counts
@@ -917,8 +913,8 @@ func compareBayesHighWater(ctx context.Context, db *store.DB, account string, st
 		}
 		if item.current < highest {
 			return apperror.Wrap(
-				apperror.BayesRollback, "critical", "Lokalny model Bayesa cofnął się lub został wyzerowany.",
-				"Pozostaw tryb ochronny i uruchom Napraw; nie włączaj purge.", nil,
+				apperror.BayesRollback, "critical", "The local Bayes model rolled back or was reset.",
+				"Remain in protect mode and run Repair; do not enable purge.", nil,
 			)
 		}
 	}
@@ -935,10 +931,10 @@ func requireSuccessfulRun(run *store.Run, err error) error {
 		return err
 	}
 	if run == nil {
-		return errors.New("brak potwierdzonego wyniku sprawdzania")
+		return errors.New("no confirmed scan result")
 	}
 	if run.Errors > 0 {
-		return fmt.Errorf("przebieg zakończony z błędami: %d; część operacji wymaga sprawdzenia", run.Errors)
+		return fmt.Errorf("run completed with %d errors; some operations need attention", run.Errors)
 	}
 	return nil
 }
@@ -958,16 +954,16 @@ func (a *application) runCommandResult(args []string) (*store.Run, error) {
 func (a *application) runCommandResultLocked(args []string, locked bool) (*store.Run, error) {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	fs.SetOutput(a.errOut)
-	dryRun := fs.Bool("dry-run", false, "tylko pokaż decyzje")
+	dryRun := fs.Bool("dry-run", false, "preview decisions only")
 	if err := fs.Parse(args); err != nil {
 		return nil, err
 	}
 	if fs.NArg() != 0 {
-		return nil, errors.New("polecenie sprawdzania nie przyjmuje dodatkowego tekstu; uruchom Guardian bez polecenia i wybierz działanie z menu")
+		return nil, errors.New("check command accepts no extra text; run Guardian without a command and choose a menu action")
 	}
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
-		return nil, fmt.Errorf("%w\nOtwórz menu i rozpocznij pierwszą konfigurację", err)
+		return nil, fmt.Errorf("%w\nOpen the menu and start first-time setup", err)
 	}
 	if !locked {
 		lock, err := acquireRunLock(cfg.Runtime.DataDir)
@@ -987,7 +983,7 @@ func (a *application) runCommandResultLocked(args []string, locked bool) (*store
 			return nil, continuityErr
 		}
 		if rolledBack {
-			a.warning("Wykryto cofnięcie lokalnego modelu Bayesa. Włączono tryb ochronny i wyłączono trwałe usuwanie.")
+			a.warning("Local Bayes model rollback detected. Protect mode enabled and permanent deletion disabled.")
 		}
 		if runtime.GOOS == "linux" {
 			if err := a.prepareLinuxMutation(rt); err != nil {
@@ -995,9 +991,9 @@ func (a *application) runCommandResultLocked(args []string, locked bool) (*store
 			}
 		}
 	}
-	a.header("Sprawdzanie skrzynki")
+	a.header("Checking mailbox")
 	if *dryRun {
-		a.warning("PRÓBA: żadna wiadomość nie zostanie przeniesiona ani nauczona.")
+		a.warning("DRY-RUN: no messages will be moved or learned.")
 	}
 	run, err := rt.engine.Run(rt.ctx, engine.RunOptions{DryRun: *dryRun})
 	err = a.secureRunModel(rt, run, err, *dryRun)
@@ -1009,23 +1005,23 @@ func (a *application) runCommandResultLocked(args []string, locked bool) (*store
 	}
 	if *dryRun {
 		if err := recordSuccessfulDryRun(rt.db, run, time.Now()); err != nil {
-			return nil, fmt.Errorf("próba się udała, ale nie zapisano jej potwierdzenia: %w", err)
+			return nil, fmt.Errorf("dry-run succeeded, but its confirmation was not saved: %w", err)
 		}
 	}
 	a.printRun(run)
 	if rt.cfg.Safety.PurgeEnabled && !*dryRun {
 		purgeRun, purgeErr := rt.engine.Purge(rt.ctx, false)
 		if purgeErr != nil {
-			a.warning("Automatyczne czyszczenie kwarantanny zostało pominięte: " + purgeErr.Error())
+			a.warning("Automatic quarantine cleanup skipped: " + purgeErr.Error())
 		} else if purgeRun.Purged > 0 {
-			fmt.Fprintf(a.out, "Trwale usunięto po ponownej weryfikacji: %d\n", purgeRun.Purged)
+			fmt.Fprintf(a.out, "Permanently deleted after revalidation: %d\n", purgeRun.Purged)
 		}
 	}
 	if !*dryRun {
 		if cleaned, cleanupErr := rt.engine.CleanupExpiredArchives(context.Background()); cleanupErr != nil {
-			a.warning("Nie usunięto wygasłych kopii lokalnych: " + cleanupErr.Error())
+			a.warning("Expired local backups were not removed: " + cleanupErr.Error())
 		} else if cleaned > 0 {
-			fmt.Fprintf(a.out, "Usunięto wygasłe kopie lokalne: %d\n", cleaned)
+			fmt.Fprintf(a.out, "Expired local backups removed: %d\n", cleaned)
 		}
 	}
 	if !*dryRun {
@@ -1055,7 +1051,7 @@ func (a *application) secureRunModel(rt *runtimeApp, run *store.Run, runErr erro
 	if backup == nil {
 		backup = func(ctx context.Context, rt *runtimeApp) error {
 			if _, statsErr := a.ensureBayesContinuity(ctx, rt); statsErr != nil {
-				a.warning("Nie udało się zapisać aktualnego stanu Bayesa: " + statsErr.Error())
+				a.warning("Could not save the current Bayes state: " + statsErr.Error())
 			}
 			stats, err := rt.scanner.Stats(ctx)
 			if err != nil {
@@ -1070,7 +1066,7 @@ func (a *application) secureRunModel(rt *runtimeApp, run *store.Run, runErr erro
 	}
 	if err := backup(ctx, rt); err != nil {
 		run.Errors++
-		combined := errors.Join(runErr, fmt.Errorf("nie udało się zabezpieczyć modelu Bayesa na Macu: %w", err))
+		combined := errors.Join(runErr, fmt.Errorf("could not back up Bayes model on Mac: %w", err))
 		if finishErr := rt.db.FinishRun(context.Background(), run, combined); finishErr != nil {
 			return errors.Join(combined, finishErr)
 		}
@@ -1082,22 +1078,22 @@ func (a *application) secureRunModel(rt *runtimeApp, run *store.Run, runErr erro
 func (a *application) statusCommand(args []string) error {
 	fs := flag.NewFlagSet("status", flag.ContinueOnError)
 	fs.SetOutput(a.errOut)
-	sinceValue := fs.String("since", "24h", "okres, np. 24h lub 7d")
+	sinceValue := fs.String("since", "24h", "period, e.g. 24h or 7d")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() != 0 {
-		return errors.New("raport nie przyjmuje dodatkowego tekstu; wybierz „Pokaż stan i zalecenia” w menu")
+		return errors.New("report accepts no extra text; choose Show status and recommendations in the menu")
 	}
 	duration, err := config.ParseSince(*sinceValue)
 	if err != nil {
-		return fmt.Errorf("nieprawidłowy okres raportu %q; użyj np. 24h albo 7d", *sinceValue)
+		return fmt.Errorf("invalid report period %q; use e.g. 24h or 7d", *sinceValue)
 	}
 	if duration <= 0 {
-		return errors.New("okres raportu musi być dłuższy niż zero, np. 24h albo 7d")
+		return errors.New("report period must be positive, e.g. 24h or 7d")
 	}
 	if duration > 366*24*time.Hour {
-		return errors.New("okres raportu nie może być dłuższy niż 366 dni")
+		return errors.New("report period must not exceed 366 days")
 	}
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
@@ -1120,29 +1116,29 @@ func (a *application) statusCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-	a.header("Stan robota")
-	fmt.Fprintf(a.out, "Tryb: %s\nTrwałe usuwanie: %s\nOkres raportu: %s\n\n",
+	a.header("Worker status")
+	fmt.Fprintf(a.out, "Mode: %s\nPermanent deletion: %s\nReport period: %s\n\n",
 		modeName(cfg.Safety.Mode), yesNo(cfg.Safety.PurgeEnabled), *sinceValue)
-	fmt.Fprintf(a.out, "Przebiegi:              %d (w tym próbne: %d)\n", summary.Runs, summary.DryRuns)
-	fmt.Fprintf(a.out, "Sprawdzone wiadomości:  %d\n", summary.Scanned)
-	fmt.Fprintf(a.out, "Uratowane z SPAM-u:     %d\n", summary.Rescued)
-	fmt.Fprintf(a.out, "Przeniesione do kwarantanny: %d\n", summary.Quarantined)
-	fmt.Fprintf(a.out, "Do ręcznego sprawdzenia:     %d\n", summary.Review)
-	fmt.Fprintf(a.out, "Nauczone jako spam/ważne:    %d/%d\n", summary.LearnedSpam, summary.LearnedHam)
-	fmt.Fprintf(a.out, "Błędy bez utraty poczty:     %d\n\n", summary.Errors)
-	fmt.Fprintf(a.out, "Obecnie w ewidencji kwarantanny: %d\n", summary.WaitingQuarantine)
-	fmt.Fprintf(a.out, "Obecnie oczekuje na sprawdzenie: %d\n", summary.WaitingReview)
-	fmt.Fprintf(a.out, "Ruchy wymagające uzgodnienia:    %d\n", summary.PendingMoves)
+	fmt.Fprintf(a.out, "Runs:                  %d (including dry-runs: %d)\n", summary.Runs, summary.DryRuns)
+	fmt.Fprintf(a.out, "Messages scanned:      %d\n", summary.Scanned)
+	fmt.Fprintf(a.out, "Rescued from spam:      %d\n", summary.Rescued)
+	fmt.Fprintf(a.out, "Moved to quarantine: %d\n", summary.Quarantined)
+	fmt.Fprintf(a.out, "For manual review:          %d\n", summary.Review)
+	fmt.Fprintf(a.out, "Learned as spam/ham:        %d/%d\n", summary.LearnedSpam, summary.LearnedHam)
+	fmt.Fprintf(a.out, "Errors without mail loss:   %d\n\n", summary.Errors)
+	fmt.Fprintf(a.out, "Currently recorded in quarantine: %d\n", summary.WaitingQuarantine)
+	fmt.Fprintf(a.out, "Currently awaiting review: %d\n", summary.WaitingReview)
+	fmt.Fprintf(a.out, "Moves needing reconciliation: %d\n", summary.PendingMoves)
 	if summary.PendingMoves > 0 {
-		a.warning("Niektóre przeniesienia trzeba bezpiecznie uzgodnić z serwerem. Wiadomości pozostały zabezpieczone.")
+		a.warning("Some moves require safe reconciliation with the server. Messages remain protected.")
 	}
-	fmt.Fprintf(a.out, "Starsze niż okres kwarantanny (to jeszcze nie oznacza usunięcia): %d\n", summary.PurgeEligible)
-	fmt.Fprintf(a.out, "\nPostęp uczenia filtra: spam %d/%d, ważne %d/%d\n",
+	fmt.Fprintf(a.out, "Older than the quarantine period (not yet deletion-eligible): %d\n", summary.PurgeEligible)
+	fmt.Fprintf(a.out, "\nFilter training: spam %d/%d, ham %d/%d\n",
 		trainedSpam, qualification.MinLearns, trainedHam, qualification.MinLearns)
-	fmt.Fprintf(a.out, "Pomyłki wykryte dzięki Twoim poprawkom (30 dni): ważne uznane za spam %d, spam uznany za ważny %d\n",
+	fmt.Fprintf(a.out, "Errors detected through your corrections (30 days): ham marked spam %d, spam marked ham %d\n",
 		falseSpam, falseHam)
 
-	fmt.Fprintln(a.out, "\nCo zrobić teraz:")
+	fmt.Fprintln(a.out, "\nNext action:")
 	current := summary
 	if _, errorCount, outcomeErr := db.LatestLiveRunOutcome(context.Background()); outcomeErr == nil {
 		current.Errors = errorCount
@@ -1150,9 +1146,9 @@ func (a *application) statusCommand(args []string) error {
 	for _, advice := range statusAdvice(current, trainedSpam, trainedHam, qualification.MinLearns, qualification.MinLearns) {
 		fmt.Fprintf(a.out, "  • %s\n", advice)
 	}
-	fmt.Fprintf(a.out, "\nDane programu: %s\nArchiwum kopii: %s\n", cfg.Runtime.DataDir, cfg.Runtime.ArchiveDir)
+	fmt.Fprintf(a.out, "\nApplication data: %s\nBackup archive: %s\n", cfg.Runtime.DataDir, cfg.Runtime.ArchiveDir)
 	if runtime.GOOS == "linux" {
-		fmt.Fprintf(a.out, "Instancja Linux: %s (%s)\n", linuxInstance(cfg), cfg.InstanceID)
+		fmt.Fprintf(a.out, "Linux instance: %s (%s)\n", linuxInstance(cfg), cfg.InstanceID)
 		value, err := db.GetSetting(context.Background(), modelCheckpointRequired)
 		if err != nil {
 			return err
@@ -1167,22 +1163,22 @@ func (a *application) statusCommand(args []string) error {
 func statusAdvice(summary store.Summary, trainedSpam, trainedHam, minSpam, minHam int) []string {
 	var advice []string
 	if summary.PendingMoves > 0 {
-		advice = append(advice, "W menu wybierz „Sprawdź skrzynkę teraz”, aby dokończyć uzgadnianie przeniesień.")
+		advice = append(advice, "Choose Check mailbox now in the menu to finish reconciling moves.")
 	}
 	if summary.Errors > 0 {
-		advice = append(advice, "W menu wybierz „Sprawdź i napraw program”; błędne operacje nie usunęły poczty.")
+		advice = append(advice, "Choose Check and repair in the menu; failed operations did not delete mail.")
 	}
 	if summary.WaitingReview > 0 {
 		advice = append(advice, fmt.Sprintf(
-			"Przejrzyj folder AI-Do-sprawdzenia — czeka tam %d wiadomości.",
+			"Review the configured review folder — %d messages are waiting.",
 			summary.WaitingReview,
 		))
 	}
 	if trainedSpam < minSpam || trainedHam < minHam {
-		advice = append(advice, "Poprawiaj pomyłki robota za pomocą folderów AI-Naucz-spam i AI-Naucz-wazne.")
+		advice = append(advice, "Correct classifications using the configured spam-training and ham-training folders.")
 	}
 	if len(advice) == 0 {
-		advice = append(advice, "Nie musisz nic robić. Guardian działa prawidłowo.")
+		advice = append(advice, "No action required. Guardian is working correctly.")
 	}
 	return advice
 }
@@ -1193,15 +1189,15 @@ func (a *application) purgeCommand(args []string) error {
 	}
 	fs := flag.NewFlagSet("purge", flag.ContinueOnError)
 	fs.SetOutput(a.errOut)
-	dryRun := fs.Bool("dry-run", false, "pokaż bez usuwania")
+	dryRun := fs.Bool("dry-run", false, "preview without deleting")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if fs.NArg() != 0 {
-		return errors.New("polecenie czyszczenia nie przyjmuje dodatkowego tekstu")
+		return errors.New("purge command accepts no extra text")
 	}
 	if !*dryRun {
-		ok, err := a.confirmDanger("To może trwale usunąć wyłącznie spam starszy niż 30 dni.", "USUN")
+		ok, err := a.confirmDanger("This can permanently delete only spam older than 30 days.", "USUN")
 		if err != nil {
 			return err
 		}
@@ -1211,7 +1207,7 @@ func (a *application) purgeCommand(args []string) error {
 	}
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
-		return fmt.Errorf("%w\nOtwórz menu i rozpocznij pierwszą konfigurację", err)
+		return fmt.Errorf("%w\nOpen the menu and start first-time setup", err)
 	}
 	lock, err := acquireRunLock(cfg.Runtime.DataDir)
 	if err != nil {
@@ -1227,14 +1223,14 @@ func (a *application) purgeCommand(args []string) error {
 		return continuityErr
 	} else if rolledBack {
 		return apperror.Wrap(apperror.BayesRollback, "critical",
-			"Lokalny model Bayesa cofnął się; purge został wyłączony.",
-			"Pozostań w trybie ochronnym i ponownie zbierz potwierdzone przykłady.", nil)
+			"The local Bayes model rolled back; purge was disabled.",
+			"Remain in protect mode and collect confirmed examples again.", nil)
 	}
 	run, err := rt.engine.Purge(rt.ctx, *dryRun)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(a.out, "Wiadomości spełniające wszystkie warunki: %d; bezpiecznie pominięte z powodu błędu lub blokady: %d\n", run.Purged, run.Errors)
+	fmt.Fprintf(a.out, "Messages meeting all requirements: %d; safely skipped due to error or safeguard: %d\n", run.Purged, run.Errors)
 	return nil
 }
 
@@ -1253,11 +1249,11 @@ func (a *application) setPurge(enable bool) error {
 		if err := config.Save(a.configPath, cfg); err != nil {
 			return err
 		}
-		a.success("Trwałe usuwanie jest wyłączone.")
+		a.success("Permanent deletion is disabled.")
 		return nil
 	}
 	if cfg.Safety.Mode != "active" {
-		return errors.New("najpierw trzeba zakończyć tryb ochronny i włączyć tryb aktywny")
+		return errors.New("complete protect mode and enable active mode first")
 	}
 	db, err := store.Open(cfg.Runtime.Database)
 	if err != nil {
@@ -1270,7 +1266,7 @@ func (a *application) setPurge(enable bool) error {
 	activeValue, _ := db.GetSetting(context.Background(), "active_since")
 	activeAt, _ := time.Parse(time.RFC3339, activeValue)
 	if activeAt.IsZero() || time.Since(activeAt) < 30*24*time.Hour {
-		return errors.New("tryb aktywny nie działa jeszcze od pełnych 30 dni; trwałe usuwanie pozostaje wyłączone")
+		return errors.New("active mode has not run for 30 full days; permanent deletion remains disabled")
 	}
 	trainedSpam, trainedHam, err := db.TrainingTotals(context.Background(), cfg.Account.Email)
 	if err != nil {
@@ -1278,7 +1274,7 @@ func (a *application) setPurge(enable bool) error {
 	}
 	if trainedSpam < cfg.Safety.MinLearnSpam || trainedHam < cfg.Safety.MinLearnHam {
 		return fmt.Errorf(
-			"za mało potwierdzonych przykładów: spam %d/%d, ważne %d/%d; trwałe usuwanie pozostaje wyłączone",
+			"insufficient confirmed examples: spam %d/%d, ham %d/%d; permanent deletion remains disabled",
 			trainedSpam, cfg.Safety.MinLearnSpam, trainedHam, cfg.Safety.MinLearnHam,
 		)
 	}
@@ -1288,11 +1284,11 @@ func (a *application) setPurge(enable bool) error {
 	}
 	if falseSpam > 0 || falseHam > 0 {
 		return fmt.Errorf(
-			"w ostatnich 30 dniach wystąpiły sprzeczne korekty (ważne→spam: %d, spam→ważne: %d); trwałe usuwanie pozostaje wyłączone",
+			"conflicting corrections in the last 30 days (ham→spam: %d, spam→ham: %d); permanent deletion remains disabled",
 			falseSpam, falseHam,
 		)
 	}
-	ok, err := a.confirmDanger("Od tej chwili robot będzie kasował ponownie potwierdzony spam po 30 dniach kwarantanny.", "WLACZ")
+	ok, err := a.confirmDanger("Guardian will permanently delete reconfirmed spam after 30 days in quarantine.", "ENABLE")
 	if err != nil || !ok {
 		return apperror.ErrCancelled
 	}
@@ -1300,7 +1296,7 @@ func (a *application) setPurge(enable bool) error {
 	if err := config.Save(a.configPath, cfg); err != nil {
 		return err
 	}
-	a.success("Trwałe usuwanie po 30 dniach jest włączone. Każde usunięcie nadal wymaga zaszyfrowanej kopii, zgodnej sumy kontrolnej i ponownego wyniku „spam”.")
+	a.success("Permanent deletion after 30 days is enabled. Every deletion still requires an encrypted backup, matching checksum and a fresh spam verdict.")
 	return nil
 }
 
@@ -1310,7 +1306,7 @@ func (a *application) modeCommand(args []string) error {
 		return err
 	}
 	if len(args) == 0 || args[0] == "status" {
-		fmt.Fprintf(a.out, "Tryb: %s; trwałe usuwanie: %s\n", modeName(cfg.Safety.Mode), yesNo(cfg.Safety.PurgeEnabled))
+		fmt.Fprintf(a.out, "Mode: %s; permanent deletion: %s\n", modeName(cfg.Safety.Mode), yesNo(cfg.Safety.PurgeEnabled))
 		return nil
 	}
 	lock, err := acquireRunLock(cfg.Runtime.DataDir)
@@ -1321,7 +1317,7 @@ func (a *application) modeCommand(args []string) error {
 	switch args[0] {
 	case "protect":
 		if cfg.Safety.Mode == "protect" {
-			a.info("Tryb ochronny jest już włączony. Bieżący okres obserwacji nie został zresetowany.")
+			a.info("Protect mode is already enabled. The current observation period was not reset.")
 			return nil
 		}
 		cfg.Safety.Mode = "protect"
@@ -1331,20 +1327,20 @@ func (a *application) modeCommand(args []string) error {
 		}
 		db, err := store.Open(cfg.Runtime.Database)
 		if err != nil {
-			return fmt.Errorf("tryb ochronny jest włączony, ale nie udało się wyzerować zegara trybu aktywnego: %w", err)
+			return fmt.Errorf("protect mode enabled, but active-mode clock could not be reset: %w", err)
 		}
 		defer db.Close()
 		if err := db.SetSetting(context.Background(), "active_since", ""); err != nil {
-			return fmt.Errorf("tryb ochronny jest włączony, ale nie udało się wyzerować zegara trybu aktywnego: %w", err)
+			return fmt.Errorf("protect mode enabled, but active-mode clock could not be reset: %w", err)
 		}
 		if err := db.SetSetting(context.Background(), "protect_since", time.Now().UTC().Format(time.RFC3339)); err != nil {
-			return fmt.Errorf("tryb ochronny jest włączony, ale nie udało się uruchomić nowego okresu obserwacji: %w", err)
+			return fmt.Errorf("protect mode enabled, but a new observation period could not be started: %w", err)
 		}
-		a.success("Włączono tryb ochronny. Odebrane nie będą automatycznie przenoszone.")
+		a.success("Protect mode enabled. Inbox messages will not be moved automatically.")
 		return nil
 	case "active":
 		if cfg.Safety.Mode == "active" {
-			a.info("Tryb aktywny jest już włączony. Zegar bezpieczeństwa dla trwałego usuwania nie został zmieniony.")
+			a.info("Active mode is already enabled. The permanent-deletion safety clock is unchanged.")
 			return nil
 		}
 		db, err := store.Open(cfg.Runtime.Database)
@@ -1358,21 +1354,21 @@ func (a *application) modeCommand(args []string) error {
 		}
 		installedValue, err := db.GetSetting(ctx, "installed_at")
 		if err != nil {
-			return fmt.Errorf("nie mogę sprawdzić początku okresu ochronnego: %w", err)
+			return fmt.Errorf("cannot check protection-period start: %w", err)
 		}
 		installedAt, err := time.Parse(time.RFC3339, installedValue)
 		if err != nil {
-			return errors.New("nie mam prawidłowej daty rozpoczęcia okresu ochronnego; uruchom guardian setup, aby naprawić konfigurację")
+			return errors.New("no valid protection-period start date; run guardian setup to repair configuration")
 		}
 		protectAt := installedAt
 		protectValue, err := db.GetSetting(ctx, "protect_since")
 		if err != nil {
-			return fmt.Errorf("nie mogę sprawdzić początku bieżącego okresu ochronnego: %w", err)
+			return fmt.Errorf("cannot check current protection-period start: %w", err)
 		}
 		if protectValue != "" {
 			protectAt, err = time.Parse(time.RFC3339, protectValue)
 			if err != nil || protectAt.Before(installedAt) {
-				return errors.New("data bieżącego okresu ochronnego jest nieprawidłowa; uruchom guardian setup")
+				return errors.New("invalid current protection-period date; run guardian setup")
 			}
 		}
 		protectDuration := time.Duration(cfg.Safety.ProtectDays) * 24 * time.Hour
@@ -1380,49 +1376,49 @@ func (a *application) modeCommand(args []string) error {
 			remaining := protectDuration - elapsed
 			remainingDays := int((remaining + 24*time.Hour - 1) / (24 * time.Hour))
 			return fmt.Errorf(
-				"tryb aktywny jest jeszcze zablokowany dla bezpieczeństwa: okres ochronny trwa %d dni, spróbuj ponownie za około %d dni",
+				"active mode is still blocked for safety: protection period is %d days; retry in about %d days",
 				cfg.Safety.ProtectDays, remainingDays,
 			)
 		}
 		qualified, err := db.CurrentQualification(ctx, cfg, time.Now().UTC())
 		if err != nil {
-			return fmt.Errorf("aktualna ocena filtra: %w", err)
+			return fmt.Errorf("current filter evaluation: %w", err)
 		}
 		quality, err := db.ActivationQuality(ctx, cfg.Account.Email, protectAt)
 		if err != nil {
-			return fmt.Errorf("nie mogę ocenić jakości dotychczasowych decyzji: %w", err)
+			return fmt.Errorf("cannot evaluate earlier decision quality: %w", err)
 		}
 		if qualified == nil {
 			if cfg.Rspamd.SpamScore < 12 {
-				return errors.New("próg poniżej 12 wymaga odrębnej oceny: guardian qualify")
+				return errors.New("threshold below 12 requires independent evaluation: guardian qualify")
 			}
 			if err := activationQualityProblem(quality); err != nil {
 				return err
 			}
 		}
-		ok, err := a.confirmDanger("Tryb aktywny zacznie przenosić pewny spam z Odebranych do odwracalnej kwarantanny.", "AKTYWUJ")
+		ok, err := a.confirmDanger("Active mode will start moving confident spam from Inbox to reversible quarantine.", "AKTYWUJ")
 		if err != nil || !ok {
 			return apperror.ErrCancelled
 		}
 		cfg.Safety.Mode = "active"
 		cfg.Safety.PurgeEnabled = false
 		if err := db.SetSetting(ctx, "active_since", time.Now().UTC().Format(time.RFC3339)); err != nil {
-			return fmt.Errorf("nie udało się uruchomić zegara bezpieczeństwa; tryb aktywny pozostaje wyłączony: %w", err)
+			return fmt.Errorf("could not start safety clock; active mode remains disabled: %w", err)
 		}
 		if err := config.Save(a.configPath, cfg); err != nil {
 			_ = db.SetSetting(ctx, "active_since", "")
 			return err
 		}
-		a.success("Włączono tryb aktywny. Trwałe usuwanie nadal jest wyłączone.")
+		a.success("Active mode enabled. Permanent deletion remains disabled.")
 		return nil
 	default:
-		return errors.New("użyj: guardian mode status|protect|active")
+		return errors.New("use: guardian mode status|protect|active")
 	}
 }
 
 func (a *application) archiveCommand(args []string) error {
 	if len(args) == 0 {
-		return errors.New("użyj: guardian archive list albo guardian archive restore ID")
+		return errors.New("use: guardian archive list or guardian archive restore ID")
 	}
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
@@ -1432,19 +1428,19 @@ func (a *application) archiveCommand(args []string) error {
 	case "list":
 		fs := flag.NewFlagSet("archive list", flag.ContinueOnError)
 		fs.SetOutput(a.errOut)
-		page := fs.Int("page", 1, "numer strony")
-		limit := fs.Int("limit", 100, "liczba pozycji na stronie")
+		page := fs.Int("page", 1, "page number")
+		limit := fs.Int("limit", 100, "entries per page")
 		if err := fs.Parse(args[1:]); err != nil {
 			return err
 		}
 		if fs.NArg() != 0 {
-			return errors.New("użyj: guardian archive list [--page N] [--limit N]")
+			return errors.New("use: guardian archive list [--page N] [--limit N]")
 		}
 		if *page < 1 || *page > 1_000_000 {
-			return errors.New("numer strony musi mieścić się między 1 a 1000000")
+			return errors.New("page number must be between 1 and 1000000")
 		}
 		if *limit < 1 || *limit > 200 {
-			return errors.New("liczba pozycji na stronie musi mieścić się między 1 a 200")
+			return errors.New("page size must be between 1 and 200")
 		}
 		db, err := store.Open(cfg.Runtime.Database)
 		if err != nil {
@@ -1456,32 +1452,32 @@ func (a *application) archiveCommand(args []string) error {
 		if err != nil {
 			return err
 		}
-		a.header(fmt.Sprintf("Zaszyfrowane kopie — strona %d", *page))
+		a.header(fmt.Sprintf("Encrypted backups — page %d", *page))
 		if len(items) == 0 {
 			if *page == 1 {
-				fmt.Fprintln(a.out, "Brak kopii.")
+				fmt.Fprintln(a.out, "No backups.")
 			} else {
-				fmt.Fprintln(a.out, "Na tej stronie nie ma już kopii. Wróć do wcześniejszej strony.")
+				fmt.Fprintln(a.out, "No more backups on this page. Return to the previous page.")
 			}
 			return nil
 		}
-		fmt.Fprintln(a.out, "ID    data                 werdykt       stan")
+		fmt.Fprintln(a.out, "ID    date                 verdict       status")
 		for _, item := range items {
 			fmt.Fprintf(a.out, "%-5d %-20s %-13s %s\n", item.ID, item.FirstSeen.Local().Format("2006-01-02 15:04"), item.Verdict, item.Status)
 		}
-		fmt.Fprintln(a.out, "\nAby rozpoznać wiadomość: guardian archive show ID")
-		fmt.Fprintln(a.out, "Aby odzyskać: guardian archive restore ID")
+		fmt.Fprintln(a.out, "\nTo identify a message: guardian archive show ID")
+		fmt.Fprintln(a.out, "To recover: guardian archive restore ID")
 		if len(items) == *limit {
-			fmt.Fprintf(a.out, "Następna strona: guardian archive list --page %d --limit %d\n", *page+1, *limit)
+			fmt.Fprintf(a.out, "Next page: guardian archive list --page %d --limit %d\n", *page+1, *limit)
 		}
 		return nil
 	case "show":
 		if len(args) != 2 {
-			return errors.New("podaj ID, np. guardian archive show 12")
+			return errors.New("provide ID, e.g. guardian archive show 12")
 		}
 		id, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil || id < 1 {
-			return errors.New("ID musi być dodatnią liczbą")
+			return errors.New("ID must be a positive integer")
 		}
 		db, err := store.Open(cfg.Runtime.Database)
 		if err != nil {
@@ -1490,18 +1486,18 @@ func (a *application) archiveCommand(args []string) error {
 		defer db.Close()
 		record, err := db.MessageByID(context.Background(), id)
 		if err != nil {
-			return fmt.Errorf("nie znaleziono kopii o ID %d: %w", id, err)
+			return fmt.Errorf("backup ID %d not found: %w", id, err)
 		}
 		if record.Account != cfg.Account.Email {
-			return errors.New("ta kopia należy do innego konta")
+			return errors.New("this backup belongs to another account")
 		}
 		if record.ArchivePath == "" {
-			return errors.New("lokalna kopia tej wiadomości już wygasła albo nie została utworzona")
+			return errors.New("local backup of this message expired or was never created")
 		}
 		kc := runtimeSecrets(cfg)
 		identity, err := archive.LoadIdentity(kc, cfg.Runtime.ArchiveKeychainService, cfg.Account.Email)
 		if err != nil {
-			return fmt.Errorf("nie mogę otworzyć klucza zaszyfrowanej kopii: %w", err)
+			return fmt.Errorf("cannot open encrypted-backup key: %w", err)
 		}
 		archiver, err := archive.New(cfg.Runtime.ArchiveDir, identity)
 		if err != nil {
@@ -1512,25 +1508,25 @@ func (a *application) archiveCommand(args []string) error {
 			return err
 		}
 		if archive.SHA256(raw) != record.RawSHA256 {
-			return errors.New("suma kontrolna odszyfrowanej kopii nie pasuje")
+			return errors.New("decrypted backup checksum mismatch")
 		}
 		preview, err := parseArchiveHeaderPreview(raw)
 		if err != nil {
-			return fmt.Errorf("kopię można nadal odzyskać, ale jej nagłówki są uszkodzone: %w", err)
+			return fmt.Errorf("backup remains recoverable, but its headers are damaged: %w", err)
 		}
-		a.header(fmt.Sprintf("Podgląd kopii ID %d", id))
-		fmt.Fprintf(a.out, "Od:    %s\nTemat: %s\nData:  %s\n", preview.From, preview.Subject, preview.Date)
-		fmt.Fprintln(a.out, "\nPokazano wyłącznie oczyszczone nagłówki. Treść, HTML, odnośniki i załączniki nie zostały otwarte.")
+		a.header(fmt.Sprintf("Preview backup ID %d", id))
+		fmt.Fprintf(a.out, "From:    %s\nSubject: %s\nDate:    %s\n", preview.From, preview.Subject, preview.Date)
+		fmt.Fprintln(a.out, "\nOnly sanitized headers are shown. Message body, HTML, links and attachments were not opened.")
 		return nil
 	case "restore":
 		if len(args) != 2 {
-			return errors.New("podaj ID, np. guardian archive restore 12")
+			return errors.New("provide ID, e.g. guardian archive restore 12")
 		}
 		id, err := strconv.ParseInt(args[1], 10, 64)
 		if err != nil || id < 1 {
-			return errors.New("ID musi być dodatnią liczbą")
+			return errors.New("ID must be a positive integer")
 		}
-		ok, err := a.confirm("Przywrócić kopię do AI-Do-sprawdzenia jako nieprzeczytaną?", true)
+		ok, err := a.confirm("Restore the backup to the configured review folder as unread?", true)
 		if err != nil || !ok {
 			return apperror.ErrCancelled
 		}
@@ -1557,21 +1553,21 @@ func (a *application) archiveCommand(args []string) error {
 		}
 		if err := restoreErr; err != nil {
 			if errors.Is(err, engine.ErrRestoreAlreadyPresent) {
-				a.info("Wiadomość nadal istnieje w zapisanym folderze. Nie utworzono niepotrzebnego duplikatu.")
+				a.info("The message still exists in its recorded folder. No unnecessary duplicate created.")
 				return nil
 			}
 			return err
 		}
-		a.success("Wiadomość została odzyskana do AI-Do-sprawdzenia. Niczego nie wysłano.")
+		a.success("Message recovered to the configured review folder. Nothing was sent.")
 		return nil
 	default:
-		return errors.New("użyj: guardian archive list albo guardian archive restore ID")
+		return errors.New("use: guardian archive list or guardian archive restore ID")
 	}
 }
 
 func (a *application) serviceCommand(args []string) error {
 	if len(args) != 1 {
-		return errors.New("użyj: guardian service install|status|uninstall")
+		return errors.New("use: guardian service install|status|uninstall")
 	}
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
@@ -1586,32 +1582,32 @@ func (a *application) serviceCommand(args []string) error {
 	case "install":
 		authorized, err := dryRunAuthorized(cfg)
 		if err != nil {
-			return fmt.Errorf("sprawdzenie zgody dry-run: %w", err)
+			return fmt.Errorf("checking dry-run authorization: %w", err)
 		}
 		if !authorized {
-			return errors.New("najpierw wykonaj udany guardian run --dry-run; automatyzacja pozostała wyłączona")
+			return errors.New("first complete guardian run --dry-run successfully; automation remains off")
 		}
 		if err := manager.Install(); err != nil {
 			return err
 		}
-		a.success("Automatyczne sprawdzanie co 2 godziny jest aktywne.")
+		a.success("Automatic checks every 2 hours are active.")
 	case "status":
 		status, err := manager.Status()
 		if err != nil {
 			return err
 		}
 		if strings.Contains(status, "state = running") {
-			a.success("Usługa działa właśnie teraz.")
+			a.success("The service is running now.")
 		} else {
-			a.success("Usługa jest zainstalowana i czeka na kolejny przebieg.")
+			a.success("The service is installed and waiting for the next run.")
 		}
 	case "uninstall":
 		if err := manager.Uninstall(); err != nil {
 			return err
 		}
-		a.success("Automatyczne uruchamianie wyłączone. Wiadomości i dane pozostały bez zmian.")
+		a.success("Autostart disabled. Messages and data are unchanged.")
 	default:
-		return errors.New("użyj: guardian service install|status|uninstall")
+		return errors.New("use: guardian service install|status|uninstall")
 	}
 	return nil
 }
@@ -1627,7 +1623,7 @@ func dryRunAuthorized(cfg config.Config) (bool, error) {
 
 func (a *application) stackCommand(args []string) error {
 	if len(args) != 1 {
-		return errors.New("użyj: guardian stack up|status|down")
+		return errors.New("use: guardian stack up|status|down")
 	}
 	cfg := config.Default()
 	if loaded, err := config.Load(a.configPath); err == nil {
@@ -1648,7 +1644,7 @@ func (a *application) stackCommand(args []string) error {
 		if err := manager.Up(); err != nil {
 			return err
 		}
-		a.success("Lokalny silnik działa.")
+		a.success("The local engine works.")
 	case "status":
 		value, err := manager.Status()
 		if err != nil {
@@ -1659,22 +1655,22 @@ func (a *application) stackCommand(args []string) error {
 		if err := manager.Down(); err != nil {
 			return err
 		}
-		a.success("Silnik zatrzymany. Dane Bayesa pozostały zachowane.")
+		a.success("Engine stopped. Bayes data retained.")
 	default:
-		return errors.New("użyj: guardian stack up|status|down")
+		return errors.New("use: guardian stack up|status|down")
 	}
 	return nil
 }
 
-// repair wykonuje wyłącznie odwracalne naprawy lokalnej instalacji. Nie zmienia
-// trybu ochrony, nie włącza trwałego usuwania i nie przenosi wiadomości.
+// repair performs reversible local repairs without changing protection
+// mode, enabling permanent deletion or moving messages.
 func (a *application) repair() error {
-	a.header("Sprawdź i napraw program")
-	fmt.Fprintln(a.out, "Ta kontrola nie przenosi ani nie usuwa wiadomości i nie zmienia trybu ochrony.")
+	a.header("Check and repair")
+	fmt.Fprintln(a.out, "This check does not move or delete messages or change protection mode.")
 
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
-		return fmt.Errorf("program nie jest jeszcze skonfigurowany: %w\nOtwórz menu i wybierz „Rozpocznij pierwszą konfigurację”", err)
+		return fmt.Errorf("application not configured yet: %w\nOpen the menu and choose Start first-time setup", err)
 	}
 	lock, err := acquireRunLock(cfg.Runtime.DataDir)
 	if err != nil {
@@ -1682,7 +1678,7 @@ func (a *application) repair() error {
 	}
 	defer lock.Close()
 
-	a.info("Etap 1 z 3: uruchamiam lokalny filtr antyspamowy…")
+	a.info("Step 1 of 3: starting the local spam filter…")
 	startFilter := a.startFilter
 	if startFilter == nil {
 		startFilter = func(cfg config.Config) error {
@@ -1694,38 +1690,37 @@ func (a *application) repair() error {
 	}
 	if err := startFilter(cfg); err != nil {
 		return fmt.Errorf(
-			"nie udało się uruchomić lokalnego filtra: %w\nAutomatyzacja i ustawienia bezpieczeństwa pozostały bez zmian",
+			"could not start local filter: %w\nAutomation and safety settings unchanged",
 			err,
 		)
 	}
-	a.success("Lokalny filtr jest uruchomiony.")
+	a.success("The local filter is running.")
 
-	a.info("Etap 2 z 3: sprawdzam szyfrowanie, kopie, filtr i połączenie z o2…")
+	a.info("Step 2 of 3: checking encryption, backups, filter and IMAP connection…")
 	checkInstallation := a.checkInstallation
 	if checkInstallation == nil {
 		checkInstallation = func() error { return a.doctor(false, false) }
 	}
 	if err := checkInstallation(); err != nil {
 		return fmt.Errorf(
-			"kontrola nie została zaliczona: %w\nAutomatyzacja i ustawienia bezpieczeństwa pozostały bez zmian",
+			"check failed: %w\nAutomation and safety settings are unchanged",
 			err,
 		)
 	}
-	// Bootstrap usługi launchd może od razu uruchomić pierwszy przebieg.
-	// Zwolnij blokadę, aby ten bezpieczny przebieg nie odbił się od naprawy.
+	// Bootstrap may start a run immediately; release the repair lock first.
 	if err := lock.Close(); err != nil {
-		return fmt.Errorf("kontrole przeszły pomyślnie, ale nie mogę bezpiecznie zwolnić blokady programu; automatyzacja pozostała bez zmian: %w", err)
+		return fmt.Errorf("checks passed, but the application lock could not be safely released; automation unchanged: %w", err)
 	}
 
-	a.info("Etap 3 z 3: sprawdzam automatyczne uruchamianie…")
+	a.info("Step 3 of 3: checking automatic startup…")
 	exe, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("nie mogę ustalić położenia programu; automatyzacja pozostała bez zmian: %w", err)
+		return fmt.Errorf("cannot locate executable; automation unchanged: %w", err)
 	}
 	manager := service.Manager{Executable: exe, DataDir: cfg.Runtime.DataDir, LogFile: cfg.Runtime.LogFile}
 	dryRunReady, err := dryRunAuthorized(cfg)
 	if err != nil {
-		return fmt.Errorf("nie można potwierdzić obowiązkowej próby bez zmian: %w", err)
+		return fmt.Errorf("cannot confirm required dry-run: %w", err)
 	}
 	if !dryRunReady {
 		disableAutomation := a.disableAutomation
@@ -1733,10 +1728,10 @@ func (a *application) repair() error {
 			disableAutomation = func(config.Config) error { return manager.Uninstall() }
 		}
 		if err := disableAutomation(cfg); err != nil {
-			return fmt.Errorf("dry-run wymaga ponownego wykonania, ale nie udało się zatrzymać automatu: %w", err)
+			return fmt.Errorf("a new dry-run is required, but automation could not be stopped: %w", err)
 		}
-		a.warning("Automatyzacja pozostaje wyłączona, ponieważ trzeba ponownie wykonać bezpieczny dry-run.")
-		a.success("Pozostałe kontrole i naprawy zakończono pomyślnie.")
+		a.warning("Automation remains off because a new safe dry-run is required.")
+		a.success("Other checks and repairs completed successfully.")
 		return nil
 	}
 	automationStatus := a.automationStatus
@@ -1751,35 +1746,35 @@ func (a *application) repair() error {
 		enableAutomation = func(config.Config) error { return manager.Install() }
 	}
 	if err := automationStatus(cfg); err == nil {
-		a.info("Automatyczne sprawdzanie jest aktywne. Odświeżam jego pliki startowe i zabezpieczenia…")
+		a.info("Automatic checks are active. Refreshing launch files and safeguards…")
 		if err := enableAutomation(cfg); err != nil {
-			return fmt.Errorf("kontrole przeszły pomyślnie, ale nie udało się bezpiecznie odświeżyć automatyzacji: %w", err)
+			return fmt.Errorf("checks passed, but automation could not be safely refreshed: %w", err)
 		}
-		a.success("Automatyczne sprawdzanie co 2 godziny jest aktywne i odświeżone.")
-		a.success("Program działa prawidłowo. Nie trzeba nic więcej robić.")
+		a.success("Automatic checks every 2 hours are active and refreshed.")
+		a.success("The application works correctly. No further action required.")
 		return nil
 	}
 
-	a.warning("Automatyczne sprawdzanie co 2 godziny nie jest aktywne.")
+	a.warning("Automatic checks every 2 hours are inactive.")
 	if !a.interactive {
-		a.info("Zachowano tryb ręczny. Automat możesz włączyć osobnym przełącznikiem po zakończeniu naprawy.")
-		a.success("Pozostałe kontrole zakończono pomyślnie.")
+		a.info("Manual mode retained. Enable automation separately after repair completes.")
+		a.success("Other checks completed successfully.")
 		return nil
 	}
-	ok, err := a.confirm("Czy włączyć je teraz?", true)
+	ok, err := a.confirm("Enable it now?", true)
 	if err != nil {
-		return fmt.Errorf("automatyzacja pozostała wyłączona: %w", err)
+		return fmt.Errorf("automation remains off: %w", err)
 	}
 	if !ok {
-		a.info("Automatyzacja pozostała wyłączona zgodnie z Twoim wyborem.")
-		a.success("Pozostałe kontrole zakończono pomyślnie.")
+		a.info("Automation remains off as requested.")
+		a.success("Other checks completed successfully.")
 		return nil
 	}
 	if err := enableAutomation(cfg); err != nil {
-		return fmt.Errorf("kontrole przeszły pomyślnie, ale nie udało się włączyć automatyzacji: %w", err)
+		return fmt.Errorf("checks passed, but automation could not be enabled: %w", err)
 	}
-	a.success("Automatyczne sprawdzanie co 2 godziny zostało włączone.")
-	a.success("Program działa prawidłowo. Nie trzeba nic więcej robić.")
+	a.success("Automatic checks every 2 hours enabled.")
+	a.success("The application works correctly. No further action required.")
 	return nil
 }
 
@@ -1788,11 +1783,9 @@ func (a *application) menu() error {
 		cfg, cfgErr := config.Load(a.configPath)
 		a.header("Menu")
 		if cfgErr != nil {
-			fmt.Fprintln(a.out, "Guardian czeka na pierwszą konfigurację. Żadna wiadomość nie została zmieniona.")
-			fmt.Fprintln(a.out, `
-  1. Rozpocznij pierwszą konfigurację
-  0. Zakończ`)
-			choice, err := a.ask("Wybierz numer", "")
+			fmt.Fprintln(a.out, "Guardian is waiting for first-time setup. No messages were changed.")
+			fmt.Fprintln(a.out, "\n  1. Start first-time setup\n  0. Quit")
+			choice, err := a.ask("Choose a number", "")
 			if err != nil {
 				return err
 			}
@@ -1801,25 +1794,18 @@ func (a *application) menu() error {
 				if actionErr := a.setup(); actionErr != nil {
 					a.problemWithAdvice(actionErr)
 				}
-				_, _ = a.ask("Naciśnij Enter, aby wrócić do menu", "")
+				_, _ = a.ask("Press Enter to return to the menu", "")
 			case "0", "q", "Q":
 				return nil
 			default:
-				a.warning("Wpisz 1, aby rozpocząć, albo 0, aby zakończyć.")
+				a.warning("Enter 1 to start or 0 to quit.")
 			}
 			continue
 		}
 
-		fmt.Fprintf(a.out, "Tryb: %s | trwałe usuwanie: %s\n", modeName(cfg.Safety.Mode), yesNo(cfg.Safety.PurgeEnabled))
-		fmt.Fprintln(a.out, `
-  1. Sprawdź skrzynkę teraz
-  2. Pokaż stan i zalecenia
-  3. Sprawdź i napraw program
-  4. Jak poprawić pomyłkę robota
-  5. Odzyskaj wiadomość z kopii
-  6. Ustawienia i opcje dodatkowe
-  0. Zakończ`)
-		choice, err := a.ask("Wybierz numer", "")
+		fmt.Fprintf(a.out, "Mode: %s | permanent deletion: %s\n", modeName(cfg.Safety.Mode), yesNo(cfg.Safety.PurgeEnabled))
+		fmt.Fprintln(a.out, "\n  1. Check mailbox now\n  2. Show status and recommendations\n  3. Check and repair\n  4. Correct a classification\n  5. Recover a message from backup\n  6. Settings and advanced options\n  0. Quit")
+		choice, err := a.ask("Choose a number", "")
 		if err != nil {
 			return err
 		}
@@ -1840,23 +1826,18 @@ func (a *application) menu() error {
 		case "0", "q", "Q":
 			return nil
 		default:
-			a.warning("Nie ma takiej pozycji. Wpisz numer od 0 do 6.")
+			a.warning("No such option. Enter a number from 0 to 6.")
 		}
 		if actionErr != nil {
 			a.problemWithAdvice(actionErr)
 		}
-		_, _ = a.ask("Naciśnij Enter, aby wrócić do menu", "")
+		_, _ = a.ask("Press Enter to return to the menu", "")
 	}
 }
 
 func (a *application) optionsMenu(cfg config.Config) error {
-	fmt.Fprintln(a.out, `
-  1. Ustawienia trybu ochrony
-  2. Próba bez przenoszenia wiadomości
-  3. Zaktualizuj konfigurację konta
-  4. Pokaż techniczny stan lokalnego filtra
-  0. Wróć do głównego menu`)
-	value, err := a.ask("Wybierz numer", "")
+	fmt.Fprintln(a.out, "\n  1. Protection mode settings\n  2. Dry-run without moving messages\n  3. Update account configuration\n  4. Show local filter technical status\n  0. Back to main menu")
+	value, err := a.ask("Choose a number", "")
 	if err != nil {
 		return err
 	}
@@ -1872,7 +1853,7 @@ func (a *application) optionsMenu(cfg config.Config) error {
 	case "0", "":
 		return nil
 	default:
-		return errors.New("nie ma takiej pozycji; wybierz numer od 0 do 4")
+		return errors.New("no such option; choose a number from 0 to 4")
 	}
 }
 
@@ -1880,13 +1861,8 @@ func (a *application) modeMenu(cfg config.Config, cfgErr error) error {
 	if cfgErr != nil {
 		return cfgErr
 	}
-	fmt.Fprintln(a.out, `
-  1. Włącz tryb ochronny (najbezpieczniejszy)
-  2. Włącz tryb aktywny
-  3. Włącz trwałe usuwanie po 30 dniach
-  4. Wyłącz trwałe usuwanie
-  0. Wróć bez zmian`)
-	value, err := a.ask("Wybierz numer", "")
+	fmt.Fprintln(a.out, "\n  1. Enable protect mode (safest)\n  2. Enable active mode\n  3. Enable permanent deletion after 30 days\n  4. Disable permanent deletion\n  0. Back without changes")
+	value, err := a.ask("Choose a number", "")
 	if err != nil {
 		return err
 	}
@@ -1902,7 +1878,7 @@ func (a *application) modeMenu(cfg config.Config, cfgErr error) error {
 	case "0", "":
 		return nil
 	default:
-		return errors.New("nie ma takiej pozycji; wybierz numer od 0 do 4")
+		return errors.New("no such option; choose a number from 0 to 4")
 	}
 }
 
@@ -1911,7 +1887,7 @@ func (a *application) archiveMenu() error {
 		if err := a.archiveCommand([]string{"list", "--page", strconv.Itoa(page), "--limit", "100"}); err != nil {
 			return err
 		}
-		value, err := a.ask("Podaj ID, N aby zobaczyć następną stronę albo Enter, aby wrócić", "")
+		value, err := a.ask("Enter an ID, N for the next page, or Enter to return", "")
 		if err != nil || value == "" {
 			return err
 		}
@@ -1947,7 +1923,7 @@ func parseArchiveHeaderPreview(raw []byte) (archiveHeaderPreview, error) {
 		}
 		value = sanitizeHeaderForTerminal(value, 180)
 		if value == "" {
-			return "(brak)"
+			return "(none)"
 		}
 		return value
 	}
@@ -2036,20 +2012,13 @@ func skipStringControl(runes []rune, i int) int {
 }
 
 func (a *application) trainingInstructions() {
-	fmt.Fprintln(a.out, `
-Gdy robot się pomyli, przeciągnij wiadomość w webmailu lub programie pocztowym:
-
-  • przeoczony spam         → AI-Naucz-spam
-  • ważna wiadomość w złym miejscu → AI-Naucz-wazne
-
-Przy kolejnym przebiegu robot nauczy Rspamd i przeniesie wiadomość do właściwego
-folderu. Nie trzeba otwierać wiadomości ani klikać żadnych odnośników.`)
+	fmt.Fprintln(a.out, "\nTo correct a classification, move the message in your email client to the configured spam-training or ham-training folder. Guardian learns from it on the next run and moves it to the appropriate destination. You do not need to open the message or follow any links. See your configuration for the exact folder names.")
 }
 
 func (a *application) openRuntime(withMail bool) (*runtimeApp, func(), error) {
 	cfg, err := config.Load(a.configPath)
 	if err != nil {
-		return nil, func() {}, apperror.Wrap(apperror.Config, "critical", "Konfiguracja Guardiana jest nieczytelna.", "Otwórz aplikację i rozpocznij konfigurację albo użyj Napraw.", err)
+		return nil, func() {}, apperror.Wrap(apperror.Config, "critical", "Guardian configuration is unreadable.", "Open the application and start setup or use Repair.", err)
 	}
 	if err := os.MkdirAll(cfg.Runtime.DataDir, 0o700); err != nil {
 		return nil, func() {}, err
@@ -2073,13 +2042,13 @@ func (a *application) openRuntime(withMail bool) (*runtimeApp, func(), error) {
 	controller, err := kc.Get(cfg.Rspamd.PasswordKeychainService, "controller")
 	if err != nil {
 		cleanup()
-		return nil, func() {}, fmt.Errorf("nie można odczytać sekretu kontrolera Rspamd: %w", err)
+		return nil, func() {}, fmt.Errorf("cannot read Rspamd controller secret: %w", err)
 	}
 	scanner := rspamd.New(cfg.Rspamd.ScanURL, cfg.Rspamd.LearnURL, controller, time.Duration(cfg.Rspamd.TimeoutSeconds)*time.Second)
 	id, err := archive.LoadIdentity(kc, cfg.Runtime.ArchiveKeychainService, cfg.Account.Email)
 	if err != nil {
 		cleanup()
-		return nil, func() {}, apperror.Wrap(apperror.ArchiveKey, "critical", "Nie można odczytać klucza zaszyfrowanych kopii.", "Nie usuwaj archiwum; odblokuj pęk kluczy i uruchom Napraw.", err)
+		return nil, func() {}, apperror.Wrap(apperror.ArchiveKey, "critical", "Cannot read the encrypted-backup key.", "Do not delete the archive; unlock Keychain and run Repair.", err)
 	}
 	archiver, err := archive.New(cfg.Runtime.ArchiveDir, id)
 	if err != nil {
@@ -2091,7 +2060,7 @@ func (a *application) openRuntime(withMail bool) (*runtimeApp, func(), error) {
 		password, err := kc.Get(cfg.Account.PasswordKeychainService, cfg.Account.Email)
 		if err != nil {
 			cleanup()
-			return nil, func() {}, apperror.Wrap(apperror.Keychain, "critical", "Nie można odczytać hasła o2 z pęku kluczy.", "Odblokuj pęk kluczy lub zapisz ponownie hasło aplikacyjne.", err)
+			return nil, func() {}, apperror.Wrap(apperror.Keychain, "critical", "Cannot read the IMAP password from Keychain.", "Unlock Keychain or save the account/app password again.", err)
 		}
 		// Command deadlines belong to the IMAP client. Healthy sessions may
 		// outlive ten minutes; interruption or a failed command cancels the same
@@ -2124,8 +2093,8 @@ func (a *application) ensureBayesContinuity(ctx context.Context, rt *runtimeApp)
 	if err != nil {
 		if rt.cfg.Safety.Mode == "active" || rt.cfg.Safety.PurgeEnabled {
 			return false, apperror.Wrap(
-				apperror.Rspamd, "critical", "Nie można potwierdzić ciągłości lokalnego modelu Bayesa.",
-				"Uruchom „Napraw”, zanim Guardian wykona automatyczne decyzje.", err,
+				apperror.Rspamd, "critical", "Cannot confirm continuity of the local Bayes model.",
+				"Run Repair before Guardian makes automatic decisions.", err,
 			)
 		}
 		return false, nil
@@ -2140,7 +2109,7 @@ func (a *application) ensureBayesContinuity(ctx context.Context, rt *runtimeApp)
 		}
 		parsed, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
-			return 0, true, fmt.Errorf("nieprawidłowy licznik %s", key)
+			return 0, true, fmt.Errorf("invalid counter %s", key)
 		}
 		return parsed, true, nil
 	}
@@ -2230,13 +2199,13 @@ func (a *application) maybeNotify(db *store.DB) {
 	}
 	summary, err := db.Summary(ctx, since)
 	if err != nil {
-		a.warning("Nie udało się przygotować dziennego powiadomienia: " + err.Error())
+		a.warning("Could not prepare the daily notification: " + err.Error())
 		return
 	}
-	message := fmt.Sprintf("Uratowane: %d, kwarantanna: %d, do sprawdzenia: %d, błędy: %d",
+	message := fmt.Sprintf("Rescued: %d, quarantined: %d, review: %d, errors: %d",
 		summary.Rescued, summary.Quarantined, summary.WaitingReview, summary.Errors)
-	if err := a.notify("O2 Mail Guardian", message); err != nil {
-		a.warning("Nie udało się wyświetlić dziennego powiadomienia.")
+	if err := a.notify("Mail Guardian", message); err != nil {
+		a.warning("Could not display the daily notification.")
 		return
 	}
 	_ = db.SetSetting(ctx, "last_notification", time.Now().UTC().Format(time.RFC3339))
@@ -2256,14 +2225,14 @@ func (a *application) maybeNotifyRunFailure(db *store.DB) {
 		return
 	}
 	if err := a.notify(
-		"O2 Mail Guardian wymaga uwagi",
-		"Automatyczne sprawdzanie nie zakończyło się poprawnie. Poczta nie została usunięta. Otwórz Guardian i wybierz „Sprawdź i napraw program”.",
+		"Mail Guardian needs attention",
+		"The automatic check failed. Mail was not deleted. Open Guardian and choose Check and repair.",
 	); err != nil {
-		a.warning("Nie udało się wyświetlić powiadomienia o problemie.")
+		a.warning("Could not display the problem notification.")
 		return
 	}
 	if err := db.SetSetting(ctx, "last_failure_notification", time.Now().UTC().Format(time.RFC3339)); err != nil {
-		a.warning("Nie udało się zapisać czasu powiadomienia o problemie.")
+		a.warning("Could not save the problem-notification timestamp.")
 	}
 }
 
@@ -2280,52 +2249,52 @@ func (a *application) notify(title, message string) error {
 }
 
 func (a *application) printRun(run *store.Run) {
-	fmt.Fprintln(a.out, "\nPodsumowanie:")
+	fmt.Fprintln(a.out, "\nSummary:")
 	fmt.Fprintf(a.out, "  Sprawdzone:      %d\n", run.Scanned)
-	fmt.Fprintf(a.out, "  Uratowane:       %d\n", run.Rescued)
-	fmt.Fprintf(a.out, "  Kwarantanna:     %d\n", run.Quarantined)
-	fmt.Fprintf(a.out, "  Do sprawdzenia:  %d\n", run.Review)
-	fmt.Fprintf(a.out, "  Nauczone spam/ważne: %d/%d\n", run.LearnedSpam, run.LearnedHam)
-	fmt.Fprintf(a.out, "  Błędy bez utraty poczty: %d\n", run.Errors)
+	fmt.Fprintf(a.out, "  Rescued:         %d\n", run.Rescued)
+	fmt.Fprintf(a.out, "  Quarantined:     %d\n", run.Quarantined)
+	fmt.Fprintf(a.out, "  Review:          %d\n", run.Review)
+	fmt.Fprintf(a.out, "  Learned spam/ham: %d/%d\n", run.LearnedSpam, run.LearnedHam)
+	fmt.Fprintf(a.out, "  Errors without mail loss: %d\n", run.Errors)
 	if run.Errors > 0 {
-		a.warning("Nie wszystkie wiadomości udało się sprawdzić. Pozostały bezpiecznie na serwerze; wybierz w menu „Sprawdź i napraw program”.")
+		a.warning("Some messages could not be checked. They remain safe on the server; choose Check and repair in the menu.")
 	} else if run.Review > 0 {
-		a.info("Zajrzyj do folderu AI-Do-sprawdzenia — są tam wiadomości wymagające Twojej decyzji.")
+		a.info("Check the configured review folder — messages await your decision.")
 	} else {
-		a.success("Sprawdzanie zakończone.")
+		a.success("Check complete.")
 	}
 }
 
 func (a *application) readHiddenPassword(question string) (string, error) {
-	fmt.Fprintf(a.out, "%s (wpisywane znaki nie będą widoczne): ", question)
+	fmt.Fprintf(a.out, "%s (characters will be hidden): ", question)
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
 		fmt.Fprintln(a.out)
-		return "", errors.New("bezpieczne wpisanie hasła wymaga interaktywnego okna Terminala; otwórz Guardian.command i ponów konfigurację")
+		return "", errors.New("secure password entry requires an interactive Terminal; open Guardian.command and retry setup")
 	}
 	value, err := term.ReadPassword(int(os.Stdin.Fd()))
 	fmt.Fprintln(a.out)
 	if err != nil {
-		return "", fmt.Errorf("nie mogę bezpiecznie odczytać hasła: %w", err)
+		return "", fmt.Errorf("cannot read password securely: %w", err)
 	}
 	password := strings.TrimSpace(string(value))
 	if password == "" {
-		return "", errors.New("hasło aplikacyjne nie może być puste")
+		return "", errors.New("account/app password must not be empty")
 	}
 	if strings.ContainsAny(password, "\r\n\x00") {
-		return "", errors.New("hasło aplikacyjne ma niedozwolony format")
+		return "", errors.New("invalid account/app password format")
 	}
 	return password, nil
 }
 
 func verifyAndStorePassword(password string, verify, storeSecret func(string) error) error {
 	if password == "" {
-		return errors.New("hasło aplikacyjne nie może być puste")
+		return errors.New("account/app password must not be empty")
 	}
 	if err := verify(password); err != nil {
-		return fmt.Errorf("o2 odrzuciło nowe hasło lub połączenie nie powiodło się: %w", err)
+		return fmt.Errorf("mail server rejected the new password or connection failed: %w", err)
 	}
 	if err := storeSecret(password); err != nil {
-		return fmt.Errorf("hasło działa, ale nie udało się zapisać go w pęku kluczy: %w", err)
+		return fmt.Errorf("password works, but could not be saved in Keychain: %w", err)
 	}
 	return nil
 }
@@ -2355,9 +2324,9 @@ func (a *application) ask(question, defaultValue string) (string, error) {
 }
 
 func (a *application) confirm(question string, defaultYes bool) (bool, error) {
-	hint := "[T/n]"
+	hint := "[Y/n]"
 	if !defaultYes {
-		hint = "[t/N]"
+		hint = "[y/N]"
 	}
 	value, err := a.ask(question+" "+hint, "")
 	if err != nil {
@@ -2372,21 +2341,22 @@ func (a *application) confirm(question string, defaultYes bool) (bool, error) {
 	case "n", "nie", "no":
 		return false, nil
 	default:
-		return false, errors.New("odpowiedz „tak” albo „nie”")
+		return false, errors.New("answer yes or no")
 	}
 }
 
 func (a *application) confirmDanger(message, phrase string) (bool, error) {
-	fmt.Fprintf(a.out, "\n%s\nAby potwierdzić, wpisz dokładnie %s: ", message, phrase)
+	fmt.Fprintf(a.out, "\n%s\nTo confirm, type exactly %s: ", message, phrase)
 	value, err := a.in.ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return false, err
 	}
-	return strings.TrimSpace(value) == phrase, nil
+	value = strings.TrimSpace(value)
+	return value == phrase || (phrase == "ENABLE" && value == "WLACZ"), nil
 }
 
 func (a *application) header(title string) {
-	fmt.Fprintf(a.out, "\n%s%sO2 Mail Guardian — %s%s\n", a.c(blue), a.c(bold), title, a.c(reset))
+	fmt.Fprintf(a.out, "\n%s%sMail Guardian — %s%s\n", a.c(blue), a.c(bold), title, a.c(reset))
 	fmt.Fprintln(a.out, "────────────────────────────────────────────")
 }
 func (a *application) info(message string) {
@@ -2399,7 +2369,7 @@ func (a *application) warning(message string) {
 	fmt.Fprintf(a.out, "%s!%s %s\n", a.c(yellow), a.c(reset), message)
 }
 func (a *application) problem(err error) {
-	fmt.Fprintf(a.errOut, "%sBłąd:%s %v\n", a.c(red), a.c(reset), err)
+	fmt.Fprintf(a.errOut, "%sError:%s %v\n", a.c(red), a.c(reset), err)
 }
 func (a *application) problemWithAdvice(err error) {
 	userError := apperror.From(err)
@@ -2409,7 +2379,7 @@ func (a *application) problemWithAdvice(err error) {
 	}
 	a.problem(errors.New(userError.Message))
 	if userError.Recovery != "" {
-		a.info("Co możesz zrobić: " + userError.Recovery)
+		a.info("What you can do: " + userError.Recovery)
 	}
 }
 func (a *application) report(kind, message string) {
@@ -2433,13 +2403,13 @@ func (a *application) c(value string) string {
 
 func acquireRunLock(dataDir string) (*runlock.Lock, error) {
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
-		return nil, fmt.Errorf("nie mogę przygotować prywatnego katalogu danych: %w", err)
+		return nil, fmt.Errorf("cannot prepare private data directory: %w", err)
 	}
 	lock, err := runlock.Acquire(filepath.Join(dataDir, "guardian.lock"))
 	if err != nil {
 		return nil, apperror.Wrap(
-			apperror.Busy, "attention", "Guardian wykonuje już inną operację.",
-			"Poczekaj kilka minut i spróbuj ponownie.", err,
+			apperror.Busy, "attention", "Guardian is already performing another operation.",
+			"Wait a few minutes and retry.", err,
 		)
 	}
 	return lock, nil
@@ -2454,7 +2424,7 @@ func nonemptyFile(path string) (bool, error) {
 		return false, err
 	}
 	if !info.Mode().IsRegular() {
-		return false, fmt.Errorf("%s nie jest zwykłym plikiem", path)
+		return false, fmt.Errorf("%s is not a regular file", path)
 	}
 	return info.Size() > 0, nil
 }
@@ -2466,14 +2436,14 @@ func validateNewArchiveIdentity(archiveDir, database string) error {
 	hasDependentData, err := archiveIdentityHasDependentData(archiveDir, database)
 	if err != nil {
 		return apperror.Wrap(
-			apperror.ArchiveKey, "critical", "Nie można bezpiecznie sprawdzić wcześniejszych danych Guardiana.",
-			"Nie twórz nowego klucza; uruchom Napraw i zachowaj bazę oraz archiwum.", err,
+			apperror.ArchiveKey, "critical", "Cannot safely inspect existing Guardian data.",
+			"Do not create a new key; run Repair and retain the database and archive.", err,
 		)
 	}
 	if hasDependentData {
 		return apperror.Wrap(
-			apperror.ArchiveKey, "critical", "Brakuje dotychczasowego klucza szyfrowania, ale istnieją wcześniejsze dane Guardiana.",
-			"Odtwórz klucz archiwum w pęku kluczy. Guardian nie zastąpi go nowym kluczem.", nil,
+			apperror.ArchiveKey, "critical", "The previous encryption key is missing, but Guardian data already exists.",
+			"Restore the archive key in Keychain. Guardian will not replace it with a new key.", nil,
 		)
 	}
 	return nil
@@ -2482,11 +2452,11 @@ func validateNewArchiveIdentity(archiveDir, database string) error {
 func archiveIdentityHasDependentData(archiveDir, database string) (bool, error) {
 	hasEncryptedFiles, err := archive.HasEncryptedFiles(archiveDir)
 	if err != nil {
-		return false, fmt.Errorf("sprawdzenie zaszyfrowanych kopii: %w", err)
+		return false, fmt.Errorf("checking encrypted backups: %w", err)
 	}
 	hasDatabase, err := nonemptyFile(database)
 	if err != nil {
-		return false, fmt.Errorf("sprawdzenie bazy Guardiana: %w", err)
+		return false, fmt.Errorf("checking Guardian database: %w", err)
 	}
 	return hasEncryptedFiles || hasDatabase, nil
 }
@@ -2494,7 +2464,7 @@ func archiveIdentityHasDependentData(archiveDir, database string) (bool, error) 
 func rollbackNewArchiveIdentity(store secretStore, service, account, archiveDir, database string) error {
 	hasDependentData, err := archiveIdentityHasDependentData(archiveDir, database)
 	if err != nil {
-		return fmt.Errorf("nie można potwierdzić, że nowy klucz archiwum jest zbędny; został zachowany: %w", err)
+		return fmt.Errorf("cannot confirm that new archive key is unnecessary; retained it: %w", err)
 	}
 	if hasDependentData {
 		// A database may have been created just before a later setup step failed.
@@ -2511,57 +2481,57 @@ func activationQualityProblem(quality store.ActivationQuality) error {
 	var reasons []string
 	if quality.FalsePositives > 0 {
 		reasons = append(reasons, fmt.Sprintf(
-			"%d ważnych wiadomości otrzymało wcześniej pewny werdykt „spam”",
+			"%d legitimate messages previously received a confident spam verdict",
 			quality.FalsePositives,
 		))
 	}
 	if quality.FalseRescues > 0 {
 		reasons = append(reasons, fmt.Sprintf(
-			"%d wiadomości oznaczonych później jako spam zostało wcześniej automatycznie uratowanych",
+			"%d messages later marked as spam were previously rescued automatically",
 			quality.FalseRescues,
 		))
 	}
 	if quality.SpamFeedback == 0 {
-		reasons = append(reasons, "nie oznaczono jeszcze żadnej wiadomości w folderze AI-Naucz-spam")
+		reasons = append(reasons, "no messages have been marked in the configured spam-training folder")
 	} else {
 		percent := quality.SpamPreviouslySpam * 100 / quality.SpamFeedback
 		if quality.SpamPreviouslySpam*100 < quality.SpamFeedback*90 {
 			reasons = append(reasons, fmt.Sprintf(
-				"robot rozpoznał wcześniej jako pewny spam tylko %d z %d oznaczonych wiadomości (%d%%); wymagane jest co najmniej 90%%",
+				"only %d of %d marked messages were previously confident spam (%d%%); at least 90%% required",
 				quality.SpamPreviouslySpam, quality.SpamFeedback, percent,
 			))
 		}
 	}
 	if quality.SpamUnexplained > 0 {
 		reasons = append(reasons, fmt.Sprintf(
-			"%d oznaczonych spamów nie miało wcześniej werdyktu „spam” ani „do ręcznego sprawdzenia”",
+			"%d spam corrections had no earlier spam or manual-review verdict",
 			quality.SpamUnexplained,
 		))
 	}
 	if len(reasons) == 0 && !quality.Ready() {
-		reasons = append(reasons, "zebrane wyniki nie spełniają jeszcze wszystkich warunków bezpieczeństwa")
+		reasons = append(reasons, "collected results do not yet meet all safety requirements")
 	}
 	if len(reasons) == 0 {
 		return nil
 	}
 	return errors.New(
-		"tryb aktywny pozostaje wyłączony, ponieważ:\n  • " +
+		"active mode remains disabled because:\n  • " +
 			strings.Join(reasons, "\n  • ") +
-			"\nPozostań w trybie ochronnym, poprawiaj pomyłki w folderach nauki i spróbuj ponownie po dalszej obserwacji",
+			"\nRemain in protect mode, correct classifications using the training folders, and retry after further observation",
 	)
 }
 
 func modeName(mode string) string {
 	if mode == "active" {
-		return "aktywny (kwarantanna)"
+		return "active (quarantine)"
 	}
-	return "ochronny"
+	return "protect"
 }
 func yesNo(v bool) string {
 	if v {
-		return "włączone"
+		return "enabled"
 	}
-	return "wyłączone"
+	return "disabled"
 }
 func boolError(ok bool, message string) error {
 	if ok {
