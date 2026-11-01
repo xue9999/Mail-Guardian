@@ -96,7 +96,7 @@ func TestLinuxWorkerRejectsMissingInstanceBeforeHostCommands(t *testing.T) {
 		_, err := m.Status()
 		return err
 	}, func() error { return m.BackupRedis(t.TempDir(), 0, 0) }} {
-		if err := call(); err == nil || !strings.Contains(err.Error(), "instancji") {
+		if err := call(); err == nil || !strings.Contains(err.Error(), "instance") {
 			t.Fatalf("Linux dispatch reached a host command without an instance: %v", err)
 		}
 	}

@@ -22,6 +22,9 @@
 - Make synthetic backup restart tests independent of host free-space state and
   produce oversized pipe input concurrently to avoid a macOS fixture deadlock.
   Production backup and remote-protocol guards are unchanged.
+- Drain Mach-O metadata output during package validation to avoid SIGPIPE on
+  small pipe buffers while retaining minimum-OS validation. Keep new local UI
+  account/folder metadata out of diagnostic exports, with an archive regression.
 - Document the provider protocol requirements, unsupported authentication,
   qualification limits and upgrade contract. Publication does not deploy this
   new minor line to the reference VPS.

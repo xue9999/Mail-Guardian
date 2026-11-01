@@ -82,8 +82,9 @@ SWIFT_BIN_DIR="$(guardian_swift build --package-path "$PROJECT_DIR/macos" --conf
 cp "${SWIFT_BIN_DIR}/O2MailGuardianApp" "${APP}/Contents/MacOS/O2MailGuardianApp"
 cp "$PROJECT_DIR/macos/Info.plist" "$APP/Contents/Info.plist"
 # Validate deployment metadata at build time, without requiring Xcode on the recipient Mac.
+# Drain otool completely: early awk exit can make otool fail with SIGPIPE under pipefail.
 for binary in "$PREBUILT/guardian" "$APP/Contents/MacOS/O2MailGuardianApp"; do
-  minimum="$(/usr/bin/otool -l "$binary" | awk '/LC_BUILD_VERSION/ {build=1} build && /minos/ {print $2; exit} /LC_VERSION_MIN_MACOSX/ {legacy=1} legacy && /version/ {print $2; exit}')"
+  minimum="$(/usr/bin/otool -l "$binary" | awk '/LC_BUILD_VERSION/ {build=1} !found && build && /minos/ {minimum=$2; found=1} /LC_VERSION_MIN_MACOSX/ {legacy=1} !found && legacy && /version/ {minimum=$2; found=1} END {if (found) print minimum}')"
   [[ -n "$minimum" ]] && awk -v v="$minimum" 'BEGIN {split(v,a,"."); exit !(a[1] < 13 || (a[1] == 13 && a[2] == 0))}' || { printf 'Unsupported minimum macOS: %s\n' "$minimum" >&2; exit 1; }
 done
 /usr/bin/codesign --force --sign - "$PREBUILT/guardian"

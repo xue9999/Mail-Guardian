@@ -852,6 +852,9 @@ func (a *application) exportDiagnostics() (any, error) {
 	}
 	if snapshotErr == nil {
 		report["snapshot_available"] = true
+		// Local UI metadata can identify the mailbox or contain private custom
+		// folder names. Keep it out of the shareable diagnostic archive.
+		snapshot.Connection, snapshot.MailboxFolders = nil, nil
 		report["snapshot"] = snapshot
 	} else {
 		report["snapshot_available"] = false
