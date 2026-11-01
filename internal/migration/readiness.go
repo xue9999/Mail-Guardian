@@ -17,7 +17,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/config"
 	"golang.org/x/sys/unix"
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"

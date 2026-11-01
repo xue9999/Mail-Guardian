@@ -23,12 +23,12 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/engine"
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/engine"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/keychain"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
 	_ "modernc.org/sqlite"
 )
 

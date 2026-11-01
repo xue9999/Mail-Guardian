@@ -63,7 +63,7 @@ func (m Manager) Install() error {
 	runnerPath := filepath.Join(m.DataDir, runnerFileName)
 	for _, dir := range []string{filepath.Dir(path), m.DataDir, filepath.Dir(m.LogFile)} {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
-			return fmt.Errorf("przygotowanie katalogu usługi %q: %w", dir, err)
+			return fmt.Errorf("preparing service directory %q: %w", dir, err)
 		}
 	}
 	if err := os.Chmod(m.DataDir, 0o700); err != nil {
@@ -71,7 +71,7 @@ func (m Manager) Install() error {
 	}
 	log, err := os.OpenFile(m.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
-		return fmt.Errorf("przygotowanie logu usługi: %w", err)
+		return fmt.Errorf("preparing service log: %w", err)
 	}
 	if err := log.Close(); err != nil {
 		return err
@@ -80,7 +80,7 @@ func (m Manager) Install() error {
 		return err
 	}
 	if err := writeAtomic(runnerPath, []byte(serviceRunner()), 0o700); err != nil {
-		return fmt.Errorf("instalacja bezpiecznego programu usługi: %w", err)
+		return fmt.Errorf("installing the secure service runner: %w", err)
 	}
 	content := plist(runnerPath, m.Executable, m.DataDir, m.LogFile)
 	if err := validatePlist(content); err != nil {
@@ -89,7 +89,7 @@ func (m Manager) Install() error {
 	previous, readErr := os.ReadFile(path)
 	hadPrevious := readErr == nil
 	if readErr != nil && !errors.Is(readErr, os.ErrNotExist) {
-		return fmt.Errorf("kopia poprzedniej usługi: %w", readErr)
+		return fmt.Errorf("backing up previous service: %w", readErr)
 	}
 	if err := writeAtomic(path, []byte(content), 0o600); err != nil {
 		return err
@@ -103,20 +103,20 @@ func (m Manager) Install() error {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "/bin/launchctl", "bootstrap", domain, path)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		bootstrapErr := fmt.Errorf("launchctl nie uruchomił automatycznego sprawdzania: %w (%s)", err, bytes.TrimSpace(out))
+		bootstrapErr := fmt.Errorf("launchctl did not start automatic checks: %w (%s)", err, bytes.TrimSpace(out))
 		if rollbackErr := rollbackPlist(path, previous, hadPrevious, domain, Label); rollbackErr != nil {
-			return fmt.Errorf("%v; dodatkowo nie udało się przywrócić poprzedniej usługi: %w", bootstrapErr, rollbackErr)
+			return fmt.Errorf("%v; also failed to restore the previous service: %w", bootstrapErr, rollbackErr)
 		}
-		return fmt.Errorf("%v; poprzednia konfiguracja usługi została przywrócona", bootstrapErr)
+		return fmt.Errorf("%v; previous service configuration restored", bootstrapErr)
 	}
 	enableCtx, enableCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer enableCancel()
 	if out, err := exec.CommandContext(enableCtx, "/bin/launchctl", "enable", domain+"/"+Label).CombinedOutput(); err != nil {
-		enableErr := fmt.Errorf("launchctl nie włączył usługi: %w (%s)", err, bytes.TrimSpace(out))
+		enableErr := fmt.Errorf("launchctl did not enable service: %w (%s)", err, bytes.TrimSpace(out))
 		if rollbackErr := rollbackPlist(path, previous, hadPrevious, domain, Label); rollbackErr != nil {
-			return fmt.Errorf("%v; dodatkowo nie udało się przywrócić poprzedniej usługi: %w", enableErr, rollbackErr)
+			return fmt.Errorf("%v; also failed to restore the previous service: %w", enableErr, rollbackErr)
 		}
-		return fmt.Errorf("%v; poprzednia konfiguracja usługi została przywrócona", enableErr)
+		return fmt.Errorf("%v; previous service configuration restored", enableErr)
 	}
 	return nil
 }
@@ -149,26 +149,26 @@ func (m Manager) Status() (string, error) {
 	out, err := exec.CommandContext(ctx, "/bin/launchctl", "print", domain+"/"+Label).CombinedOutput()
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return "", errors.New("sprawdzanie usługi przekroczyło 10 sekund; uruchom „guardian napraw”")
+			return "", errors.New("service check exceeded 10 seconds; run guardian repair")
 		}
-		return "", errors.New("automatyczne uruchamianie nie jest aktywne; wybierz „Napraw instalację” albo uruchom „guardian napraw”")
+		return "", errors.New("autostart is inactive; choose Repair installation or run guardian repair")
 	}
 	return string(out), nil
 }
 
 func (m Manager) validate() error {
 	if !filepath.IsAbs(m.Executable) {
-		return errors.New("ścieżka programu guardian musi być bezwzględna")
+		return errors.New("guardian executable path must be absolute")
 	}
 	info, err := os.Stat(m.Executable)
 	if err != nil {
-		return fmt.Errorf("nie znaleziono programu guardian %q: %w", m.Executable, err)
+		return fmt.Errorf("guardian executable %q not found: %w", m.Executable, err)
 	}
 	if !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
-		return fmt.Errorf("%q nie jest wykonywalnym programem guardian", m.Executable)
+		return fmt.Errorf("%q is not an executable guardian program", m.Executable)
 	}
 	if !filepath.IsAbs(m.DataDir) || !filepath.IsAbs(m.LogFile) {
-		return errors.New("katalog danych i log usługi muszą mieć ścieżki bezwzględne")
+		return errors.New("data directory and service log must use absolute paths")
 	}
 	return nil
 }
@@ -222,61 +222,7 @@ func plist(runner, executable, dataDir, logFile string) string {
 }
 
 func serviceRunner() string {
-	return `#!/bin/bash
-
-set -u
-
-GUARDIAN_BIN="${1:?brakuje ścieżki guardian}"
-DATA_DIR="${2:?brakuje katalogu danych}"
-LOG_FILE="${3:?brakuje ścieżki logu}"
-NOTICE_FILE="${DATA_DIR}/service-error-notified-at"
-MAX_LOG_BYTES=5242880
-
-rotate_log() {
-  [[ -f "${LOG_FILE}" ]] || return 0
-  local size
-  size="$(/usr/bin/stat -f '%z' "${LOG_FILE}" 2>/dev/null || printf '0')"
-  [[ "${size}" =~ ^[0-9]+$ ]] || size=0
-  if (( size <= MAX_LOG_BYTES )); then
-    return 0
-  fi
-  [[ -f "${LOG_FILE}.1" ]] && /bin/mv -f "${LOG_FILE}.1" "${LOG_FILE}.2"
-  /bin/mv -f "${LOG_FILE}" "${LOG_FILE}.1"
-  (umask 077; : > "${LOG_FILE}")
-  /bin/chmod 600 "${LOG_FILE}"
-}
-
-notify_failure() {
-  local now last
-  now="$(/bin/date +%s)"
-  last=0
-  if [[ -f "${NOTICE_FILE}" ]]; then
-    read -r last < "${NOTICE_FILE}" || last=0
-    [[ "${last}" =~ ^[0-9]+$ ]] || last=0
-  fi
-  if (( now - last < 86400 )); then
-    return 0
-  fi
-  /usr/bin/osascript -e 'display notification "Automatyczne sprawdzanie nie powiodło się. Otwórz aplikację O2 Mail Guardian i wybierz Sprawdź i napraw." with title "O2 Mail Guardian"' >/dev/null 2>&1 || true
-  local tmp="${NOTICE_FILE}.tmp.$$"
-  (umask 077; printf '%s\n' "${now}" > "${tmp}")
-  /bin/mv -f "${tmp}" "${NOTICE_FILE}"
-}
-
-rotate_log
-
-# Przekierowanie jest otwierane dopiero po rotacji. Dzięki temu bieżący
-# przebieg zawsze zapisuje do guardian.log, a nie do przeniesionego .1.
-if ! GUARDIAN_SERVICE_RUNNER=1 "${GUARDIAN_BIN}" service-run >>"${LOG_FILE}" 2>&1; then
-	printf '%s\n' "Automatyczne sprawdzanie skrzynki nie powiodło się. Uruchom guardian doctor." >&2
-	notify_failure
-	exit 1
-fi
-
-# Zachowujemy timestamp także po udanym przebiegu. Dzięki temu dwa odrębne
-# błędy rozdzielone sukcesem nie zasypią użytkownika powiadomieniami tego
-# samego dnia. Po 24 godzinach notify_failure sam nadpisze znacznik.
-`
+	return "#!/bin/bash\n\nset -u\n\nGUARDIAN_BIN=\"${1:?missing guardian path}\"\nDATA_DIR=\"${2:?missing data directory}\"\nLOG_FILE=\"${3:?missing log path}\"\nNOTICE_FILE=\"${DATA_DIR}/service-error-notified-at\"\nMAX_LOG_BYTES=5242880\n\nrotate_log() {\n  [[ -f \"${LOG_FILE}\" ]] || return 0\n  local size\n  size=\"$(/usr/bin/stat -f '%z' \"${LOG_FILE}\" 2>/dev/null || printf '0')\"\n  [[ \"${size}\" =~ ^[0-9]+$ ]] || size=0\n  if (( size <= MAX_LOG_BYTES )); then\n    return 0\n  fi\n  [[ -f \"${LOG_FILE}.1\" ]] && /bin/mv -f \"${LOG_FILE}.1\" \"${LOG_FILE}.2\"\n  /bin/mv -f \"${LOG_FILE}\" \"${LOG_FILE}.1\"\n  (umask 077; : > \"${LOG_FILE}\")\n  /bin/chmod 600 \"${LOG_FILE}\"\n}\n\nnotify_failure() {\n  local now last\n  now=\"$(/bin/date +%s)\"\n  last=0\n  if [[ -f \"${NOTICE_FILE}\" ]]; then\n    read -r last < \"${NOTICE_FILE}\" || last=0\n    [[ \"${last}\" =~ ^[0-9]+$ ]] || last=0\n  fi\n  if (( now - last < 86400 )); then\n    return 0\n  fi\n  /usr/bin/osascript -e 'display notification \"Automatic check failed. Open Mail Guardian and choose Check and repair.\" with title \"Mail Guardian\"' >/dev/null 2>&1 || true\n  local tmp=\"${NOTICE_FILE}.tmp.$$\"\n  (umask 077; printf '%s\\n' \"${now}\" > \"${tmp}\")\n  /bin/mv -f \"${tmp}\" \"${NOTICE_FILE}\"\n}\n\nrotate_log\n\n# Open redirection after rotation so the current run writes guardian.log.\nif ! GUARDIAN_SERVICE_RUNNER=1 \"${GUARDIAN_BIN}\" service-run >>\"${LOG_FILE}\" 2>&1; then\n\tprintf '%s\\n' \"Automatic mailbox check failed. Run guardian doctor.\" >&2\n\tnotify_failure\n\texit 1\nfi\n\n# Retain the timestamp after success to rate-limit separate failures to one notice per day.\n"
 }
 
 func validatePlist(content string) error {
@@ -286,7 +232,7 @@ func validatePlist(content string) error {
 	cmd.Stdin = strings.NewReader(content)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("wygenerowana usługa launchd jest nieprawidłowa: %w (%s)", err, bytes.TrimSpace(out))
+		return fmt.Errorf("generated launchd service is invalid: %w (%s)", err, bytes.TrimSpace(out))
 	}
 	return nil
 }
@@ -341,7 +287,7 @@ func rollbackPlist(path string, previous []byte, hadPrevious bool, domain, label
 	defer bootstrapCancel()
 	out, err := exec.CommandContext(bootstrapCtx, "/bin/launchctl", "bootstrap", domain, path).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("launchctl bootstrap poprzedniej usługi: %w (%s)", err, bytes.TrimSpace(out))
+		return fmt.Errorf("launchctl bootstrap of previous service: %w (%s)", err, bytes.TrimSpace(out))
 	}
 	return nil
 }

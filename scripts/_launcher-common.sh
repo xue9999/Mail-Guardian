@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Wspólne, proste komunikaty dla skrótów otwieranych dwuklikiem.
+# Shared messages for double-click launchers.
 
 set -u
 
@@ -15,7 +15,7 @@ launcher_red() { printf '\033[1;31m%s\033[0m\n' "$*" >&2; }
 launcher_pause() {
   if [[ -t 0 ]]; then
     printf '\n'
-    read -r -p "Naciśnij Enter, aby zamknąć to okno…" _
+    read -r -p "Press Enter to close this window…" _
   fi
 }
 
@@ -25,8 +25,8 @@ launcher_confirm() {
   if [[ ! -t 0 ]]; then
     return 1
   fi
-  read -r -p "${question} [T/n] " answer
-  case "${answer:-T}" in
+  read -r -p "${question} [Y/n] " answer
+  case "${answer:-Y}" in
     [Nn]*) return 1 ;;
     *) return 0 ;;
   esac
@@ -36,35 +36,35 @@ ensure_guardian_installed() {
   if [[ -x "${GUARDIAN_BIN}" ]]; then
     return 0
   fi
-  launcher_yellow "O2 Mail Guardian nie jest jeszcze zainstalowany."
+  launcher_yellow "Mail Guardian is not installed yet."
   if [[ ! -f "${LAUNCHER_PROJECT_DIR}/Install.command" ]]; then
-    launcher_red "W tym folderze brakuje Install.command. Pobierz ponownie pełną paczkę programu."
+    launcher_red "Install.command is missing. Download the complete package again."
     return 1
   fi
-  if ! launcher_confirm "Uruchomić teraz bezpieczny instalator?"; then
-    launcher_yellow "Instalacja pominięta."
+  if ! launcher_confirm "Run the safe installer now?"; then
+    launcher_yellow "Installation skipped."
     return 1
   fi
   if ! GUARDIAN_LAUNCHED_FROM_SHORTCUT=1 /bin/bash "${LAUNCHER_PROJECT_DIR}/Install.command"; then
-    launcher_red "Instalacja nie została zakończona. Przeczytaj czerwony komunikat powyżej."
+    launcher_red "Installation did not complete. Read the error above."
     return 1
   fi
   if [[ ! -x "${GUARDIAN_BIN}" ]]; then
-    launcher_red "Instalator zakończył pracę, ale program nadal nie jest dostępny."
+    launcher_red "Installer exited, but the program is still unavailable."
     return 1
   fi
 }
 
 offer_guardian_repair() {
-  launcher_yellow "Program może teraz wykonać bezpieczną naprawę bez zmieniania wiadomości."
-  if ! launcher_confirm "Sprawdzić i naprawić program?"; then
-    launcher_yellow "Naprawa pominięta. Żadna wiadomość nie została z tego powodu usunięta."
+  launcher_yellow "The program can attempt a safe repair without changing messages."
+  if ! launcher_confirm "Check and repair the application?"; then
+    launcher_yellow "Repair skipped. No message was deleted as a result."
     return 1
   fi
   if ! "${GUARDIAN_BIN}" napraw; then
-    launcher_red "Automatyczna naprawa nie rozwiązała problemu."
-    launcher_red "Otwórz aplikację O2 Mail Guardian i w zakładce Pomoc zapisz bezpieczny raport."
+    launcher_red "Automatic repair did not resolve the problem."
+    launcher_red "Open Mail Guardian and save a safe report from Help."
     return 1
   fi
-  launcher_green "Naprawa zakończyła się pomyślnie."
+  launcher_green "Repair completed successfully."
 }

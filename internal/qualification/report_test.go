@@ -2,7 +2,7 @@ package qualification
 
 import (
 	"encoding/json"
-	"github.com/o2-mail-guardian/guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/config"
 	"os"
 	"testing"
 	"time"

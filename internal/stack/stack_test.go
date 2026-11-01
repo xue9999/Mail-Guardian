@@ -23,7 +23,7 @@ func TestWaitForRspamdRequiresPongFromEveryEndpoint(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 80*time.Millisecond)
 	defer cancel()
 	err := waitForRspamd(ctx, []string{healthy.URL, unhealthy.URL}, 10*time.Millisecond)
-	if err == nil || !strings.Contains(err.Error(), "brak odpowiedzi") {
+	if err == nil || !strings.Contains(err.Error(), "no pong response") {
 		t.Fatalf("waitForRspamd() error = %v", err)
 	}
 }

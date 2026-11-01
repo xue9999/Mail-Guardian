@@ -1,7 +1,7 @@
 #!/bin/bash
 # Exercise the real installer and real signed binaries; isolate external effects.
 set -Eeuo pipefail
-PACKAGE_ROOT="${1:?Podaj rozpakowaną paczkę}"
+PACKAGE_ROOT="${1:?Provide extracted package}"
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd -P)"
 TEST_HOME="$(mktemp -d /tmp/o2-guardian-installer-test.XXXXXX)"
 trap '/bin/rm -rf "$TEST_HOME"' EXIT
@@ -43,7 +43,7 @@ run_install() {
   local code=0
   env "${common[@]}" "$@" /bin/bash -x "$PACKAGE_ROOT/.payload/scripts/install-core.sh" > "$TEST_HOME/output" 2>&1 || code=$?
   if grep -Eq '^\++ ((/usr/bin/)?swift (build|test)|go (build|test|vet)|brew install go)' "$TEST_HOME/output"; then
-    printf 'Ścieżka binarna wywołała kompilator.\n' >&2; exit 1
+    printf 'Prebuilt installation invoked a compiler.\n' >&2; exit 1
   fi
   return "$code"
 }
@@ -66,7 +66,7 @@ for kind in doctor service; do
 done
 # Every actual staging checkpoint restores the old complete set.
 for point in after-deploy after-backend after-app after-ui-plist; do
-  if run_install GUARDIAN_FAIL_AT="$point"; then printf 'Nie wywołano awarii: %s\n' "$point" >&2; exit 1; fi
+  if run_install GUARDIAN_FAIL_AT="$point"; then printf 'Failure was not injected: %s\n' "$point" >&2; exit 1; fi
   [[ "$(cat "$TEST_HOME/result")" == failed ]]
   cmp "$PACKAGE_ROOT/.payload/prebuilt/guardian" "$TEST_HOME/.local/bin/o2-mail-guardian/guardian"
   cmp "$PACKAGE_ROOT/.payload/prebuilt/O2 Mail Guardian.app/Contents/MacOS/O2MailGuardianApp" "$TEST_HOME/Applications/O2 Mail Guardian.app/Contents/MacOS/O2MailGuardianApp"
@@ -88,7 +88,7 @@ for ((i=0; i<200; i++)); do [[ ! -f "$TEST_HOME/held" ]] || break; sleep 0.1; do
 log="$TEST_HOME/Library/Logs/O2 Mail Guardian/instalacja.log"
 log_sum="$(shasum "$log")"
 if run_install; then exit 1; fi
-grep -q 'Inna instalacja' "$TEST_HOME/output"
+grep -q 'Another installation' "$TEST_HOME/output"
 if env "${common[@]}" /bin/bash "$PACKAGE_ROOT/Install.command" > "$TEST_HOME/second-wrapper" 2>&1; then exit 1; fi
 [[ "$(shasum "$log")" == "$log_sum" ]]
 touch "$TEST_HOME/release"
@@ -104,4 +104,4 @@ kill -TERM "$core_pid"
 touch "$TEST_HOME/release"
 if wait "$core_pid"; then exit 1; fi
 [[ ! -d "$TEST_HOME/Library/Logs/O2 Mail Guardian/install.lock" ]]
-printf 'Gotowe programy: pierwsza instalacja, aktualizacja, awarie, blokada i sygnał: OK\n'
+printf 'Prebuilt installation, update, failures, lock and signal: OK\n'

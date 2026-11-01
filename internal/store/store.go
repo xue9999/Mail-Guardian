@@ -127,7 +127,7 @@ func Open(path string) (*DB, error) {
 	} {
 		if _, err := db.ExecContext(ctx, pragma); err != nil {
 			db.Close()
-			return nil, fmt.Errorf("inicjalizacja SQLite: %w", err)
+			return nil, fmt.Errorf("initializing SQLite: %w", err)
 		}
 	}
 	s := &DB{sql: db}
@@ -137,7 +137,7 @@ func Open(path string) (*DB, error) {
 	}
 	if err := os.Chmod(path, 0o600); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("ustawianie prywatnych uprawnień bazy: %w", err)
+		return nil, fmt.Errorf("setting private database permissions: %w", err)
 	}
 	return s, nil
 }
@@ -164,11 +164,11 @@ func (db *DB) RequireFreshDryRun(ctx context.Context, protectSince time.Time) er
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO settings(key,value) VALUES(?,?)
 ON CONFLICT(key) DO UPDATE SET value=excluded.value`, key, value); err != nil {
-			return fmt.Errorf("reset zabezpieczeń konfiguracji: %w", err)
+			return fmt.Errorf("resetting configuration safety gates: %w", err)
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("utrwalenie resetu zabezpieczeń konfiguracji: %w", err)
+		return fmt.Errorf("committing configuration safety reset: %w", err)
 	}
 	return nil
 }
@@ -187,7 +187,7 @@ func (db *DB) IntegrityCheck(ctx context.Context) error {
 	for rows.Next() {
 		var diagnostic string
 		if err := rows.Scan(&diagnostic); err != nil {
-			return fmt.Errorf("odczyt SQLite quick_check: %w", err)
+			return fmt.Errorf("reading SQLite quick_check: %w", err)
 		}
 		if !strings.EqualFold(strings.TrimSpace(diagnostic), "ok") && len(diagnostics) < 10 {
 			diagnostics = append(diagnostics, diagnostic)
@@ -197,7 +197,7 @@ func (db *DB) IntegrityCheck(ctx context.Context) error {
 		return fmt.Errorf("SQLite quick_check: %w", err)
 	}
 	if len(diagnostics) != 0 {
-		return fmt.Errorf("baza SQLite jest uszkodzona: %s", strings.Join(diagnostics, "; "))
+		return fmt.Errorf("SQLite database is corrupt: %s", strings.Join(diagnostics, "; "))
 	}
 	return nil
 }
@@ -213,10 +213,10 @@ func (db *DB) PruneTechnicalHistory(ctx context.Context, before time.Time) error
 
 	cutoff := before.UTC().Format(time.RFC3339Nano)
 	if _, err := tx.ExecContext(ctx, `DELETE FROM events WHERE at<?`, cutoff); err != nil {
-		return fmt.Errorf("retencja zdarzeń technicznych: %w", err)
+		return fmt.Errorf("technical-event retention: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM runs WHERE started_at<?`, cutoff); err != nil {
-		return fmt.Errorf("retencja historii uruchomień: %w", err)
+		return fmt.Errorf("run-history retention: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("utrwalenie retencji technicznej: %w", err)
@@ -308,25 +308,25 @@ CREATE TABLE IF NOT EXISTS reconciliations (
 );`
 	tx, err := db.sql.BeginTx(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("rozpoczęcie migracji bazy: %w", err)
+		return fmt.Errorf("starting database migration: %w", err)
 	}
 	defer tx.Rollback()
 	if _, err := tx.ExecContext(ctx, schema); err != nil {
-		return fmt.Errorf("tworzenie struktury bazy: %w", err)
+		return fmt.Errorf("creating database schema: %w", err)
 	}
 	if err := ensureColumn(ctx, tx, "messages", "feedback_intent", "TEXT NOT NULL DEFAULT ''"); err != nil {
 		return fmt.Errorf("migracja intencji korekt: %w", err)
 	}
 	for _, column := range []string{"initial_verdict", "initial_action"} {
 		if err := ensureColumn(ctx, tx, "messages", column, "TEXT NOT NULL DEFAULT ''"); err != nil {
-			return fmt.Errorf("zachowanie pierwszej oceny wiadomości: %w", err)
+			return fmt.Errorf("retaining first message evaluation: %w", err)
 		}
 	}
 	if _, err := tx.ExecContext(ctx, `UPDATE messages SET initial_verdict=verdict,initial_action=action WHERE initial_verdict=''`); err != nil {
 		return fmt.Errorf("utrwalenie historycznych ocen: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("utrwalenie migracji bazy: %w", err)
+		return fmt.Errorf("committing database migration: %w", err)
 	}
 	return nil
 }
@@ -372,7 +372,7 @@ func (db *DB) BeginRun(ctx context.Context, command string, dryRun bool) (*Run, 
 	if _, err := tx.ExecContext(ctx, `
 UPDATE runs SET status='error',finished_at=?
 WHERE status='running' AND finished_at IS NULL`, now.Format(time.RFC3339Nano)); err != nil {
-		return nil, fmt.Errorf("uzgadnianie przerwanego uruchomienia: %w", err)
+		return nil, fmt.Errorf("reconciling interrupted run: %w", err)
 	}
 	res, err := tx.ExecContext(ctx,
 		`INSERT INTO runs(started_at,command,dry_run,status) VALUES(?,?,?,'running')`,
@@ -663,7 +663,7 @@ WHERE id=?`,
 
 func (db *DB) MarkLearned(ctx context.Context, id int64, feedback string) error {
 	if feedback != "spam" && feedback != "ham" {
-		return fmt.Errorf("nieprawidłowa etykieta uczenia %q", feedback)
+		return fmt.Errorf("invalid training label %q", feedback)
 	}
 	_, err := db.sql.ExecContext(ctx, `
 UPDATE messages SET status='pending_move',feedback=?,action='learn_'||?,last_error=''
@@ -673,7 +673,7 @@ WHERE id=?`, feedback, feedback, id)
 
 func (db *DB) MarkFeedbackIntent(ctx context.Context, id int64, feedback string) error {
 	if feedback != "spam" && feedback != "ham" {
-		return fmt.Errorf("nieprawidłowa intencja uczenia %q", feedback)
+		return fmt.Errorf("invalid training intent %q", feedback)
 	}
 	_, err := db.sql.ExecContext(ctx, `
 UPDATE messages SET feedback_intent=?,last_error='' WHERE id=?`, feedback, id)
@@ -703,14 +703,14 @@ WHERE id=? AND account=?
 		return err
 	}
 	if updated != 1 {
-		return errors.New("wiadomość nadal ma zapisaną lokalizację; przywrócenie przez APPEND jest zablokowane")
+		return errors.New("message still has its recorded location; restore by APPEND blocked")
 	}
 	return nil
 }
 
 func (db *DB) FinalizeRestore(ctx context.Context, id int64, account, folder string, uidValidity, uid uint32) error {
 	if uidValidity == 0 || uid == 0 {
-		return errors.New("przywrócenie nie ma jednoznacznego UID i UIDVALIDITY")
+		return errors.New("restore has no unambiguous UID and UIDVALIDITY")
 	}
 	res, err := db.sql.ExecContext(ctx, `
 UPDATE messages
@@ -725,7 +725,7 @@ WHERE id=? AND account=? AND status IN ('pending_restore','restored')`,
 		return err
 	}
 	if updated != 1 {
-		return errors.New("nie znaleziono oczekującego przywrócenia dla tego konta")
+		return errors.New("no pending restore found for this account")
 	}
 	return nil
 }
@@ -909,23 +909,23 @@ FROM runs WHERE started_at>=?`, since.UTC().Format(time.RFC3339Nano)).
 	}
 	if err := db.sql.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM messages WHERE status='quarantined'`).Scan(&s.WaitingQuarantine); err != nil {
-		return s, fmt.Errorf("podsumowanie kwarantanny: %w", err)
+		return s, fmt.Errorf("summarizing quarantine: %w", err)
 	}
 	if err := db.sql.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM messages WHERE status='review'`).Scan(&s.WaitingReview); err != nil {
-		return s, fmt.Errorf("podsumowanie ręcznej weryfikacji: %w", err)
+		return s, fmt.Errorf("summarizing manual review: %w", err)
 	}
 	if err := db.sql.QueryRowContext(ctx, `
 SELECT COUNT(*) FROM messages
 WHERE status IN ('pending_learn','pending_move','pending_restore','move_ambiguous')`).
 		Scan(&s.PendingMoves); err != nil {
-		return s, fmt.Errorf("podsumowanie nierozstrzygniętych operacji: %w", err)
+		return s, fmt.Errorf("summarizing unresolved operations: %w", err)
 	}
 	if err := db.sql.QueryRowContext(ctx, `
 SELECT COUNT(*) FROM messages
 WHERE status='quarantined' AND delete_after IS NOT NULL AND delete_after<=?`,
 		time.Now().UTC().Format(time.RFC3339Nano)).Scan(&s.PurgeEligible); err != nil {
-		return s, fmt.Errorf("podsumowanie gotowych do usunięcia: %w", err)
+		return s, fmt.Errorf("summarizing deletion eligibility: %w", err)
 	}
 	return s, nil
 }
@@ -1150,7 +1150,7 @@ FROM reconciliations WHERE message_id=?`, messageID).Scan(
 
 func (db *DB) SaveReconcileProgress(ctx context.Context, p ReconcileProgress) error {
 	if p.MessageID <= 0 {
-		return errors.New("postęp uzgadniania nie ma identyfikatora wiadomości")
+		return errors.New("reconciliation progress is missing message identity")
 	}
 	if p.UpdatedAt.IsZero() {
 		p.UpdatedAt = time.Now().UTC()

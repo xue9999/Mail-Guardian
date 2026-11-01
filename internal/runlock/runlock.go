@@ -20,7 +20,7 @@ func Acquire(path string) (*Lock, error) {
 	if err := unix.Flock(int(f.Fd()), unix.LOCK_EX|unix.LOCK_NB); err != nil {
 		f.Close()
 		if errors.Is(err, unix.EWOULDBLOCK) {
-			return nil, errors.New("robot już działa w innym procesie")
+			return nil, errors.New("worker already running in another process")
 		}
 		return nil, fmt.Errorf("blokada procesu: %w", err)
 	}

@@ -3,8 +3,8 @@ package store
 import (
 	"context"
 	"encoding/json"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/qualification"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/qualification"
 	"os"
 	"path/filepath"
 	"testing"

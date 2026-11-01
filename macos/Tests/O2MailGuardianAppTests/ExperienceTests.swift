@@ -13,7 +13,7 @@ extension ProtocolTests {
         #expect(!model.busy)
         #expect(model.failure == nil)
         #expect(model.snapshotIsStale)
-        #expect(model.notice?.contains("Wcześniej zakończone kroki") == true)
+        #expect(model.notice?.contains("Previously completed steps") == true)
     }
 
     @MainActor
@@ -79,12 +79,12 @@ extension ProtocolTests {
         snapshot.health = "healthy"
         snapshot.automation = "on"
         snapshot.mode = "protect"
-        #expect(ProtectionPresentation(snapshot).title == "Odebrane pod obserwacją")
+        #expect(ProtectionPresentation(snapshot).title == "Inbox under observation")
         #expect(ProtectionPresentation(snapshot).symbol == "eye.fill")
         snapshot.mode = "active"
-        #expect(ProtectionPresentation(snapshot).title == "Porządkowanie jest włączone")
+        #expect(ProtectionPresentation(snapshot).title == "Cleanup enabled")
         snapshot.automation = "off"
-        #expect(ProtectionPresentation(snapshot).title == "Sprawdzanie na Twoje żądanie")
+        #expect(ProtectionPresentation(snapshot).title == "Checks on demand")
     }
 
     @Test func unknownModeAndStaleDataCannotAppearHealthy() {
@@ -93,17 +93,17 @@ extension ProtocolTests {
         snapshot.health = "healthy"
         snapshot.automation = "on"
         snapshot.mode = "unexpected"
-        #expect(ProtectionPresentation(snapshot).title == "Sprawdź ustawienia ochrony")
+        #expect(ProtectionPresentation(snapshot).title == "Check protection settings")
         snapshot.mode = "active"
-        #expect(ProtectionPresentation(snapshot, stale: true).title == "Nie można potwierdzić stanu")
+        #expect(ProtectionPresentation(snapshot, stale: true).title == "Cannot confirm status")
         #expect(ProtectionPresentation(snapshot, stale: true).symbol == "questionmark.shield")
         snapshot.health = "critical"
-        #expect(ProtectionPresentation(snapshot).title == "Ochrona wymaga naprawy")
+        #expect(ProtectionPresentation(snapshot).title == "Protection needs repair")
         snapshot.health = "attention"
-        #expect(ProtectionPresentation(snapshot).title == "Ochrona wymaga uwagi")
+        #expect(ProtectionPresentation(snapshot).title == "Protection needs attention")
     }
 
-    @Test func olderSnapshotsDoNotInventActivationReadiness() throws {
+    @Test func olderSnapshotsToNotInventActivationReadiness() throws {
         let json = #"{"protocol":1,"ok":true,"data":{"configured":true,"health":"healthy","health_label":"OK","recommendation":"OK","automation":"on","mode":"protect","purge_enabled":false,"summary":{},"trained_spam":200,"trained_ham":200,"required_spam":200,"required_ham":200,"first_dry_run":true,"app_autostart":true,"version":"0.3.0"}}"#
         let snapshot = try ProtocolContract.decodeSnapshot(json).data
         #expect(snapshot?.protection == nil)

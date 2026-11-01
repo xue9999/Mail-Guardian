@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/migration"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/migration"
 	"golang.org/x/sys/unix"
 )
 

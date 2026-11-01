@@ -33,11 +33,11 @@ enum GuardianSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .overview: return "Przegląd"
-        case .learning: return "Nauka i korekty"
-        case .archive: return "Odzyskiwanie"
-        case .settings: return "Ustawienia"
-        case .help: return "Pomoc"
+        case .overview: return "Overview"
+        case .learning: return "Training and corrections"
+        case .archive: return "Recovery"
+        case .settings: return "Settings"
+        case .help: return "Help"
         }
     }
     var symbol: String {
@@ -61,38 +61,38 @@ struct ProtectionPresentation {
 
     init(_ snapshot: GuardianSnapshot, stale: Bool = false) {
         if stale {
-            title = "Nie można potwierdzić stanu"
-            detail = "Pokazujemy ostatnio odczytane dane. Sprawdź połączenie z lokalnym silnikiem."
+            title = "Cannot confirm status"
+            detail = "Showing the last retrieved data. Check the connection to the local engine."
             symbol = "questionmark.shield"
             tone = .orange
         } else if snapshot.health == "critical" || snapshot.health == "attention" {
-            title = snapshot.health == "critical" ? "Ochrona wymaga naprawy" : "Ochrona wymaga uwagi"
+            title = snapshot.health == "critical" ? "Protection needs repair" : "Protection needs attention"
             detail = snapshot.recommendation
             symbol = snapshot.health == "critical" ? "exclamationmark.shield.fill" : "exclamationmark.triangle.fill"
             tone = snapshot.health == "critical" ? .red : .orange
         } else if !snapshot.configured {
-            title = "Połącz swoją pocztę"
-            detail = "Przejdź krótką konfigurację, aby rozpocząć bezpieczną próbę."
+            title = "Connect your email"
+            detail = "Complete a short setup to start a safe dry-run."
             symbol = "envelope.badge.shield.half.filled"
             tone = GuardianStyle.accent
         } else if snapshot.automation != "on" {
-            title = "Sprawdzanie na Twoje żądanie"
-            detail = "Automat jest wyłączony. Guardian sprawdzi pocztę, gdy uruchomisz sprawdzanie."
+            title = "Checks on demand"
+            detail = "Automation is off. Guardian checks mail when you request it."
             symbol = "pause.circle.fill"
             tone = .secondary
         } else if snapshot.mode == "protect" {
-            title = "Odebrane pod obserwacją"
-            detail = "Guardian sprawdza pocztę co 2 godziny. Nie przenosi automatycznie wiadomości z Odebranych."
+            title = "Inbox under observation"
+            detail = "Guardian checks mail every 2 hours. Inbox messages are not moved automatically."
             symbol = "eye.fill"
             tone = GuardianStyle.accent
         } else if snapshot.mode == "active" {
-            title = "Porządkowanie jest włączone"
-            detail = "Guardian przenosi pewny spam do kwarantanny i odzyskuje ważne wiadomości z folderu SPAM."
+            title = "Cleanup enabled"
+            detail = "Guardian quarantines confident spam and rescues legitimate messages from the spam folder."
             symbol = "checkmark.shield.fill"
             tone = GuardianStyle.accent
         } else {
-            title = "Sprawdź ustawienia ochrony"
-            detail = "Nie rozpoznano trybu działania. Uruchom sprawdzenie i naprawę."
+            title = "Check protection settings"
+            detail = "Unrecognized operating mode. Run Check and repair."
             symbol = "questionmark.shield"
             tone = .orange
         }
@@ -146,7 +146,7 @@ struct GuardianCard<Content: View>: View {
 
 struct PrivacyNote: View {
     var body: some View {
-        Label("Analiza na Twoim Macu. Bez otwierania linków i załączników.", systemImage: "lock.shield")
+        Label("Analysis on your Mac. Links and attachments are not opened.", systemImage: "lock.shield")
             .font(.caption).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -169,19 +169,19 @@ struct ScanOutcomeView: View {
     let outcome: ScanOutcome
     var body: some View {
         GuardianCard {
-            Label(outcome.errors > 0 ? "Sprawdzanie zakończone z uwagami" : (outcome.dryRun ? "Wynik bezpiecznej próby" : "Wynik ostatniego sprawdzenia"),
+            Label(outcome.errors > 0 ? "Check completed with issues" : (outcome.dryRun ? "Dry-run result" : "Last check result"),
                   systemImage: outcome.errors > 0 ? "exclamationmark.triangle" : "checkmark.circle")
                 .font(.headline)
-            Text(outcome.dryRun ? "To symulacja bieżącego trybu. Żadna wiadomość nie została przeniesiona, usunięta ani użyta do nauki." : "Wyniki tej operacji, bez doliczania wcześniejszych sprawdzeń.")
+            Text(outcome.dryRun ? "This simulates the current mode. No messages were moved, deleted or used for learning." : "Results of this operation, excluding previous checks.")
                 .font(.callout).foregroundStyle(.secondary)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 130), alignment: .leading)], alignment: .leading, spacing: 16) {
-                outcomeNumber(outcome.scanned, "Sprawdzone")
-                outcomeNumber(outcome.review, outcome.dryRun ? "Do sprawdzenia · plan" : "Do sprawdzenia")
-                outcomeNumber(outcome.quarantined, outcome.dryRun ? "Kwarantanna · plan" : "W kwarantannie")
-                outcomeNumber(outcome.rescued, outcome.dryRun ? "Odzyskanie · plan" : "Odzyskane")
+                outcomeNumber(outcome.scanned, "Scanned")
+                outcomeNumber(outcome.review, outcome.dryRun ? "Review · planned" : "Review")
+                outcomeNumber(outcome.quarantined, outcome.dryRun ? "Quarantine · planned" : "Quarantined")
+                outcomeNumber(outcome.rescued, outcome.dryRun ? "Rescue · planned" : "Rescued")
             }
             if outcome.errors > 0 {
-                Text("Nie udało się wykonać części kontroli (\(outcome.errors)). Sprawdź i napraw ochronę przed kolejną próbą.")
+                Text("Some checks failed (\(outcome.errors)). Check and repair protection before retrying.")
                     .foregroundStyle(.orange).font(.callout)
             }
         }
@@ -199,24 +199,24 @@ struct ProtectionProgressView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("Droga do automatycznego porządkowania", systemImage: "checklist").font(.headline)
+                Label("Progress toward automatic cleanup", systemImage: "checklist").font(.headline)
                 Spacer()
             }
             if let progress = model.snapshot.protection {
                 HStack {
-                    Text(progress.periodComplete ? "Okres obserwacji zakończony" : "Pozostało dni obserwacji: \(progress.remainingDays)")
+                    Text(progress.periodComplete ? "Observation period complete" : "Observation days remaining: \(progress.remainingDays)")
                     Spacer()
-                    Text("\(max(0, progress.requiredDays - progress.remainingDays)) / \(progress.requiredDays) dni").foregroundStyle(.secondary)
+                    Text("\(max(0, progress.requiredDays - progress.remainingDays)) / \(progress.requiredDays) days").foregroundStyle(.secondary)
                 }.font(.callout)
                 ProgressView(value: Double(max(0, progress.requiredDays - progress.remainingDays)), total: Double(max(1, progress.requiredDays)))
-                    .accessibilityLabel("Okres obserwacji")
-                Label(progress.qualityReady ? "Jakość decyzji potwierdzona" : "Potrzebne potwierdzenie jakości decyzji", systemImage: progress.qualityReady ? "checkmark.circle.fill" : "circle.dashed")
+                    .accessibilityLabel("Observation period")
+                Label(progress.qualityReady ? "Decision quality confirmed" : "Decision quality needs confirmation", systemImage: progress.qualityReady ? "checkmark.circle.fill" : "circle.dashed")
                     .font(.callout).foregroundStyle(progress.qualityReady ? GuardianStyle.accent : .secondary)
                 Text(progress.message).font(.callout).foregroundStyle(.secondary)
                 if let checks = progress.qualityChecks, !checks.isEmpty {
-                    DisclosureGroup("Warunki jakości: \(checks.filter { $0.passed }.count) z \(checks.count) spełnionych") {
+                    DisclosureGroup("Quality requirements: \(checks.filter { $0.passed }.count) of \(checks.count) met") {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("Ocena dotyczy bieżącego okresu obserwacji i Twoich potwierdzeń. Brak zgłoszonych pomyłek nie jest gwarancją bezbłędnego działania.")
+                            Text("This assessment covers the current observation period and your confirmations. No reported errors does not guarantee error-free operation.")
                                 .font(.callout).foregroundStyle(.secondary)
                             ForEach(checks) { check in
                                 VStack(alignment: .leading, spacing: 4) {
@@ -224,14 +224,14 @@ struct ProtectionProgressView: View {
                                         .foregroundStyle(check.passed ? GuardianStyle.accent : .primary)
                                     Text(check.detail).font(.callout).foregroundStyle(.secondary)
                                 }.accessibilityElement(children: .ignore)
-                                    .accessibilityLabel("\(check.title). \(check.passed ? "Warunek spełniony" : "Warunek niespełniony"). \(check.detail)")
+                                    .accessibilityLabel("\(check.title). \(check.passed ? "Requirement met" : "Requirement unmet"). \(check.detail)")
                             }
                         }.padding(.top, 10)
                     }
                 }
 
             } else {
-                Text("Przenoszenie wymaga zakończenia okresu obserwacji i potwierdzenia jakości decyzji. Odśwież stan, aby sprawdzić gotowość.").foregroundStyle(.secondary)
+                Text("Moves require completed observation and confirmed decision quality. Refresh status to check readiness.").foregroundStyle(.secondary)
             }
         }
     }
@@ -246,15 +246,15 @@ struct MainTabs: View {
                     Image(systemName: "checkmark.shield.fill").font(.title).foregroundStyle(GuardianStyle.accent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Mail Guardian").font(.headline)
-                        Text("Spokojniej z pocztą").font(.caption).foregroundStyle(.secondary)
+                        Text("Peace of mind for your email").font(.caption).foregroundStyle(.secondary)
                     }
                 }.padding(.horizontal, 18).padding(.top, 24)
                 List(GuardianSection.allCases, selection: Binding<GuardianSection?>(get: { model.section }, set: { if let value = $0 { model.section = value } })) { section in
                     Label(section.title, systemImage: section.symbol).padding(.vertical, 6).tag(section)
                 }.listStyle(.sidebar)
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("Działa lokalnie na Macu", systemImage: "lock.shield").font(.caption)
-                    Text("O2 Mail Guardian \(model.snapshot.version)").font(.caption2)
+                    Label("Runs locally on your Mac", systemImage: "lock.shield").font(.caption)
+                    Text("Mail Guardian \(model.snapshot.version)").font(.caption2)
                 }.foregroundStyle(.secondary).padding(18)
             }.navigationSplitViewColumnWidth(min: 195, ideal: 205, max: 230)
         } detail: {
@@ -274,7 +274,7 @@ struct DashboardView: View {
     @State private var showDetails = false
     private var presentation: ProtectionPresentation { ProtectionPresentation(model.snapshot, stale: model.snapshotIsStale) }
     var body: some View {
-        GuardianPage(eyebrow: "Twoja poczta, pod kontrolą", title: "Twoja poczta", subtitle: "") {
+        GuardianPage(eyebrow: "Your email, under control", title: "Your email", subtitle: "") {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: presentation.symbol).font(.system(size: 27)).frame(width: 56, height: 56)
@@ -286,22 +286,22 @@ struct DashboardView: View {
                 }
                 HStack(spacing: 12) {
                     if model.snapshotIsStale || model.snapshot.health == "critical" || model.snapshot.health == "attention" {
-                        Button("Sprawdź i napraw") { Task { await model.repair() } }.buttonStyle(.borderedProminent)
+                        Button("Check and repair") { Task { await model.repair() } }.buttonStyle(.borderedProminent)
                     } else {
-                        Button("Sprawdź pocztę teraz") { Task { await model.runNow() } }.buttonStyle(.borderedProminent)
+                        Button("Check mail now") { Task { await model.runNow() } }.buttonStyle(.borderedProminent)
                     }
                     if model.snapshot.automation != "on" && model.snapshot.firstDryRun {
-                        Button("Włącz automat") { Task { await model.setAutomation(true) } }
+                        Button("Enable automation") { Task { await model.setAutomation(true) } }
                     }
                     Spacer()
                 }.controlSize(.large).disabled(model.busy)
                 Divider()
                 HStack(alignment: .top) {
-                    Label("Ostatni sukces: \(friendlyDate(model.snapshot.lastSuccess))", systemImage: "checkmark.circle")
+                    Label("Last success: \(friendlyDate(model.snapshot.lastSuccess))", systemImage: "checkmark.circle")
                     Spacer()
-                    Label(model.snapshot.automation == "on" ? "Automatycznie co 2 godziny" : "Sprawdzanie ręczne", systemImage: "clock")
+                    Label(model.snapshot.automation == "on" ? "Automatically every 2 hours" : "Manual checks", systemImage: "clock")
                 }.font(.callout).foregroundStyle(.secondary)
-                Label(model.snapshot.purgeEnabled ? "Trwałe usuwanie włączone — z kontrolami bezpieczeństwa" : "Trwałe usuwanie wyłączone", systemImage: model.snapshot.purgeEnabled ? "exclamationmark.circle" : "lock.fill")
+                Label(model.snapshot.purgeEnabled ? "Permanent deletion enabled — safety checks apply" : "Permanent deletion disabled", systemImage: model.snapshot.purgeEnabled ? "exclamationmark.circle" : "lock.fill")
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
                 .background(LinearGradient(colors: [presentation.tone.opacity(0.08), GuardianStyle.surface], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20))
@@ -310,51 +310,51 @@ struct DashboardView: View {
             if let scan = model.lastScan { ScanOutcomeView(outcome: scan) }
             if model.snapshot.summary.waitingReview > 0 || model.snapshot.summary.pendingMoves > 0 {
                 GuardianCard {
-                    Label("Twoje następne działanie", systemImage: "tray.full").font(.headline)
+                    Label("Your next action", systemImage: "tray.full").font(.headline)
                     if model.snapshot.summary.waitingReview > 0 {
-                        Text("Wiadomości do Twojej oceny: \(model.snapshot.summary.waitingReview). Znajdziesz je w poczcie o2, w folderze AI-Do-sprawdzenia.")
-                        Button("Przejdź do oceny wiadomości", systemImage: "arrow.right") { model.section = .learning }
+                        Text("Messages awaiting review: \(model.snapshot.summary.waitingReview). Open \(model.snapshot.folders.review) in your email client.")
+                        Button("Review messages", systemImage: "arrow.right") { model.section = .learning }
                     }
                     if model.snapshot.summary.pendingMoves > 0 {
-                        Text("Guardian weryfikuje przerwane operacje: \(model.snapshot.summary.pendingMoves). Nie uruchamiaj ich ponownie ręcznie; skorzystaj z naprawy.").font(.callout).foregroundStyle(.secondary)
-                        Button("Sprawdź i napraw") { Task { await model.repair() } }.disabled(model.busy)
+                        Text("Guardian is reconciling interrupted operations: \(model.snapshot.summary.pendingMoves). Use Repair instead of repeating them manually.").font(.callout).foregroundStyle(.secondary)
+                        Button("Check and repair") { Task { await model.repair() } }.disabled(model.busy)
                     }
                 }
             }
             if model.snapshot.configured && model.snapshot.health == "healthy" && !model.snapshotIsStale && model.snapshot.summary.waitingReview == 0 && model.snapshot.summary.pendingMoves == 0 {
-                Label(model.snapshot.automation == "on" ? "Nie masz teraz wiadomości do oceny według ostatnich zapisów." : "Nie masz zapisanych wiadomości do oceny. Kolejne sprawdzenie uruchom ręcznie.", systemImage: "checkmark.circle")
+                Label(model.snapshot.automation == "on" ? "No messages await review according to the latest records." : "No recorded messages await review. Run the next check manually.", systemImage: "checkmark.circle")
                     .font(.callout).foregroundStyle(.secondary)
             }
             if model.snapshot.mode == "protect" {
                 GuardianCard {
                     ProtectionProgressView(model: model)
                     HStack {
-                        Button(model.snapshot.protection?.ready == true ? "Przejdź do włączenia porządkowania" : "Zobacz ustawienia ochrony") { model.section = .settings }
-                        Button("Jak pomóc w nauce") { model.section = .learning }
+                        Button(model.snapshot.protection?.ready == true ? "Enable cleanup" : "View protection settings") { model.section = .settings }
+                        Button("How to help with training") { model.section = .learning }
                     }
-                    Text("Podczas obserwacji wiadomości z folderu SPAM mogą trafiać do AI-Do-sprawdzenia. Guardian przetwarza też Twoje korekty.").font(.caption).foregroundStyle(.secondary)
+                    Text("During observation, messages from spam may move to the review folder. Guardian also processes your corrections.").font(.caption).foregroundStyle(.secondary)
                 }
             }
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("Ostatnie 24 godziny").font(.headline)
+                    Text("Last 24 hours").font(.headline)
                     Spacer()
-                    if model.snapshotIsStale { Text("Dane mogą być nieaktualne").font(.caption).foregroundStyle(.orange) }
+                    if model.snapshotIsStale { Text("Data may be outdated").font(.caption).foregroundStyle(.orange) }
                 }
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .topLeading), count: 3), spacing: 12) {
-                    metric("Sprawdzone", value: model.snapshot.summary.scanned, symbol: "envelope", detail: "analizy wiadomości")
-                    metric("Odzyskane", value: model.snapshot.summary.rescued, symbol: "tray.and.arrow.up", detail: "z folderu SPAM")
-                    metric("Zatrzymany spam", value: model.snapshot.summary.quarantined, symbol: "shield.lefthalf.filled", detail: "przeniesienia do kwarantanny")
+                    metric("Scanned", value: model.snapshot.summary.scanned, symbol: "envelope", detail: "message analysis")
+                    metric("Rescued", value: model.snapshot.summary.rescued, symbol: "tray.and.arrow.up", detail: "from spam")
+                    metric("Spam held", value: model.snapshot.summary.quarantined, symbol: "shield.lefthalf.filled", detail: "moves to quarantine")
                 }
             }
             GuardianCard {
-                DisclosureGroup("Szczegóły działania", isExpanded: $showDetails) {
+                DisclosureGroup("Operation details", isExpanded: $showDetails) {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Ostatnia próba: \(friendlyDate(model.snapshot.lastAttempt))")
-                        Text("Kopie w kwarantannie według ostatnich zapisów: \(model.snapshot.summary.waitingQuarantine)")
+                        Text("Last attempt: \(friendlyDate(model.snapshot.lastAttempt))")
+                        Text("Quarantine backups in the latest records: \(model.snapshot.summary.waitingQuarantine)")
                         HStack {
-                            Button("Zobacz kopie") { model.section = .archive }
-                            Button("Odśwież stan") { Task { await model.refresh() } }.disabled(model.busy)
+                            Button("View backups") { model.section = .archive }
+                            Button("Refresh status") { Task { await model.refresh() } }.disabled(model.busy)
                         }
                     }.font(.callout).padding(.top, 10)
                 }
@@ -383,20 +383,20 @@ struct OperationFeedback: View {
                         Text(error.message).font(.callout.weight(.semibold)).textSelection(.enabled)
                         if let recovery = error.recovery { Text(recovery).font(.callout).foregroundStyle(.secondary) }
                         HStack {
-                            if failureQuickAction(for: error.code) == .o2Instructions {
-                                Link("Otwórz instrukcję o2", destination: URL(string: "https://pomoc.o2.pl/wpkonto/hasla-do-aplikacji-zewnetrznej")!)
+                            if failureQuickAction(for: error.code) == .accountSettings {
+                                Button("Open account settings") { model.reconfigure = true; model.failure = nil }.disabled(model.busy)
                             } else {
-                                Button(model.snapshotIsStale ? "Ponów odczyt stanu" : "Sprawdź i napraw") {
+                                Button(model.snapshotIsStale ? "Retry status retrieval" : "Check and repair") {
                                     model.failure = nil
                                     Task { if model.snapshotIsStale { await model.refresh() } else { await model.repair() } }
                                 }.disabled(model.busy)
                             }
-                            Button(showErrorDetails ? "Ukryj szczegóły" : "Szczegóły dla pomocy") { showErrorDetails.toggle() }.buttonStyle(.link)
+                            Button(showErrorDetails ? "Hide details" : "Support details") { showErrorDetails.toggle() }.buttonStyle(.link)
                         }.font(.caption)
-                        if showErrorDetails { Text("Kod: \(error.code)").font(.caption.monospaced()).textSelection(.enabled) }
+                        if showErrorDetails { Text("Code: \(error.code)").font(.caption.monospaced()).textSelection(.enabled) }
                     }
                     Spacer(minLength: 0)
-                    Button { model.failure = nil; showErrorDetails = false } label: { Image(systemName: "xmark") }.buttonStyle(.plain).help("Zamknij komunikat").accessibilityLabel("Zamknij komunikat")
+                    Button { model.failure = nil; showErrorDetails = false } label: { Image(systemName: "xmark") }.buttonStyle(.plain).help("Dismiss error").accessibilityLabel("Dismiss error")
                 }.padding(16).background(.orange.opacity(0.07))
             }
             if model.busy {
@@ -404,17 +404,17 @@ struct OperationFeedback: View {
                     ProgressView().controlSize(.small)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(model.operationTitle).font(.callout.weight(.medium))
-                        Text("Możesz anulować. Wcześniej zakończone kroki pozostaną zapisane.").font(.caption).foregroundStyle(.secondary)
+                        Text("You may cancel. Previously completed steps remain saved.").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Anuluj") { model.cancel() }
+                    Button("Cancel") { model.cancel() }
                 }.padding(.horizontal, 20).padding(.vertical, 14)
             } else if let notice = model.notice {
                 HStack(spacing: 10) {
                     Image(systemName: "info.circle").foregroundStyle(GuardianStyle.accent)
                     Text(notice).font(.callout).textSelection(.enabled)
                     Spacer()
-                    Button { model.notice = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain).help("Zamknij powiadomienie").accessibilityLabel("Zamknij powiadomienie")
+                    Button { model.notice = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain).help("Dismiss notification").accessibilityLabel("Dismiss notification")
                 }.padding(.horizontal, 20).padding(.vertical, 14)
             }
         }.background(.regularMaterial)

@@ -46,7 +46,7 @@ fi
 flock -u 8
 exec 8<&-
 [[ ! -e /etc/mail-guardian && ! -e /opt/mail-guardian ]]
-"$GUARDIAN_NATIVE_PACKAGE/guardian" server init-config --instance pilot --email pilot@example.invalid --server-spam Spam --output /root/pilot.toml
+"$GUARDIAN_NATIVE_PACKAGE/guardian" server init-config --provider custom --host imap.example.invalid --instance pilot --email pilot@example.invalid --server-spam Spam --output /root/pilot.toml
 "$GUARDIAN_NATIVE_PACKAGE/install.sh" --instance pilot --config /root/pilot.toml --check
 [[ ! -e /etc/mail-guardian && ! -e /opt/mail-guardian ]]
 umask 000
@@ -161,7 +161,7 @@ if "$GUARDIAN_NATIVE_PACKAGE/install.sh" --instance pilot; then
   printf 'An unsafe migration fence was accepted unexpectedly.\n' >&2; exit 1
 fi
 chmod 640 /etc/mail-guardian/pilot/migration.lock
-"$GUARDIAN_NATIVE_PACKAGE/guardian" server init-config --instance pilot --email changed@example.invalid --server-spam Spam --output /root/changed.toml
+"$GUARDIAN_NATIVE_PACKAGE/guardian" server init-config --provider custom --host imap.example.invalid --instance pilot --email changed@example.invalid --server-spam Spam --output /root/changed.toml
 if "$GUARDIAN_NATIVE_PACKAGE/install.sh" --instance pilot --config /root/changed.toml; then
   printf 'Configuration overwrite was accepted unexpectedly.\n' >&2; exit 1
 fi

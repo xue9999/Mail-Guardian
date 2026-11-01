@@ -3,9 +3,9 @@ package engine
 import (
 	"context"
 	"encoding/json"
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/qualification"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/qualification"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 	"os"
 	"testing"
 	"time"

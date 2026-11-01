@@ -46,6 +46,23 @@ MOVE hardening. The reference server release identity
 code release should increment `VERSION` and the owning GUI/package metadata
 consistently rather than replacing the existing public tag.
 
+## Mail Guardian 0.7 migration boundary
+
+Version 0.7.0 is a new minor source line: English product/documentation and
+explicit provider-neutral setup. The Go module is now
+`github.com/xue9999/Mail-Guardian`. Existing 0.6.1 tags remain immutable.
+Do not automatically promote this minor line to the reference VPS; manual
+compatibility review, a coherent current recovery point and a supervised actual
+run are required. The installed 0.6 patch coordinator remains on its approved
+line until that review. See [provider compatibility](../PROVIDERS.md).
+
+Preserve historical storage, credential, bundle/service/Docker identifiers and
+v1 identity seeds while changing display strings. Fresh profiled installations
+use random identities and English folder defaults; legacy loads keep their exact
+configured names. Provider/host/login changes must not inherit state or send
+saved secrets to a new endpoint. UI snapshots may expose connection and folder
+metadata, never secrets or secret-store identifiers.
+
 ## Dependency exceptions that need deliberate review
 
 - `github.com/emersion/go-imap/v2` is a preview API. A stable replacement or new

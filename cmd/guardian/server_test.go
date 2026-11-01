@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/o2-mail-guardian/guardian/internal/apperror"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/service"
+	"github.com/xue9999/Mail-Guardian/internal/apperror"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/service"
 )
 
 func TestServerConfigIsExplicitPrivateAndNeverOverwritten(t *testing.T) {
@@ -23,7 +23,7 @@ func TestServerConfigIsExplicitPrivateAndNeverOverwritten(t *testing.T) {
 	writeFixture := func(output string, data []byte) error {
 		return createPrivateInitialConfig(filepath.Dir(path), output, data, uint32(os.Geteuid()))
 	}
-	args := []string{"init-config", "--instance", "pilot", "--email", "fixture@o2.pl", "--server-spam", "Spam", "--output", path}
+	args := []string{"init-config", "--provider", "o2", "--instance", "pilot", "--email", "fixture@o2.pl", "--server-spam", "Spam", "--output", path}
 	if err := a.serverCommandWithConfigWriter(args, writeFixture); err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestServerConfigurationRejectsMissingFolderWithoutCreatingOutput(t *testing
 	path := filepath.Join(t.TempDir(), "config.toml")
 	var output bytes.Buffer
 	a := &application{out: &output, errOut: &output}
-	if err := a.serverCommand([]string{"init-config", "--instance", "pilot", "--email", "fixture@o2.pl", "--output", path}); err == nil {
+	if err := a.serverCommand([]string{"init-config", "--provider", "o2", "--instance", "pilot", "--email", "fixture@o2.pl", "--output", path}); err == nil {
 		t.Fatal("unconfirmed server spam folder accepted")
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
@@ -94,7 +94,7 @@ func TestServerActiveConfigurationIsExplicitAndPurgeRemainsDisabled(t *testing.T
 			writer := func(output string, data []byte) error {
 				return createPrivateInitialConfig(dir, output, data, uint32(os.Geteuid()))
 			}
-			err := a.serverCommandWithConfigWriter([]string{"init-config", "--instance", "pilot", "--email", "fixture@o2.pl", "--server-spam", "Spam", "--mode", mode, "--output", path}, writer)
+			err := a.serverCommandWithConfigWriter([]string{"init-config", "--provider", "o2", "--instance", "pilot", "--email", "fixture@o2.pl", "--server-spam", "Spam", "--mode", mode, "--output", path}, writer)
 			if mode == "invalid" {
 				if err == nil {
 					t.Fatal("invalid mode accepted")
@@ -157,6 +157,7 @@ func TestLinuxServiceAndStackCheckInstanceLockBeforeMaintenance(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg.Account.Email, cfg.Account.Username = "fixture@o2.pl", "fixture@o2.pl"
+	cfg.Account.Provider = "o2"
 	cfg.Folders.ServerSpam = "Spam"
 	cfg.Runtime.DataDir = data
 	cfg.Runtime.Database = filepath.Join(data, "guardian.db")
@@ -195,5 +196,28 @@ func TestLinuxServiceAndStackCheckInstanceLockBeforeMaintenance(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestServerCustomConnectionIsExplicitAndSupportsSeparateLogin(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "custom.toml")
+	var out bytes.Buffer
+	a := &application{out: &out, errOut: &out}
+	args := []string{"init-config", "--instance", "custom", "--email", "owner@example.org", "--server-spam", "Junk", "--output", path}
+	called := false
+	writer := func(_ string, data []byte) error { called = true; return os.WriteFile(path, data, 0600) }
+	if err := a.serverCommandWithConfigWriter(args, writer); err == nil || called {
+		t.Fatal("missing custom host reached writer")
+	}
+	args = append(args, "--host", "imap.example.org", "--port", "1993", "--username", "separate-login")
+	if err := a.serverCommandWithConfigWriter(args, writer); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Account.Provider != "custom" || cfg.Account.Host != "imap.example.org" || cfg.Account.Port != 1993 || cfg.Account.LoginUsername() != "separate-login" || cfg.Folders.Review != "Guardian-Review" || cfg.Safety.PurgeEnabled {
+		t.Fatalf("custom setup lost connection or safety settings: %+v", cfg.Account)
 	}
 }

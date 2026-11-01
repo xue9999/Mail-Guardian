@@ -3,8 +3,8 @@ package migration
 import (
 	"errors"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/platform"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/platform"
 )
 
 // LinuxConfig maps a source configuration to the existing Linux pilot paths.

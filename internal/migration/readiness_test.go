@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func readinessTestLimits() ReadinessLimits {
@@ -37,6 +37,7 @@ func readinessFixture(t *testing.T) (string, config.Config) {
 		t.Fatal(err)
 	}
 	cfg, err := config.NewInstance()
+	cfg.Account.Provider = "o2"
 	if err != nil {
 		t.Fatal(err)
 	}

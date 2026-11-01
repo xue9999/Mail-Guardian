@@ -25,7 +25,7 @@ func ValidateMessageMIME(raw []byte) error { return validateRFC822MIME(raw) }
 
 func validateRFC822AtDepth(raw []byte, depth int) error {
 	if depth > maxMIMEDepth {
-		return fmt.Errorf("zbyt głęboko zagnieżdżona struktura MIME")
+		return fmt.Errorf("MIME structure nested too deeply")
 	}
 	message, err := mail.ReadMessage(bytes.NewReader(raw))
 	if err != nil {
@@ -36,7 +36,7 @@ func validateRFC822AtDepth(raw []byte, depth int) error {
 
 func validateMIMEEntity(header textproto.MIMEHeader, body io.Reader, depth int) error {
 	if depth > maxMIMEDepth {
-		return fmt.Errorf("zbyt głęboko zagnieżdżona struktura MIME")
+		return fmt.Errorf("MIME structure nested too deeply")
 	}
 	contentType := header.Get("Content-Type")
 	mediaType := "text/plain"
@@ -57,7 +57,7 @@ func validateMIMEEntity(header textproto.MIMEHeader, body io.Reader, depth int) 
 	switch transferEncoding {
 	case "", "7bit", "8bit", "binary", "base64", "quoted-printable":
 	default:
-		return fmt.Errorf("nieznane Content-Transfer-Encoding")
+		return fmt.Errorf("unknown Content-Transfer-Encoding")
 	}
 
 	mediaType = strings.ToLower(mediaType)
@@ -99,7 +99,7 @@ func validateMIMEEntity(header textproto.MIMEHeader, body io.Reader, depth int) 
 	}
 	_, err = io.Copy(io.Discard, decodedMIMEBody(body, transferEncoding))
 	if err != nil {
-		return fmt.Errorf("uszkodzona treść %s: %w", transferEncoding, err)
+		return fmt.Errorf("corrupt content %s: %w", transferEncoding, err)
 	}
 	return nil
 }

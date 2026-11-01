@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"filippo.io/age"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/migration"
-	"github.com/o2-mail-guardian/guardian/internal/recoverybundle"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/migration"
+	"github.com/xue9999/Mail-Guardian/internal/recoverybundle"
 	_ "modernc.org/sqlite"
 )
 
@@ -76,6 +76,7 @@ func TestOfflineSyntheticSnapshotAndRecovery(t *testing.T) {
 	must(t, migration.SnapshotDatabase(context.Background(), source, filepath.Join(stage, "guardian.db")))
 
 	cfg, err := config.NewInstance()
+	cfg.Account.Provider = "o2"
 	must(t, err)
 	cfg.Account.Email = "fixture@example.invalid"
 	cfg.Folders.ServerSpam = "Spam"

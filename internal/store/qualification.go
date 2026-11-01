@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/qualification"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/qualification"
 )
 
 const qualificationKey = "filter_qualification_v1"
@@ -46,7 +46,7 @@ func (db *DB) CurrentQualification(ctx context.Context, cfg config.Config, now t
 		return nil, err
 	}
 	if mistakes > 0 {
-		return nil, errors.New("nowa korekta potwierdza błędne przeniesienie; potrzebna ponowna ocena filtra")
+		return nil, errors.New("new correction confirms an incorrect move; filter reevaluation required")
 	}
 	return &r, nil
 }

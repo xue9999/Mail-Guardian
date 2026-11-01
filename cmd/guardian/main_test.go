@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func TestChooseMailboxExcludesInboxAndRobotFolders(t *testing.T) {
@@ -51,7 +51,7 @@ func TestChooseMailboxExcludesInboxAndRobotFolders(t *testing.T) {
 	if got != "Niechciane" {
 		t.Fatalf("chooseMailbox() = %q, want Niechciane", got)
 	}
-	for _, forbidden := range []string{"INBOX", "ai-kwarantanna", "AI-Do-sprawdzenia", "AI-Naucz-spam", "AI-Naucz-wazne"} {
+	for _, forbidden := range []string{"INBOX", "ai-kwarantanna", "review folder", "training folders", "AI-Naucz-wazne"} {
 		if strings.Contains(out.String(), forbidden) {
 			t.Fatalf("excluded folder %q appeared in chooser:\n%s", forbidden, out.String())
 		}
@@ -72,7 +72,7 @@ func TestChooseMailboxRejectsListWithOnlyProtectedFolders(t *testing.T) {
 	}
 
 	_, err := app.chooseMailbox(boxes, "INBOX", "AI-Kwarantanna", "AI-Do-sprawdzenia")
-	if err == nil || !strings.Contains(err.Error(), "nie ma folderu") {
+	if err == nil || !strings.Contains(err.Error(), "no folder can safely") {
 		t.Fatalf("chooseMailbox() error = %v, want a friendly no-folder error", err)
 	}
 }
@@ -166,12 +166,12 @@ func TestMenuBeforeSetupShowsOnlyTheNecessaryChoice(t *testing.T) {
 	if err := app.menu(); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Rozpocznij pierwszą konfigurację", "Żadna wiadomość nie została zmieniona"} {
+	for _, want := range []string{"Start first-time setup", "No messages were changed"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("menu output does not contain %q:\n%s", want, out.String())
 		}
 	}
-	if strings.Contains(out.String(), "Tryb aktywny") || strings.Contains(out.String(), "Stan lokalnego silnika") {
+	if strings.Contains(out.String(), "active mode") || strings.Contains(out.String(), "Local engine status") {
 		t.Fatalf("menu before setup exposes unnecessary advanced choices:\n%s", out.String())
 	}
 }
@@ -189,11 +189,11 @@ func TestConfiguredMenuUsesPlainLanguage(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		"Sprawdź skrzynkę teraz",
-		"Pokaż stan i zalecenia",
-		"Sprawdź i napraw program",
-		"Jak poprawić pomyłkę robota",
-		"Odzyskaj wiadomość z kopii",
+		"Check mailbox now",
+		"Show status and recommendations",
+		"Check and repair",
+		"Correct a classification",
+		"Recover a message from backup",
 		modeName(cfg.Safety.Mode),
 	} {
 		if !strings.Contains(out.String(), want) {
@@ -202,7 +202,7 @@ func TestConfiguredMenuUsesPlainLanguage(t *testing.T) {
 	}
 }
 
-func TestHelpUsesPolishAliasesAndPointsToMenu(t *testing.T) {
+func TestHelpUsesEnglishCommandsAndAcceptsLegacyAlias(t *testing.T) {
 	var out bytes.Buffer
 	app := &application{out: &out, errOut: &out}
 	if err := app.execute([]string{"pomoc"}); err != nil {
@@ -216,7 +216,7 @@ func TestHelpUsesPolishAliasesAndPointsToMenu(t *testing.T) {
 		}
 		return
 	}
-	for _, want := range []string{"guardian napraw", "guardian konfiguruj", "guardian stan", "guardian sprawdz", "Nie musisz zapamiętywać"} {
+	for _, want := range []string{"guardian repair", "guardian setup", "guardian status", "guardian run", "Daily actions are also available in the menu"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("help does not contain %q:\n%s", want, out.String())
 		}
@@ -260,7 +260,7 @@ func TestRepairIsFailClosedWhenHealthCheckFails(t *testing.T) {
 		},
 	}
 	err := app.repair()
-	if err == nil || !strings.Contains(err.Error(), "Automatyzacja i ustawienia bezpieczeństwa pozostały bez zmian") {
+	if err == nil || !strings.Contains(err.Error(), "Automation and safety settings are unchanged") {
 		t.Fatalf("repair() error = %v, want fail-closed explanation", err)
 	}
 	if got := strings.Join(steps, ","); got != "filter,check" {
@@ -306,9 +306,9 @@ func TestRepairAsksBeforeEnablingAutomation(t *testing.T) {
 		t.Fatalf("repair steps = %q", got)
 	}
 	for _, want := range []string{
-		"nie przenosi ani nie usuwa wiadomości",
-		"Czy włączyć je teraz?",
-		"Automatyczne sprawdzanie co 2 godziny zostało włączone",
+		"does not move or delete messages",
+		"Enable it now?",
+		"Automatic checks every 2 hours enabled",
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("repair output does not contain %q:\n%s", want, out.String())
@@ -359,7 +359,7 @@ func TestNonInteractiveRepairPreservesManualModeWithoutPrompt(t *testing.T) {
 	if err := app.repair(); err != nil {
 		t.Fatal(err)
 	}
-	if enabled || strings.Contains(out.String(), "Czy włączyć") || !strings.Contains(out.String(), "Zachowano tryb ręczny") {
+	if enabled || strings.Contains(out.String(), "Enable it now") || !strings.Contains(out.String(), "Manual mode retained") {
 		t.Fatalf("non-interactive repair changed or prompted for automation: enabled=%v output=%q", enabled, out.String())
 	}
 }
@@ -516,7 +516,7 @@ func TestStatusAdviceUsesMenuActions(t *testing.T) {
 		PendingMoves:  1,
 	}, 10, 20, 200, 200)
 	text := strings.Join(advice, "\n")
-	for _, want := range []string{"Sprawdź skrzynkę teraz", "Sprawdź i napraw program", "AI-Do-sprawdzenia", "AI-Naucz-spam"} {
+	for _, want := range []string{"Check mailbox now", "Check and repair", "review folder", "training folders"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("status advice does not contain %q:\n%s", want, text)
 		}
@@ -545,7 +545,7 @@ func TestFailureNotificationIsGenericAndThrottled(t *testing.T) {
 	if len(notifications) != 1 {
 		t.Fatalf("notification count = %d, want 1", len(notifications))
 	}
-	for _, want := range []string{"wymaga uwagi", "Poczta nie została usunięta", "Sprawdź i napraw program"} {
+	for _, want := range []string{"needs attention", "Mail was not deleted", "Check and repair"} {
 		if !strings.Contains(notifications[0], want) {
 			t.Fatalf("notification does not contain %q:\n%s", want, notifications[0])
 		}
@@ -652,7 +652,7 @@ func TestActivationQualityProblem(t *testing.T) {
 	if err == nil {
 		t.Fatal("unsafe activation quality was accepted")
 	}
-	for _, want := range []string{"ważnych wiadomości", "automatycznie uratowanych", "co najmniej 90%", "ręcznego sprawdzenia"} {
+	for _, want := range []string{"legitimate messages", "rescued automatically", "at least 90%", "manual-review"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("activation error %q does not explain %q", err, want)
 		}
@@ -701,7 +701,7 @@ func TestStatusWarnsAboutPendingMoves(t *testing.T) {
 	if err := app.statusCommand([]string{"--since", "24h"}); err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"Ruchy wymagające uzgodnienia:    1", "Sprawdź skrzynkę teraz"} {
+	for _, want := range []string{"Moves needing reconciliation: 1", "Check mailbox now"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("status output does not contain %q:\n%s", want, out.String())
 		}

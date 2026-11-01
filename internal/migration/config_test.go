@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/platform"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/platform"
 )
 
 func TestLinuxConfigPreservesResolvedIdentityAndPolicy(t *testing.T) {
@@ -16,6 +16,7 @@ func TestLinuxConfigPreservesResolvedIdentityAndPolicy(t *testing.T) {
 			if version == 2 {
 				var err error
 				source, err = config.NewInstance()
+				source.Account.Provider = "o2"
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -57,6 +58,7 @@ func TestLinuxConfigPreservesResolvedIdentityAndPolicy(t *testing.T) {
 
 func TestLinuxConfigRejectsInvalidInstanceAndSource(t *testing.T) {
 	source, err := config.NewInstance()
+	source.Account.Provider = "o2"
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -18,21 +18,21 @@ cleanup() {
 trap cleanup EXIT
 
 GUARDIAN_DIST_DIR="${DIST_DIR}" /bin/bash "${PROJECT_DIR}/scripts/package-release.sh" >/dev/null
-archive="$(find "${DIST_DIR}" -maxdepth 1 -type f -name 'O2-Mail-Guardian-*.zip' -print -quit)"
+archive="$(find "${DIST_DIR}" -maxdepth 1 -type f -name 'Mail-Guardian-*.zip' -print -quit)"
 [[ -n "${archive}" ]]
 if /usr/bin/unzip -Z1 "${archive}" | /usr/bin/grep -Eq '(^|/)__MACOSX/|/\._'; then
-  printf 'Paczka zawiera widoczne metadane macOS zamiast czystego układu.\n' >&2
+  printf 'Package contains visible macOS metadata.\n' >&2
   exit 1
 fi
 /bin/mkdir -p "${EXTRACT_DIR}"
 /usr/bin/ditto -x -k "${archive}" "${EXTRACT_DIR}"
-package_root="$(find "${EXTRACT_DIR}" -mindepth 1 -maxdepth 1 -type d -name 'O2 Mail Guardian *' -print -quit)"
+package_root="$(find "${EXTRACT_DIR}" -mindepth 1 -maxdepth 1 -type d -name 'Mail Guardian *' -print -quit)"
 [[ -n "${package_root}" ]]
 
 visible="$(find "${package_root}" -mindepth 1 -maxdepth 1 ! -name '.*' -print | /usr/bin/sed "s#${package_root}/##" | LC_ALL=C /usr/bin/sort)"
-expected=$'Install.command\nLICENSE\nZACZNIJ-TUTAJ.txt'
+expected=$'Install.command\nLICENSE\nSTART-HERE.txt'
 [[ "${visible}" == "${expected}" ]] || {
-  printf 'Gotowa paczka pokazuje nieoczekiwane pliki:\n%s\n' "${visible}" >&2
+  printf 'Package exposes unexpected files:\n%s\n' "${visible}" >&2
   exit 1
 }
 
@@ -50,15 +50,15 @@ bundle_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString'
 
 [[ ! -e "${package_root}/.payload/macos/Tests" ]]
 /usr/bin/grep -Fq -- '--self-test' "${package_root}/.payload/scripts/install-core.sh"
-/usr/bin/grep -Fq 'Control' "${package_root}/ZACZNIJ-TUTAJ.txt"
-/usr/bin/grep -Fq 'osobnego hasła aplikacyjnego' "${package_root}/ZACZNIJ-TUTAJ.txt"
+/usr/bin/grep -Fq 'Control' "${package_root}/START-HERE.txt"
+/usr/bin/grep -Fq 'separate app password' "${package_root}/START-HERE.txt"
 if find "${package_root}" \( -name .build -o -name .git -o -name bin -o -name '*.db' -o -name '*.log' \) -print -quit | /usr/bin/grep -q .; then
-  printf 'Paczka zawiera lokalne artefakty albo dane robocze.\n' >&2
+  printf 'Package contains local artifacts or runtime data.\n' >&2
   exit 1
 fi
 
 cancel_output="$(printf 'N\n' | HOME="${TEST_ROOT}/home" GUARDIAN_SKIP_PAUSE=1 /bin/bash "${package_root}/Install.command" 2>&1)"
-[[ "${cancel_output}" == *"niczego nie zmieniono"* ]]
+[[ "${cancel_output}" == *"nothing changed"* ]]
 
 HOME="${PACKAGE_TEST_HOME}" \
 XDG_CONFIG_HOME="${PACKAGE_TEST_HOME}/config" \
@@ -91,10 +91,10 @@ for mutation in missing corrupt version arch marker manifest extra executable; d
   if HOME="$PACKAGE_TEST_HOME" XDG_CONFIG_HOME="$PACKAGE_TEST_HOME/config" GUARDIAN_SKIP_PAUSE=1 \
     GUARDIAN_INSTALL_INTEGRATION_TEST=1 GUARDIAN_INSTALL_TEST_DRIVER="$PACKAGE_TEST_HOME/driver.sh" \
     /bin/bash "$payload/scripts/install-core.sh" > "$TEST_ROOT/rejected" 2>&1; then
-    printf 'Uszkodzona paczka została przyjęta: %s\n' "$mutation" >&2; exit 1
+    printf 'Corrupt package accepted: %s\n' "$mutation" >&2; exit 1
   fi
   [[ ! -e "$PACKAGE_TEST_HOME/external-called" ]]
-  grep -Eq 'Paczka jest niekompletna|Gotowe programy nie przeszły' "$TEST_ROOT/rejected"
+  grep -Eq 'Package is incomplete|Prebuilt programs failed' "$TEST_ROOT/rejected"
   case "$mutation" in
     missing|corrupt) mv "$TEST_ROOT/guardian" "$payload/prebuilt/guardian" ;;
     version) cp "$PROJECT_DIR/VERSION" "$payload/VERSION" ;;
@@ -106,4 +106,4 @@ for mutation in missing corrupt version arch marker manifest extra executable; d
   esac
 done
 verify_release "$payload" "$release_version"
-printf 'Prosta paczka wydania: OK\n'
+printf 'Release package: OK\n'

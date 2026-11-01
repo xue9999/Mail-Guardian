@@ -11,7 +11,7 @@ if [[ -d "${APP_DIR}" ]]; then
   if /usr/bin/open "${APP_DIR}"; then
     exit 0
   fi
-  launcher_red "Nie udało się otworzyć aplikacji. Uruchamiam awaryjne menu tekstowe."
+  launcher_red "Could not open the application. Starting the fallback text menu."
 fi
 
 if ! ensure_guardian_installed; then
@@ -23,7 +23,7 @@ if "${GUARDIAN_BIN}" menu; then
   exit 0
 fi
 
-launcher_red "Menu zakończyło się błędem. Żadna wiadomość nie została usunięta przez sam skrót."
+launcher_red "Menu exited with an error. The launcher itself did not delete any message."
 if offer_guardian_repair; then
   "${GUARDIAN_BIN}" menu
   result=$?

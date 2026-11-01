@@ -12,8 +12,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
 )
 
 const Policy = "delivered-imap-v2-bayes100-dns-quarantine"
@@ -79,23 +79,23 @@ func validHash(s string) bool { b, err := hex.DecodeString(s); return err == nil
 
 func (r Report) Validate(cfg config.Config, now time.Time) error {
 	if r.Protocol != 1 || r.Policy != Policy || r.Method != "subject-grouped-disjoint-70-10-20" {
-		return errors.New("ocena pochodzi z innej wersji mechanizmu filtrowania")
+		return errors.New("evaluation uses another filtering-rules version")
 	}
 	c, err := cfg.ResolveIdentity()
 	if err != nil {
 		return err
 	}
 	if r.AuthorizationFingerprint != c.AuthorizationFingerprint() {
-		return errors.New("ocena dotyczy innej konfiguracji skrzynki")
+		return errors.New("evaluation belongs to another mailbox configuration")
 	}
 	if r.CreatedAt.IsZero() || r.CreatedAt.After(now.Add(time.Minute)) {
-		return errors.New("nieprawidłowa data oceny")
+		return errors.New("invalid evaluation date")
 	}
 	if r.MinLearns != MinLearns || r.TrainingStats.SpamRevision < MinLearns || r.TrainingStats.HamRevision < MinLearns {
-		return errors.New("model walidacyjny nie był wystarczająco nauczony")
+		return errors.New("validation model was insufficiently trained")
 	}
 	if math.IsNaN(r.SpamThreshold) || math.IsInf(r.SpamThreshold, 0) || r.SpamThreshold < 6 || math.Abs(r.SpamThreshold-cfg.Rspamd.SpamScore) > 0.000001 || cfg.Rspamd.HamScore != -2 || !cfg.Safety.RequireAuthForRescue {
-		return errors.New("progi lub reguły filtrowania zmieniły się od oceny")
+		return errors.New("filter thresholds or rules changed since evaluation")
 	}
 	hashes := map[string]bool{}
 	groups := map[string]int{}
@@ -104,11 +104,11 @@ func (r Report) Validate(cfg config.Config, now time.Time) error {
 	for role, set := range [][]Evidence{r.Training, r.Calibration, r.Validation} {
 		for _, e := range set {
 			if !validHash(e.Hash) || !validHash(e.Group) || hashes[e.Hash] || (e.Label != "ham" && e.Label != "spam") || math.IsNaN(e.Score) || math.IsInf(e.Score, 0) {
-				return errors.New("nieprawidłowy lub powtórzony przykład oceny")
+				return errors.New("invalid or duplicate evaluation example")
 			}
 			hashes[e.Hash] = true
 			if previous, ok := groups[e.Group]; ok && previous != role {
-				return errors.New("podobne tematy wiadomości przekraczają granicę nauki i testu")
+				return errors.New("similar message subjects cross the training/test boundary")
 			}
 			groups[e.Group] = role
 			class := 0
@@ -124,7 +124,7 @@ func (r Report) Validate(cfg config.Config, now time.Time) error {
 		}
 	}
 	if train[0] < 100 || train[1] < 100 || cal[0] < 20 || cal[1] < 10 {
-		return errors.New("za mało oddzielonych przykładów nauki lub strojenia")
+		return errors.New("insufficient held-out training or tuning examples")
 	}
 	threshold := 6.0
 	for _, e := range r.Calibration {
@@ -133,11 +133,11 @@ func (r Report) Validate(cfg config.Config, now time.Time) error {
 		}
 	}
 	if math.Abs(threshold-r.SpamThreshold) > 0.000001 {
-		return errors.New("próg nie odpowiada zamrożonemu wynikowi strojenia")
+		return errors.New("threshold does not match frozen tuning result")
 	}
 	m := r.Metrics()
 	if m.SpamTested < 40 || m.HamTested < 30 || m.SpamDetected*100 < m.SpamTested*MinimumRecallPercent || m.FalsePositives != 0 || m.FalseRescues != 0 {
-		return fmt.Errorf("ocena nie spełnia warunków: spam %d/%d, ważne %d, błędny spam %d, błędne ratowanie %d", m.SpamDetected, m.SpamTested, m.HamTested, m.FalsePositives, m.FalseRescues)
+		return fmt.Errorf("evaluation requirements not met: spam %d/%d, ham %d, false spam %d, false rescues %d", m.SpamDetected, m.SpamTested, m.HamTested, m.FalsePositives, m.FalseRescues)
 	}
 	return nil
 }

@@ -18,7 +18,7 @@ func (a *application) prepareLinuxMutation(rt *runtimeApp) error {
 		return err
 	}
 	if err := a.linuxModelCheckpoint(rt); err != nil {
-		return fmt.Errorf("operacje na skrzynce są zablokowane do czasu poprawnej kontroli modelu: %w", err)
+		return fmt.Errorf("mailbox operations blocked until successful model check: %w", err)
 	}
 	return nil
 }
@@ -30,7 +30,7 @@ func (a *application) finishLinuxMutation(rt *runtimeApp) error {
 		return err
 	}
 	if err := a.linuxModelCheckpoint(rt); err != nil {
-		return fmt.Errorf("nie udało się zabezpieczyć modelu; kolejne operacje wymagają ponownej kontroli: %w", err)
+		return fmt.Errorf("could not back up model; further operations require revalidation: %w", err)
 	}
 	return setModelCheckpointRequired(rt, "")
 }
@@ -39,7 +39,7 @@ func setModelCheckpointRequired(rt *runtimeApp, value string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := rt.db.SetSetting(ctx, modelCheckpointRequired, value); err != nil {
-		return fmt.Errorf("nie udało się zapisać obowiązkowej kontroli modelu: %w", err)
+		return fmt.Errorf("could not record required model check: %w", err)
 	}
 	return nil
 }

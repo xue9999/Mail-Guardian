@@ -16,12 +16,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/apperror"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/engine"
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/apperror"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/engine"
+	"github.com/xue9999/Mail-Guardian/internal/keychain"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 type memorySecrets struct {
@@ -583,5 +583,56 @@ func TestArchiveDateRangeValidation(t *testing.T) {
 	start, end, err := archiveDateRange("2026-10-25T00:00:00+02:00", "2026-10-26T00:00:00+01:00")
 	if err != nil || end.Sub(start) != 25*time.Hour {
 		t.Fatalf("timezone boundary lost: %v %v %v", start, end, err)
+	}
+}
+
+func TestSuccessfulDiagnosticsExcludeLocalConnectionAndFolderMetadata(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	cfg, err := config.NewInstance()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Account.Email, cfg.Account.Host, cfg.Account.Username = "private@example.org", "imap.private.example", "private-login"
+	cfg.Folders.ServerSpam, cfg.Folders.Review = "Junk", "private-review-folder"
+	cfg.Runtime.DataDir, cfg.Runtime.Database = home, filepath.Join(home, "guardian.db")
+	cfg.Runtime.ArchiveDir, cfg.Runtime.LogFile = filepath.Join(home, "archive"), filepath.Join(home, "guardian.log")
+	path := filepath.Join(home, "config.toml")
+	if err := config.Save(path, cfg); err != nil {
+		t.Fatal(err)
+	}
+	a := &application{configPath: path, out: io.Discard, errOut: io.Discard}
+	snapshot, err := a.buildAPISnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.Connection == nil || snapshot.MailboxFolders == nil || snapshot.Connection.Username != "private-login" {
+		t.Fatal("UI snapshot omitted the metadata this regression must exercise")
+	}
+	result, err := a.exportDiagnostics()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader, err := zip.OpenReader(result.(map[string]any)["path"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	entry, err := reader.File[0].Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer entry.Close()
+	body, err := io.ReadAll(entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(body, []byte(`"snapshot_available":true`)) {
+		t.Fatalf("successful snapshot was not exported: %s", body)
+	}
+	for _, private := range []string{"private@example.org", "imap.private.example", "private-login", "private-review-folder", `"connection"`, `"mailbox_folders"`} {
+		if bytes.Contains(body, []byte(private)) {
+			t.Fatalf("diagnostics leaked %q", private)
+		}
 	}
 }

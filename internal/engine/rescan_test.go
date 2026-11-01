@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
 )
 
 type changingScanner struct {

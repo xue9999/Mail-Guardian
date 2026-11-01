@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 // Runs without user configuration, Keychain, IMAP, or services.
@@ -26,7 +26,7 @@ func (a *application) selfTest() error {
 	if _, err := db.Summary(context.Background(), time.Now()); err != nil {
 		return err
 	}
-	fmt.Fprintln(a.out, "Samokontrola silnika: OK")
+	fmt.Fprintln(a.out, "Engine self-check: OK")
 	return nil
 }
 

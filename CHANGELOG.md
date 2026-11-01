@@ -1,233 +1,195 @@
-# Zmiany w Mail Guardian
+# Mail Guardian changelog
+
+## 0.7.0 — 2026-11-01
+
+- Rename the displayed product to Mail Guardian and the canonical GitHub
+  repository to `xue9999/Mail-Guardian`; use the canonical Go module path.
+- Make current documentation, desktop UI, backend messages and primary command
+  help English. Preserve compatibility links to old guide filenames and keep
+  Polish command aliases accepted.
+- Expose custom IMAP profile, hostname, implicit TLS port and separate login in
+  desktop/interactive setup and Linux configuration creation. New setup defaults
+  to custom; the o2 endpoint is an explicit preset. OAuth is not implemented.
+- Give explicitly profiled fresh installations independent identities and English
+  Guardian folders. Keep existing paths, Keychain/bundle/service/Docker IDs,
+  configured folders, deterministic v1 identities and mailbox bindings intact.
+- Add non-secret connection/folder metadata to the local API so desktop setup
+  and correction/recovery instructions use actual configured names. Omitted
+  fields preserve old protocol compatibility and existing custom connections.
+- Accept English `ACTIVE`/`ENABLE` confirmations alongside legacy wire tokens.
+  Filtering, observation, archive, MOVE confirmation and permanent-deletion
+  policy remain governed by their existing safety gates.
+- Make synthetic backup restart tests independent of host free-space state and
+  produce oversized pipe input concurrently to avoid a macOS fixture deadlock.
+  Production backup and remote-protocol guards are unchanged.
+- Drain Mach-O metadata output during package validation to avoid SIGPIPE on
+  small pipe buffers while retaining minimum-OS validation. Keep new local UI
+  account/folder metadata out of diagnostic exports, with an archive regression.
+- Document the provider protocol requirements, unsupported authentication,
+  qualification limits and upgrade contract. Publication does not deploy this
+  new minor line to the reference VPS.
 
 ## 0.6.1 — 2026-11-01
 
-### Linux, odzyskiwanie i utrzymanie
+### Linux, recovery and maintenance
 
-- Publiczne źródła obejmują worker Linux, systemd, prywatne poświadczenia,
-  ograniczony pomocnik administracyjny, wiązanie konfiguracji i tożsamości
-  wdrożenia, migrację, szyfrowane kopie oraz porównywanie modelu Redis.
-- Nowy instalator pozostawia harmonogram wyłączony. Przejęcie istniejącej
-  polityki wymaga sprawdzonej historii oraz świeżego dry-run; skopiowanie bazy
-  nie przenosi zgody na inną konfigurację lub host.
-- Opcjonalny obserwator porównuje rzeczywisty przebieg, heartbeat i nierozstrzygnięte
-  operacje. Status procesu lub kontenera nie zastępuje udanego sprawdzenia poczty.
-- Opublikowano codzienne koordynatory aktualizacji Ubuntu, Dockera, obrazów
-  i zależności/kompilatora Guardiana wraz z testami. Zachowują spójny punkt
-  odzyskiwania z modelem, blokady, dziennik i kontrolę po zmianie. Nowe linie
-  major/minor pozostają do ręcznego przeglądu.
-- Potwierdzanie MOVE bez COPYUID ma do trzech prób odczytu z przerwami
-  250 ms i 750 ms. Używa dokładnej treści i UIDVALIDITY, bez zbędnego ENVELOPE;
-  nie ponawia samego MOVE. Niejednoznaczność nadal wymaga odzyskiwania.
-- Konserwatywne sprzątanie nieudanego utworzenia blokady aktualizacji zachowuje
-  otwarty deskryptor i sprawdza treść. Ponowne użycie inode ani zmiana pliku
-  nie upoważniają do usunięcia blokady innej transakcji.
-- Poprawiono test, którego serwer mimo braku UIDPLUS nadal wysyłał COPYUID.
-  Nowe regresje faktycznie usuwają mapowanie z odpowiedzi protokołu.
-- Dokumentacja dla developerów obejmuje architekturę, testy, źródła konserwacji,
-  wydania i postępowanie po awarii. Stare plany pilota oznaczono historycznie.
-- CI obejmuje macOS i Linux, testy operacyjne, linki dokumentacji i skan sekretów.
-  Codzienne propozycje zależności i kontrola podatności nie wdrażają kodu na VPS.
+- Publish the Linux worker, systemd units, private credentials, restricted
+  administrator helper, configuration/deployment identity, migration, encrypted
+  backup and Redis model comparison tools.
+- New installation leaves scheduling off. Adopting existing policy requires
+  validated history and a fresh dry-run; a copied database does not authorize
+  another configuration or host.
+- Optional observation checks actual work, heartbeat and unresolved operations;
+  process/container health alone is insufficient.
+- Publish daily Ubuntu, Docker, image and Guardian dependency/compiler update
+  coordinators with tests. They preserve coherent recovery/model state, locks,
+  journals and postflight checks. New major/minor lines require manual review.
+- Confirm MOVE without COPYUID through at most three read-only attempts with
+  250 ms/750 ms delays. Check exact content and UIDVALIDITY without redundant
+  ENVELOPE requests; never repeat MOVE merely to obtain its mapping.
+- Keep the descriptor open and verify payload when cleaning a failed update
+  marker. Inode reuse or file replacement cannot authorize deleting another
+  transaction's lock.
+- Correct the fixture whose server still emitted COPYUID without advertising
+  UIDPLUS; regressions now actually suppress the wire mapping.
+- Add architecture, operations, maintenance, release and incident documentation;
+  label old pilot designs historical. Add macOS/Linux CI, operational fixtures,
+  documentation links and secret scanning. Daily dependency/security checks do
+  not deploy source to production.
 
-### Konfiguracja i sekrety
+### Configuration and secrets
 
-- Konfiguracja v2 rozdziela konto, nazwę logowania i dostawcę. Wczytanie v1
-  zachowuje dotychczasową instalację o2, jej foldery, ścieżki i wpisy Keychain.
-- Dziennik skrzynki jest przypisany do instancji i połączenia. Zmiana serwera
-  lub loginu nie może wykorzystać starych UID i oczekujących operacji. Zmiana
-  folderów wymaga nowej próby oraz obserwacji; historia jakości pozostaje.
-- Wspólny interfejs sekretów obsługuje Keychain i odczyt prywatnych poświadczeń
-  Linux. Błąd odczytu lub uszkodzony klucz archiwum nie powoduje jego wymiany.
-- API konfiguracji zachowuje dotychczasowe żądania i przyjmuje dodatkowe pola
-  połączenia custom IMAP. Wspólne pola konfiguracyjne nie oznaczają ukończonej
-  obsługi OAuth ani akceptacji każdego dostawcy IMAP.
+- Configuration v2 separates account, login and provider. Loading v1 preserves
+  the existing o2 installation, folder names, paths and Keychain entries.
+- Bind mailbox state to instance and connection. Changing server/login cannot
+  reuse old UIDs or pending operations; folder changes require fresh dry-run and
+  observation while preserving quality history.
+- Share the secret-store interface between Keychain and private Linux credential
+  reads. A read failure or corrupt archive key cannot silently replace the key.
+- Keep old setup requests valid while accepting custom IMAP fields. This does
+  not imply OAuth support or qualification of every IMAP provider.
 
-### Naprawy macOS i wspólnego silnika
+### macOS and shared engine repairs
 
-- Automat nadrabia po wybudzeniu Maca jeden przebieg pominięty podczas snu.
-  Wcześniejszy harmonogram mógł pominąć sprawdzanie nawet wtedy, gdy Mac
-  został później na krótko otwarty. Nowy harmonogram działa o parzystych
-  godzinach lokalnych i przy załadowaniu usługi.
-- Pełna kontrola i pulpit jednakowo ostrzegają, gdy brak udanego przebiegu
-  albo ostatni sukces jest starszy niż 4 godziny; ponad 48 godzin to stan
-  krytyczny. Dawniej pełna kontrola mogła potwierdzać aktualność mimo dobowej
-  przerwy widocznej na pulpicie.
-- Ostatnia jawna korekta wiadomości określa jej bieżącą klasę. Zmiana decyzji
-  spam → ważne → spam ponownie wywołuje uczenie zamiast korzystać ze starego
-  potwierdzenia. Każde historyczne wskazanie „ważne” nadal blokuje trwałe
-  usunięcie tej samej treści.
-- Utrata oceny jakości nie blokuje przetwarzania kolejnych jawnych korekt.
-  Automatyczne porządkowanie nadal wymaga prawidłowej oceny, sprawdzanej
-  po przetworzeniu folderów nauki.
-- Długi, poprawnie działający przegląd skrzynki nie traci połączenia IMAP
-  po 10 minutach. Limit dotyczy pojedynczej komendy; zawieszona operacja
-  przerywa przebieg zamiast wywoływać serię błędów odczytu kolejnych wiadomości.
-- Przejściowy błąd eksportu kopii modelu może być ponowiony jeden raz.
-  Każda próba ma własny limit czasu, a zapis kopii wymaga prawidłowego
-  zakończenia eksportu i zgodnej sumy kontrolnej.
-- Kontrole trwałego zapisu Redis mają osobne limity czasu i jedną ponowną
-  próbę po błędzie procesu. Poprawna kontrola statusu zapisu nie skraca czasu
-  dostępnego na następną kontrolę ustawień synchronizacji.
+- Catch up one missed run after wake; schedule at even local hours and service
+  load. Short wake periods no longer necessarily miss all checks.
+- Align deep checks and dashboard warnings: no success or success older than
+  four hours needs attention; over 48 hours is critical.
+- Let the latest explicit correction determine the current class. A
+  spam→ham→spam change learns again, while historical ham evidence still blocks
+  permanent deletion of identical content.
+- Continue processing explicit corrections after quality authorization is lost;
+  automatic cleanup is checked after training-folder processing.
+- Apply IMAP timeout to individual commands rather than an entire healthy long
+  scan. A stuck command ends the run instead of cascading fetch failures.
+- Retry transient model export once with a separate deadline per attempt; save
+  only successful, checksum-verified exports.
+- Give Redis persistence checks separate timeouts and one process-error retry;
+  a successful status check does not consume the next fsync-check budget.
 
 ## 0.6.0
 
-- Kończenie obserwacji może korzystać z aktualnej, zapisanej oceny filtra.
-  Osobny, pusty model otrzymuje około 70% oznaczonych wiadomości, 10% służy
-  do wyboru progu, a pozostałe 20% do niezależnego sprawdzenia. Wiadomości
-  o tak samo znormalizowanym temacie pozostają w jednej części.
-- Kwalifikacja wymaga minimum 40 przykładów spamu i 30 ważnych w teście,
-  co najmniej 90% wykrytego spamu, zera błędnie zatrzymanych ważnych i zera
-  błędnie ratowanego spamu. Wynik jest związany z konfiguracją skrzynki,
-  wersją reguł i wybranym progiem. Nowa potwierdzona pomyłka w przenoszeniu
-  odbiera tę kwalifikację do czasu ponownego sprawdzenia.
-- Bayes klasyfikuje od 100 statystycznych przykładów każdej klasy. Odrębna
-  ocena pozwala dobrać próg kwarantanny od 6; bez niej aktywacja nadal wymaga
-  dotychczasowego progu co najmniej 12 i dawnych kontroli.
-- Niepełny pomocniczy test DNS nie unieważnia silnych dodatnich dowodów
-  spamu przy przenoszeniu do odwracalnej kwarantanny. Timeout całego skanu,
-  pominięcie i soft reject nadal blokują decyzję. Ratowanie wymaga kompletnego
-  skanu; trwałe usuwanie zachowuje kompletność, próg co najmniej 12, minimum
-  nauki 200/200 i pozostałe odrębne warunki.
-- W Ustawieniach dostępna jest ponowna ocena jakości bez resetowania historii.
-  Ten sam proces jest dostępny przez `guardian qualify`; raporty zawierają
-  skróty i wyniki, bez treści wiadomości i danych logowania.
-- Budowanie i instalacja wymagają Go 1.27.3 lub poprawionego Go 1.26.10.
-  Usuwa to osiągalne zgłoszenie GO-2026-6809 dotyczące sprawdzania certyfikatów.
+- Allow completed observation to use a current stored independent qualification.
+  Train a separate fresh model on about 70% of examples, tune on 10%, and test on
+  20%. Keep normalized matching subjects in the same partition.
+- Require at least 40 spam and 30 ham held-out examples, 90% spam recognition,
+  zero false holds and zero false rescues. Bind qualification to mailbox policy,
+  rules and threshold; new confirmed move errors revoke it pending reevaluation.
+- Start Bayes classification at 100 statistical examples per class. Independent
+  qualification may tune quarantine threshold down to 6; otherwise retain the
+  conservative minimum of 12 and earlier activation checks.
+- Allow strong positive spam evidence for reversible quarantine despite an
+  incomplete auxiliary DNS test. Whole-scan timeout, skip and soft reject still
+  block. Rescue needs a complete scan; purge retains completeness, threshold
+  at least 12, 200/200 minimum learning and its other independent gates.
+- Add Settings reevaluation and `guardian qualify` without resetting history.
+  Reports contain hashes/results, not message bodies or credentials.
+- Require fixed Go 1.27.3 or 1.26.10 to address reachable certificate-validation
+  advisory GO-2026-6809.
 
-## Poprawka lokalna 2026-10-22 — skanowanie dostarczonej poczty
+## Local patch — 2026-10-22: delivered-mail scanning
 
-- Skan IMAP wyłącza wyłącznie `GREYLIST_CHECK` i `GREYLIST_SAVE`: odraczanie
-  dostawy SMTP nie ma zastosowania do poczty już znajdującej się w skrzynce.
-  Rzeczywiste timeouty, błędy DNS oraz pozostałe odpowiedzi `soft reject`
-  nadal blokują automatyczną decyzję.
-- Wiadomości pozostawione w skanowanym zakresie Odebranych są oceniane ponownie
-  po dobie albo po potwierdzonym uczeniu podczas bieżącego przebiegu.
-  Skończone ruchy i jawne korekty nie są powtarzane.
-- Pierwsza ocena i akcja są zachowane oddzielnie od aktualnego wyniku.
-  Powtórny skan nie może poprawić wstecz historycznych kryteriów aktywacji.
-- Komunikat po zakończonej obserwacji wyjaśnia bezterminowe blokady historyczne;
-  zdrowy harmonogram nie sugeruje, że automatyczne porządkowanie jest gotowe.
-  Ta poprawka nie włącza porządkowania ani trwałego usuwania.
+- Disable only GREYLIST_CHECK/GREYLIST_SAVE for delivered IMAP mail. Real timeout,
+  DNS failures and other soft rejects still block automatic decisions.
+- Reevaluate eligible retained Inbox messages after a day or confirmed learning
+  in the current run. Do not repeat completed moves or explicit corrections.
+- Preserve first verdict/action separately; rescans cannot retroactively improve
+  historical activation criteria.
+- Explain persistent historical blocks after observation. A healthy schedule
+  does not imply cleanup readiness. Enable neither cleanup nor purge implicitly.
 
 ## 0.5.3
 
-- Logowanie IMAP czeka na powitanie serwera. Usunięto wyścig, w którym
-  LOGIN mógł zostać wysłany przed gotowością serwera.
-- Jawna korekta w folderze nauki pozostaje skuteczna również dla wiadomości
-  z wadliwym MIME: Guardian szyfruje oryginał, zapisuje korektę dokładnej treści
-  i przenosi ją zgodnie z wyborem użytkownika. Nie wysyła wadliwej treści do
-  uczenia ani nie zwiększa liczników Bayesa. Automatyczna klasyfikacja nadal
-  odrzuca wadliwe wiadomości. Dawniej zablokowane korekty są ponawiane.
-- Zależność x/crypto 0.58.0 usuwa 16 zgłoszeń dotyczących starszych wydań.
-  Nienaprawialne zgłoszenie dotyczące nieużywanego OpenPGP pozostaje jawne;
-  kontrola zależności zabrania importowania tego pakietu.
-- Błędy zapisu wirtualnego dysku Colimy blokują start, restart instalatora
-  i pomyślne zakończenie przebiegu, również gdy Redis nadal odpowiada z pamięci.
-  Zapis AOF jest synchroniczny; jego przebudowa rozpoczyna się od 4 MiB.
+- Wait for the IMAP greeting before LOGIN to remove a connection race.
+- Retain exact-content user corrections for malformed MIME: encrypt and move the
+  original according to explicit training choice without sending malformed data
+  for learning or increasing Bayes counters. Retry previously blocked corrections;
+  automatic classification still rejects malformed messages.
+- Update x/crypto to 0.58.0 for 16 older advisories. Document the unfixable unused
+  OpenPGP advisory and reject importing that package.
+- Block start, installer restart and successful run completion on Colima disk
+  write errors even if Redis still serves memory. Use synchronous AOF; rewrite
+  begins at 4 MiB.
 
 ## 0.5.2
 
-- Zerwanie połączenia i niedostępność serwera podczas logowania IMAP nie są
-  przedstawiane jako odrzucenie hasła; zachowana jest rzeczywista przyczyna błędu.
-- Próba z błędami pojedynczych wiadomości nie potwierdza gotowości do
-  włączenia harmonogramu. API zachowuje podsumowanie, lecz nie zgłasza
-  pełnego sukcesu; polecenie konsolowe zwraca błąd również przy częściowej awarii.
-- Budowanie używa poprawionego Go 1.27.2. Pakowanie i instalacja ze źródeł
-  odrzucają starsze podatne wersje, w tym Go 1.27.1 i 1.26.8.
-- Budowanie aplikacji, testy, podgląd i instalator wybierają pełny Xcode,
-  gdy system wskazuje Command Line Tools, a Xcode jest zainstalowany.
-  Jawny wybór DEVELOPER_DIR jest zachowany; ustawienie systemowe nie zmienia się.
-- Wspólny katalog roboczy Swift poza Documents może być używany również
-  podczas pakowania, podglądu i instalacji ze źródeł.
+- Distinguish connection/server failure during IMAP login from rejected passwords.
+- Do not authorize scheduling after a dry-run with individual-message errors;
+  return structured results plus failure rather than full success.
+- Build with fixed Go 1.27.2 and reject older vulnerable compilers, including
+  1.27.1/1.26.8, during packaging/source installation.
+- Select full Xcode for build/test/preview/install when CLT is selected; preserve
+  explicit DEVELOPER_DIR without changing system settings.
+- Support an external Swift scratch directory for packaging, preview and install.
 
 ## 0.5.1
 
-- Naprawa i sprawdzanie stosu działają z aplikacji macOS również przy
-  ograniczonym PATH; zależności Colimy i Dockera dostają jawne ścieżki.
-- Model Redis ma dwie sprawdzane sumą kontrolną kopie na Macu poza Colimą.
-  Cofnięty model nie zastępuje dobrej kopii; błędy trwałego zapisu Redis
-  i eksportu modelu pozostają widoczne w wyniku przebiegu.
-- Uzgadnianie przeniesień bez COPYUID potwierdza pełną treść wiadomości.
-  Wyszukiwanie po rozmiarze omija nieczytelne, niezwiązane wiadomości na
-  serwerze. Niejednoznaczne wyniki ani błędy odczytu nie potwierdzają ruchu.
-- Pominięcie uczenia przez Rspamd (HTTP 204) zachowuje korektę użytkownika
-  bez fałszywego zwiększania liczników i bez zapętlenia ponowień.
-- Kontrola utraty modelu używa obserwowanych liczników Rspamd; duplikaty
-  statystyczne nie powodują fałszywego alarmu.
-- Status opiera się na ostatnim zakończonym sprawdzeniu. Przebieg z błędami
-  lub nierozstrzygniętymi operacjami nie dostaje zielonego wyniku ani udanego
-  heartbeat.
-- Kreator obsługuje zgodne nazwy pól starszej aplikacji i aktualnego backendu.
-- GitHub sprawdza testy, podatności, aplikację i instalator przy zmianach.
-  Testy nie mają dostępu do prawdziwej poczty ani haseł.
+- Repair/check the stack from the UI with a restricted PATH through explicit
+  Colima/Docker dependency paths.
+- Keep two checksum-verified Redis model backups outside Colima. A regressed
+  model cannot replace good backups; persistence/export failures remain visible.
+- Confirm full message content for missing-COPYUID reconciliation. Size searches
+  avoid unrelated unreadable messages; ambiguity/read failures cannot confirm.
+- Preserve corrections when Rspamd skips learning (HTTP 204), without false
+  counter increments or endless retry loops.
+- Detect model loss using observed Rspamd counters; statistical duplicates do not
+  trigger false alarms. Failed/pending runs do not become green or successful
+  heartbeats. Accept old UI/new backend setup-field spellings.
+- Add GitHub vulnerability, application, installer and isolated synthetic checks.
 
 ## 0.5.0
 
-- Lokalny ZIP dla Apple Silicon zawiera gotowy backend i aplikację macOS.
-  Instalowanie Guardiana z paczki nie kompiluje Go ani Swift.
-- Manifest sprawdza kompletność payloadu, wersję, architekturę i sumy SHA-256;
-  samokontrola i lokalne podpisy są sprawdzane przed podmianą programów.
-- Wspólna blokada chroni przed równoległym instalowaniem i nadpisaniem logu.
-- Wynik instalacji odróżnia sukces, potrzebę uwagi i awarię. Problem kontroli
-  końcowej lub wznowienia harmonogramu pozostaje widoczny.
-- Nieudane przywracanie zachowuje kopie aktualizacyjne i nie deklaruje sukcesu.
-- Paczka zachowuje źródła; instalacja bezpośrednio z repozytorium nadal buduje
-  program. Sumy kontrolne wykrywają uszkodzenia, nie uwierzytelniają wydawcy.
-- Podpis ad hoc, bez Developer ID i notaryzacji. Minimalny deklarowany macOS 13;
-  test na obecnym Macu nie potwierdza działania na wszystkich starszych wersjach.
+- Package prebuilt Go/native macOS programs for Apple Silicon; installation from
+  the ZIP does not compile. Source checkout installation still builds.
+- Validate payload completeness, version, architecture, SHA-256, self-checks and
+  local signatures before replacement; serialize installers with a shared lock.
+- Distinguish success, attention and failure. Retain rollback backups and report
+  incomplete recovery rather than claiming success.
+- Include source. Checksums detect corruption, not publisher authenticity.
+  Use ad hoc signing without Developer ID/notarization; declare macOS 13 minimum
+  without claiming validation on every older OS.
 
 ## 0.4.0
 
-Pierwsza iteracja poprawy designu i codziennej obsługi aplikacji macOS.
-
-- Pulpit pokazuje zadania użytkownika przed statystykami. Ostatnie udane
-  sprawdzenie i harmonogram są w karcie statusu, a postęp obserwacji ma jedną sekcję.
-- Brak zapisanych wiadomości do oceny ma osobny komunikat, zależny od trybu
-  automatycznego lub ręcznego; komunikat nie pojawia się przy nieaktualnych danych.
-- Nauka i korekty prowadzą przez trzy kroki, pozwalają otworzyć pocztę o2
-  w przeglądarce i uruchomić przetwarzanie już przeniesionych korekt u góry strony.
-- Kopiowanie nazwy folderu wyświetla czasowe potwierdzenie.
-- Odzyskiwanie objaśnia daty na liście i pozwala przechodzić między sąsiednimi
-  kopiami na bieżącej stronie. Każda zmiana unieważnia odsłonięte nagłówki
-  oraz możliwość przywrócenia poprzednio wybranej wiadomości.
-
-- Archiwum pozwala wybrać daty Od/Do. Zakres obejmuje całe dni w lokalnej
-  strefie czasu i łączy się z kategorią przed paginacją po stronie bazy.
-  Zastosowanie filtra wraca do pierwszej strony i usuwa poprzedni podgląd.
-- Ocena gotowości pokazuje pięć konkretnych warunków jakości oraz liczniki
-  z bieżącego okresu obserwacji. Nie zmienia zasad aktywacji.
-
-- Menu Przejdź i skróty ⌘1–⌘5 ułatwiają nawigację klawiaturą.
-- Etykiety dostępności rozróżniają kopiowane foldery oraz spełnione
-  i niespełnione warunki jakości.
-- Błąd aktywacji pozostaje w otwartym oknie potwierdzenia; ponowienie
-  nie wymaga ponownego wpisywania tekstu.
-
-- Przygotowanie konta w kreatorze ma trzy czytelne kroki w rozwijanej sekcji.
-  Pola danych są zablokowane podczas sprawdzania połączenia, aby wynik próby
-  odpowiadał danym widocznym w formularzu.
-
-- Ikona paska menu odróżnia obserwację od aktywnego porządkowania i pokazuje
-  brak potwierdzenia stanu, gdy ostatni odczyt się nie udał.
-- Test paczki sprawdza zgodność wersji i spakowanych widoków z kodem projektu.
-
-- Puste wyniki odzyskiwania pozwalają bezpośrednio wyłączyć filtr dat lub
-  pokazać wszystkie kategorie. Pusta dalsza strona ma powrót do początku listy.
-- Błąd odczytu archiwum usuwa nieaktualną listę i blokuje nawigację stron.
-  Ponowienie odczytu dotyczy strony, której wczytanie się nie udało.
-
-- Anulowanie operacji nie jest traktowane jak sukces: okno aktywacji zachowuje
-  potwierdzenie, a dalsze kroki uruchamiają się dopiero po udanej operacji
-  i odczycie stanu. Przerwanie oznacza stan ochrony jako niepotwierdzony.
-- Komunikat anulowania wyjaśnia, że zakończone kroki mogły zostać zapisane.
-  Okno aktywacji pozwala odświeżyć stan przed ponowieniem.
-
-### Dalsze prace
-
-- Gotowa aplikacja podpisana Developer ID i notaryzowana zamiast lokalnego budowania.
-- Audyt VoiceOver, klawiatury i testy użyteczności z osobami spoza projektu.
+- Prioritize user actions before statistics, group health/schedule and observation
+  progress, and distinguish empty-review states from stale data.
+- Guide corrections in three steps with webmail access, immediate processing and
+  temporary copy-folder feedback.
+- Explain archive dates; add adjacent-entry navigation and local-day date/category
+  filters before pagination. Clear preview/restoration when selection changes.
+- Show five explicit current-period quality criteria without changing activation.
+- Add Go-menu keyboard shortcuts and accessibility labels for folders/quality.
+  Preserve activation confirmation on failure; prevent stale-state retries.
+- Explain account preparation in three steps and lock inputs while probing.
+- Distinguish observation, active and unknown menu-bar states. Verify package UI
+  and version against source.
+- Add empty-filter/page recovery actions, clear stale lists after read failures,
+  and retry the failed page. Treat cancellation as incomplete, retain completed
+  steps, mark status unconfirmed and allow refresh before retry.
+- Remaining qualification: Developer ID/notarization, VoiceOver/keyboard audit
+  and usability tests outside the project.
 
 ## 0.3.0
 
-Pierwsze wydanie: lokalny silnik ochrony, natywna aplikacja macOS, kreator
-konfiguracji, nauka, zaszyfrowane kopie i odzyskiwanie wiadomości.
+Initial local protection engine, native macOS UI, setup, training, encrypted
+backups and message recovery.

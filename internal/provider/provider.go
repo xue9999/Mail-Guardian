@@ -24,7 +24,7 @@ func Resolve(profile, host string, port int, username, email, auth string) (Conn
 		auth = Password
 	}
 	if auth != Password {
-		return Connection{}, errors.New("nieobsługiwana metoda uwierzytelniania IMAP")
+		return Connection{}, errors.New("unsupported IMAP authentication method")
 	}
 	switch profile {
 	case "o2":
@@ -35,23 +35,23 @@ func Resolve(profile, host string, port int, username, email, auth string) (Conn
 			port = 993
 		}
 		if !strings.EqualFold(host, "poczta.o2.pl") || port != 993 {
-			return Connection{}, errors.New("profil o2 wymaga poczta.o2.pl:993; dla innego serwera wybierz custom")
+			return Connection{}, errors.New("o2 profile requires poczta.o2.pl:993; use custom for another server")
 		}
 	case "custom":
 	default:
-		return Connection{}, errors.New("nieobsługiwany profil dostawcy poczty")
+		return Connection{}, errors.New("unsupported email provider profile")
 	}
 	if host == "" || strings.TrimSpace(host) != host || strings.ContainsAny(host, "/\\@\r\n\x00 \t") || port < 1 || port > 65535 {
-		return Connection{}, errors.New("nieprawidłowy adres lub port IMAP")
+		return Connection{}, errors.New("invalid IMAP host or port")
 	}
 	if strings.Contains(host, ":") && net.ParseIP(host) == nil {
-		return Connection{}, errors.New("adres IMAP nie może zawierać schematu ani portu")
+		return Connection{}, errors.New("IMAP host must not include a scheme or port")
 	}
 	if username == "" {
 		username = email
 	}
 	if username == "" || strings.ContainsAny(username, "\r\n\x00") {
-		return Connection{}, errors.New("brakuje prawidłowej nazwy logowania IMAP")
+		return Connection{}, errors.New("missing valid IMAP login name")
 	}
 	return Connection{profile, strings.ToLower(host), username, auth, port}, nil
 }

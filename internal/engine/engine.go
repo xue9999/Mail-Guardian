@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 	technicalHistoryRetentionDays = 180
 )
 
-var ErrRestoreAlreadyPresent = errors.New("wiadomość już istnieje w zapisanym folderze; nie utworzono duplikatu")
+var ErrRestoreAlreadyPresent = errors.New("message already exists in recorded folder; no duplicate created")
 
 type Reporter func(kind, message string)
 
@@ -84,7 +84,7 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (run *store.Run, r
 			return run, err
 		}
 		if !e.Mail.SafeMoveSupported() {
-			return run, errors.New("serwer nie zapewnia natywnego IMAP MOVE; przenoszenie wiadomości jest zablokowane")
+			return run, errors.New("server does not provide native IMAP MOVE; message moves blocked")
 		}
 		if err := e.Mail.EnsureMailboxes(
 			e.Config.Folders.Quarantine,
@@ -103,7 +103,7 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (run *store.Run, r
 		}
 	}
 
-	e.Report("info", "Sprawdzam foldery uczące…")
+	e.Report("info", "Checking training folders…")
 	if err := e.processTraining(ctx, run, e.Config.Folders.TrainSpam, true, options.DryRun); err != nil {
 		return run, err
 	}
@@ -116,11 +116,11 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (run *store.Run, r
 		}
 	}
 
-	e.Report("info", "Sprawdzam folder SPAM o2…")
+	e.Report("info", "Checking provider spam folder…")
 	if err := e.processFolder(ctx, run, e.Config.Folders.ServerSpam, sourceSpam, options.DryRun); err != nil {
 		return run, err
 	}
-	e.Report("info", "Sprawdzam Odebrane…")
+	e.Report("info", "Checking Inbox…")
 	if err := e.processFolder(ctx, run, e.Config.Folders.Inbox, sourceInbox, options.DryRun); err != nil {
 		return run, err
 	}
@@ -138,7 +138,7 @@ func (e *Engine) Run(ctx context.Context, options RunOptions) (run *store.Run, r
 		}
 		if remaining := len(pending) + len(restores); remaining > 0 && run.Errors == 0 {
 			run.Errors = remaining
-			e.Report("warning", "Przebieg nie jest w pełni zakończony: pozostały operacje do automatycznego uzgodnienia.")
+			e.Report("warning", "The run is incomplete: operations remain for automatic reconciliation.")
 		}
 	}
 	return run, nil
@@ -160,7 +160,7 @@ func (e *Engine) setDefaults() {
 
 func (e *Engine) prepareStore(ctx context.Context) error {
 	if err := e.Store.IntegrityCheck(ctx); err != nil {
-		return fmt.Errorf("kontrola integralności stanu zablokowała działanie: %w", err)
+		return fmt.Errorf("state integrity check blocked operation: %w", err)
 	}
 	if err := e.Store.BindConfiguration(ctx, e.Config, e.Now()); err != nil {
 		return err
@@ -176,51 +176,51 @@ func (e *Engine) requireActivationQuality(ctx context.Context) error {
 	now := e.Now().UTC()
 	installedRaw, err := e.Store.GetSetting(ctx, "installed_at")
 	if err != nil {
-		return fmt.Errorf("odczyt daty instalacji: %w", err)
+		return fmt.Errorf("reading installation date: %w", err)
 	}
 	installedAt, err := parseSettingTime(installedRaw)
 	if err != nil {
-		return errors.New("brakuje prawidłowej daty instalacji; tryb aktywny pozostaje zablokowany")
+		return errors.New("missing valid installation date; active mode remains blocked")
 	}
 	protectRaw, err := e.Store.GetSetting(ctx, "protect_since")
 	if err != nil {
-		return fmt.Errorf("odczyt początku trybu ochronnego: %w", err)
+		return fmt.Errorf("reading protect-mode start: %w", err)
 	}
 	protectAt := installedAt
 	if protectRaw != "" {
 		protectAt, err = parseSettingTime(protectRaw)
 		if err != nil || protectAt.Before(installedAt) || protectAt.After(now) {
-			return errors.New("brakuje prawidłowej daty trybu ochronnego; tryb aktywny pozostaje zablokowany")
+			return errors.New("missing valid protect-mode date; active mode remains blocked")
 		}
 	}
 	if now.Before(protectAt.Add(time.Duration(e.Config.Safety.ProtectDays) * 24 * time.Hour)) {
-		return fmt.Errorf("tryb ochronny musi działać co najmniej %d pełnych dni", e.Config.Safety.ProtectDays)
+		return fmt.Errorf("protect mode must run for at least %d full days", e.Config.Safety.ProtectDays)
 	}
 	activeRaw, err := e.Store.GetSetting(ctx, "active_since")
 	if err != nil {
-		return fmt.Errorf("odczyt daty aktywacji: %w", err)
+		return fmt.Errorf("reading activation date: %w", err)
 	}
 	activeAt, err := parseSettingTime(activeRaw)
 	if err != nil || activeAt.Before(protectAt) || activeAt.After(now) {
-		return errors.New("brakuje prawidłowej daty aktywacji; automatyczne ruchy pozostają zablokowane")
+		return errors.New("missing valid activation date; automatic moves remain blocked")
 	}
 	qualified, err := e.Store.CurrentQualification(ctx, e.Config, now)
 	if err != nil {
-		return fmt.Errorf("aktualna ocena filtra: %w", err)
+		return fmt.Errorf("current filter evaluation: %w", err)
 	}
 	if qualified != nil {
 		return nil
 	}
 	if e.Config.Rspamd.SpamScore < 12 {
-		return errors.New("próg poniżej 12 wymaga odrębnej oceny filtra")
+		return errors.New("threshold below 12 requires independent filter evaluation")
 	}
 	quality, err := e.Store.ActivationQualityUntil(ctx, e.Config.Account.Email, protectAt, activeAt)
 	if err != nil {
-		return fmt.Errorf("sprawdzenie jakości okresu ochronnego: %w", err)
+		return fmt.Errorf("checking protection-period quality: %w", err)
 	}
 	if !quality.Ready() {
 		return fmt.Errorf(
-			"okres ochronny nie spełnia kryteriów jakości (błędny spam: %d, błędne ratowanie: %d, oznaczony spam: %d, trafnie wykryty: %d, bez wyjaśnienia: %d)",
+			"protection period fails quality criteria (false spam: %d, false rescues: %d, marked spam: %d, correctly detected: %d, unexplained: %d)",
 			quality.FalsePositives,
 			quality.FalseRescues,
 			quality.SpamFeedback,
@@ -233,12 +233,12 @@ func (e *Engine) requireActivationQuality(ctx context.Context) error {
 
 func parseSettingTime(value string) (time.Time, error) {
 	if value == "" {
-		return time.Time{}, errors.New("brak daty")
+		return time.Time{}, errors.New("no date")
 	}
 	if parsed, err := time.Parse(time.RFC3339Nano, value); err == nil {
 		return parsed.UTC(), nil
 	}
-	return time.Time{}, errors.New("nieprawidłowa data")
+	return time.Time{}, errors.New("invalid date")
 }
 
 func (e *Engine) reconcilePending(ctx context.Context) error {
@@ -250,7 +250,7 @@ func (e *Engine) reconcilePending(ctx context.Context) error {
 func (e *Engine) reconcilePendingWithPolicy(ctx context.Context, allowAutomatic bool) error {
 	pending, err := e.Store.PendingMessages(ctx, e.Config.Account.Email)
 	if err != nil {
-		return fmt.Errorf("odczyt nierozstrzygniętych ruchów: %w", err)
+		return fmt.Errorf("reading unresolved moves: %w", err)
 	}
 	deadline := time.Now().Add(60 * time.Second)
 	for _, record := range pending {
@@ -262,12 +262,12 @@ func (e *Engine) reconcilePendingWithPolicy(ctx context.Context, allowAutomatic 
 			continue
 		}
 		if time.Now().After(deadline) {
-			e.Report("info", "Uzgadnianie przerwanych ruchów będzie kontynuowane w następnym przebiegu")
+			e.Report("info", "Interrupted moves will continue reconciling on the next run")
 			break
 		}
 		destination, finalStatus, ok := e.pendingDestination(record.Action)
 		if !ok {
-			_ = e.Store.AddEvent(ctx, record.ID, "move_ambiguous", "nieznany docelowy stan ruchu")
+			_ = e.Store.AddEvent(ctx, record.ID, "move_ambiguous", "unknown destination move state")
 			if err := e.Store.UpdateLocation(ctx, record.ID, record.CurrentFolder, record.UIDValidity, record.UID, "move_ambiguous"); err != nil {
 				return err
 			}
@@ -293,13 +293,13 @@ func (e *Engine) reconcilePendingWithPolicy(ctx context.Context, allowAutomatic 
 		}
 		if !progress.SourceComplete {
 			if err := e.scanReconcilePage(ctx, record.CurrentFolder, record, &progress, true, deadline); err != nil {
-				_ = e.Store.AddEvent(ctx, record.ID, "move_uncertain", "nie udało się sprawdzić strony folderu źródłowego")
+				_ = e.Store.AddEvent(ctx, record.ID, "move_uncertain", "could not inspect source folder page")
 				continue
 			}
 		}
 		if !progress.DestinationComplete && time.Now().Before(deadline) {
 			if err := e.scanReconcilePage(ctx, destination, record, &progress, false, deadline); err != nil {
-				_ = e.Store.AddEvent(ctx, record.ID, "move_uncertain", "nie udało się sprawdzić strony folderu docelowego")
+				_ = e.Store.AddEvent(ctx, record.ID, "move_uncertain", "could not inspect destination folder page")
 				continue
 			}
 		}
@@ -308,7 +308,7 @@ func (e *Engine) reconcilePendingWithPolicy(ctx context.Context, allowAutomatic 
 			return err
 		}
 		if !progress.SourceComplete || !progress.DestinationComplete {
-			_ = e.Store.AddEvent(ctx, record.ID, "move_reconcile_progress", "zapisano częściowy postęp bez blokowania nowej poczty")
+			_ = e.Store.AddEvent(ctx, record.ID, "move_reconcile_progress", "partial progress saved without blocking new mail")
 			continue
 		}
 		if err := e.finishReconciliation(ctx, record, destination, finalStatus, progress); err != nil {
@@ -337,14 +337,14 @@ func (e *Engine) reconcileBySize(ctx context.Context, record store.Message, dest
 			return err
 		}
 		if validity == 0 || len(uids) > 1000 {
-			return errors.New("uzgadnianie wymaga pełnego, ograniczonego wyniku wyszukiwania")
+			return errors.New("reconciliation requires a complete bounded search result")
 		}
 		for _, uid := range uids {
 			if err := context.Cause(ctx); err != nil {
 				return err
 			}
 			if time.Now().After(deadline) {
-				return errors.New("uzgadnianie będzie kontynuowane w następnym przebiegu")
+				return errors.New("reconciliation will continue on the next run")
 			}
 			message, err := e.Mail.Fetch(folder, uid, true)
 			if err != nil {
@@ -449,58 +449,58 @@ func (e *Engine) finishReconciliation(ctx context.Context, record store.Message,
 		if err := e.Store.UpdateLocation(ctx, record.ID, record.CurrentFolder, 0, 0, "move_ambiguous"); err != nil {
 			return err
 		}
-		return errors.New("ruch pozostaje niejednoznaczny, ponieważ znaleziono więcej niż jedną zgodną kopię")
+		return errors.New("move remains ambiguous because multiple matching copies were found")
 	case p.SourceMatches == 1 && p.DestinationMatches == 0:
 		message, err := e.Mail.Fetch(record.CurrentFolder, p.SourceMatchUID, true)
 		if err != nil || !messageMatchesRecord(message, record) {
 			_ = e.Store.DeleteReconcileProgress(ctx, record.ID)
-			return errors.New("kopii źródłowej nie udało się ponownie potwierdzić; skan zostanie wznowiony")
+			return errors.New("source copy could not be reconfirmed; scan will resume")
 		}
 		if err := e.Store.UpdateLocation(ctx, record.ID, record.CurrentFolder, message.UIDValidity, message.UID, "pending_move"); err != nil {
 			return err
 		}
 		if err := e.movePending(ctx, record.ID, message, destination, finalStatus, markUnread); err != nil {
-			return fmt.Errorf("ponowienie ruchu ID %d: %w", record.ID, err)
+			return fmt.Errorf("retrying move ID %d: %w", record.ID, err)
 		}
 		_ = e.Store.DeleteReconcileProgress(ctx, record.ID)
-		return e.Store.AddEvent(ctx, record.ID, "move_retry", "ponowiono ruch po pełnym, stronicowanym uzgodnieniu")
+		return e.Store.AddEvent(ctx, record.ID, "move_retry", "move retried after full paginated reconciliation")
 	case p.SourceMatches == 0 && p.DestinationMatches == 1:
 		message, err := e.Mail.Fetch(destination, p.DestinationMatchUID, true)
 		if err != nil || !messageMatchesRecord(message, record) {
 			_ = e.Store.DeleteReconcileProgress(ctx, record.ID)
-			return errors.New("kopii docelowej nie udało się ponownie potwierdzić; skan zostanie wznowiony")
+			return errors.New("destination copy could not be reconfirmed; scan will resume")
 		}
 		if markUnread {
 			if err := e.Mail.MarkUnread(destination, message.UIDValidity, message.UID); err != nil {
-				_ = e.Store.AddEvent(ctx, record.ID, "unread_warning", "nie udało się usunąć flagi przeczytania")
+				_ = e.Store.AddEvent(ctx, record.ID, "unread_warning", "could not remove read flag")
 			}
 		}
 		if err := e.Store.FinalizeMove(ctx, record.ID, destination, message.UIDValidity, message.UID, finalStatus, e.Now().UTC(), e.Config.Safety.QuarantineDays, e.Config.Safety.ArchiveDays); err != nil {
 			return err
 		}
 		_ = e.Store.DeleteReconcileProgress(ctx, record.ID)
-		return e.Store.AddEvent(ctx, record.ID, "move_reconciled", "potwierdzono jedną zgodną kopię docelową")
+		return e.Store.AddEvent(ctx, record.ID, "move_reconciled", "one matching destination copy confirmed")
 	default:
 		if err := e.Store.UpdateLocation(ctx, record.ID, record.CurrentFolder, 0, 0, "move_ambiguous"); err != nil {
 			return err
 		}
-		return errors.New("nie znaleziono potwierdzonej kopii źródłowej ani docelowej; zaszyfrowana kopia lokalna została zachowana")
+		return errors.New("no confirmed source or destination copy found; encrypted local backup retained")
 	}
 }
 
 func (e *Engine) reconcilePendingRestores(ctx context.Context) error {
 	pending, err := e.Store.PendingRestores(ctx, e.Config.Account.Email)
 	if err != nil {
-		return fmt.Errorf("odczyt nierozstrzygniętych przywróceń: %w", err)
+		return fmt.Errorf("reading unresolved restores: %w", err)
 	}
 	for _, record := range pending {
 		if err := context.Cause(ctx); err != nil {
 			return err
 		}
 		if err := e.Restore(ctx, record.ID); err != nil {
-			return fmt.Errorf("uzgadnianie przywrócenia ID %d: %w", record.ID, err)
+			return fmt.Errorf("reconciling restore ID %d: %w", record.ID, err)
 		}
-		e.Report("success", "Dokończono wcześniej przerwane odzyskiwanie wiadomości")
+		e.Report("success", "Completed a previously interrupted message recovery")
 	}
 	return nil
 }
@@ -633,13 +633,13 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 		}
 		if err != nil {
 			run.Errors++
-			e.Report("error", fmt.Sprintf("%s: nie udało się odczytać UID %d", folder, uid))
+			e.Report("error", fmt.Sprintf("%s: could not read UID %d", folder, uid))
 			continue
 		}
 		if msg.Size > absoluteArchiveLimit {
 			run.Errors++
-			e.recordMetadataError(ctx, msg, source, "wiadomość przekracza bezwzględny limit kopii 100 MiB")
-			e.Report("warning", fmt.Sprintf("%s UID %d: ponad 100 MiB — pozostawiam bez zmian", folder, uid))
+			e.recordMetadataError(ctx, msg, source, "message exceeds absolute 100 MiB backup limit")
+			e.Report("warning", fmt.Sprintf("%s UID %d: exceeds 100 MiB — leaving unchanged", folder, uid))
 			continue
 		}
 		msg, err = e.Mail.Fetch(folder, uid, true)
@@ -648,18 +648,18 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 		}
 		if err != nil {
 			run.Errors++
-			e.Report("error", fmt.Sprintf("%s UID %d: nie udało się pobrać bezpiecznej kopii", folder, uid))
+			e.Report("error", fmt.Sprintf("%s UID %d: could not obtain a safe backup", folder, uid))
 			continue
 		}
 		if len(msg.Raw) > absoluteArchiveLimit {
 			run.Errors++
-			e.recordMetadataError(ctx, msg, source, "pełna wiadomość przekracza bezwzględny limit kopii 100 MiB")
-			e.Report("warning", fmt.Sprintf("%s UID %d: pełna wiadomość ma ponad 100 MiB — pozostawiam bez zmian", folder, uid))
+			e.recordMetadataError(ctx, msg, source, "full message exceeds absolute 100 MiB backup limit")
+			e.Report("warning", fmt.Sprintf("%s UID %d: full message exceeds 100 MiB — leaving unchanged", folder, uid))
 			continue
 		}
 		if int64(len(msg.Raw)) > e.Config.Safety.MaxMessageMiB<<20 {
 			if source == sourceSpam {
-				if err := e.archiveAndMove(ctx, run, msg, source, rspamd.Decision{Verdict: "uncertain"}, e.Config.Folders.Review, "review", dryRun, false, "wiadomość ponad limit skanowania"); err != nil {
+				if err := e.archiveAndMove(ctx, run, msg, source, rspamd.Decision{Verdict: "uncertain"}, e.Config.Folders.Review, "review", dryRun, false, "message exceeds scan limit"); err != nil {
 					run.Errors++
 					e.Report("error", fmt.Sprintf("%s UID %d: %v", folder, uid, err))
 				} else {
@@ -667,13 +667,13 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 				}
 			} else {
 				run.Kept++
-				e.recordKept(ctx, msg, source, rspamd.Decision{Verdict: "uncertain"}, "kept", "wiadomość ponad limit skanowania", dryRun)
+				e.recordKept(ctx, msg, source, rspamd.Decision{Verdict: "uncertain"}, "kept", "message exceeds scan limit", dryRun)
 			}
 			continue
 		}
 		if mimeErr := validateRFC822MIME(msg.Raw); mimeErr != nil {
 			decision := rspamd.Decision{Verdict: "uncertain"}
-			detail := "nieprawidłowa struktura RFC822/MIME"
+			detail := "invalid RFC822/MIME structure"
 			if source == sourceSpam {
 				if err := e.archiveAndMove(ctx, run, msg, source, decision, e.Config.Folders.Review, "review", dryRun, false, detail); err != nil {
 					run.Errors++
@@ -689,7 +689,7 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 				}
 				e.recordKept(ctx, msg, source, decision, status, detail, dryRun)
 			}
-			e.Report("warning", fmt.Sprintf("%s UID %d: nieprawidłowy RFC822/MIME — brak automatycznej klasyfikacji", folder, uid))
+			e.Report("warning", fmt.Sprintf("%s UID %d: invalid RFC822/MIME — no automatic classification", folder, uid))
 			continue
 		}
 
@@ -709,7 +709,7 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 			} else {
 				e.recordKept(ctx, msg, source, decision, "error", scanErr.Error(), dryRun)
 			}
-			e.Report("warning", fmt.Sprintf("%s UID %d: Rspamd niedostępny — niczego nie kasuję", folder, uid))
+			e.Report("warning", fmt.Sprintf("%s UID %d: Rspamd unavailable — no deletion", folder, uid))
 			continue
 		}
 		decision := rspamd.ClassifyDelivery(result, e.Config.Rspamd.SpamScore, e.Config.Rspamd.HamScore, e.Config.Safety.RequireAuthForRescue)
@@ -720,7 +720,7 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 		if err != nil {
 			run.Errors++
 			decision = rspamd.Decision{Verdict: "error"}
-			e.Report("warning", fmt.Sprintf("%s UID %d: nie udało się sprawdzić korekt użytkownika", folder, uid))
+			e.Report("warning", fmt.Sprintf("%s UID %d: could not check user corrections", folder, uid))
 		}
 		action, destination, markUnread := e.decide(source, decision, active)
 		switch action {
@@ -737,7 +737,7 @@ func (e *Engine) processFolder(ctx context.Context, run *store.Run, folder, sour
 				e.Report("error", fmt.Sprintf("%s UID %d: %v", folder, uid, err))
 			} else {
 				run.Rescued++
-				e.Report("success", "Uratowano prawidłową wiadomość z folderu SPAM")
+				e.Report("success", "Legitimate message rescued from the spam folder")
 			}
 		case "quarantine":
 			if err := e.archiveAndMove(ctx, run, msg, source, decision, destination, "quarantined", dryRun, false, ""); err != nil {
@@ -839,7 +839,7 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 		}
 		if len(msg.Raw) == 0 || len(msg.Raw) > int(e.Config.Safety.MaxMessageMiB<<20) {
 			run.Errors++
-			e.recordMetadataError(ctx, msg, folder, "wiadomość ucząca jest pusta lub przekracza limit")
+			e.recordMetadataError(ctx, msg, folder, "training message is empty or exceeds limit")
 			continue
 		}
 		invalidMIME := validateRFC822MIME(msg.Raw) != nil
@@ -856,16 +856,16 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 		decision := rspamd.Decision{Verdict: verdict}
 		if dryRun {
 			if invalidMIME {
-				e.Report("warning", "Próba: zachowam oryginał i Twoją korektę; nieprawidłowy MIME wyklucza uczenie Bayesa, ale nie przeniesienie zgodne z folderem nauki.")
+				e.Report("warning", "Dry-run: retaining the original and your correction; invalid MIME prevents Bayes learning but still permits a move based on the training folder.")
 			} else {
-				e.Report("info", fmt.Sprintf("Próba: UID %d czeka na uczenie jako %s", uid, verdict))
+				e.Report("info", fmt.Sprintf("Dry-run: UID %d awaits learning as %s", uid, verdict))
 			}
 			continue
 		}
 		alreadyLearned, err := e.feedbackAlreadyLearned(ctx, msg.Raw, spam)
 		if err != nil {
 			run.Errors++
-			e.Report("error", "Nie udało się sprawdzić, czy ta korekta była już nauczona")
+			e.Report("error", "Could not check whether this correction was already learned")
 			continue
 		}
 		if alreadyLearned {
@@ -879,7 +879,7 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 			} else {
 				run.Rescued++
 			}
-			e.Report("info", "Ta sama korekta była już zapamiętana; wiadomość przeniesiono bez ponownego uczenia")
+			e.Report("info", "This correction was already learned; message moved without duplicate learning")
 			continue
 		}
 		var learningErr error
@@ -898,7 +898,7 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 				} else {
 					run.Rescued++
 				}
-				e.Report("warning", "Zapamiętano Twoją korektę i przeniesiono oryginalną wiadomość. Uczenie Bayesa pominięte; przykład nie zwiększa postępu filtra.")
+				e.Report("warning", "Your correction was recorded and the original message moved. Bayes learning skipped; this example does not increase training progress.")
 				continue
 			}
 			run.Errors++
@@ -912,13 +912,13 @@ func (e *Engine) processTraining(ctx context.Context, run *store.Run, folder str
 			run.LearnedHam++
 			run.Rescued++
 		}
-		e.Report("success", "Rspamd zapamiętał korektę")
+		e.Report("success", "Rspamd learned the correction")
 	}
 	return context.Cause(ctx)
 }
 
 func (e *Engine) archiveUnlearnableAndMove(ctx context.Context, msg imapmail.Message, source string, decision rspamd.Decision, destination, finalStatus string, markUnread bool, feedback string) error {
-	id, record, err := e.preparePending(ctx, msg, source, decision, finalStatus, "pending_learn", "invalid_mime: uczenie pominięte")
+	id, record, err := e.preparePending(ctx, msg, source, decision, finalStatus, "pending_learn", "invalid_mime: learning skipped")
 	if err != nil {
 		return err
 	}
@@ -926,7 +926,7 @@ func (e *Engine) archiveUnlearnableAndMove(ctx context.Context, msg imapmail.Mes
 		return err
 	}
 	record.FeedbackIntent = feedback
-	return e.finishUnlearnedCorrection(ctx, id, record, msg, destination, finalStatus, markUnread, "invalid_mime: zachowano oryginał i jawną korektę bez wysyłania wadliwej treści do uczenia")
+	return e.finishUnlearnedCorrection(ctx, id, record, msg, destination, finalStatus, markUnread, "invalid_mime: original and explicit correction retained without submitting malformed content for learning")
 }
 
 func (e *Engine) finishUnlearnedCorrection(ctx context.Context, id int64, record store.Message, msg imapmail.Message, destination, finalStatus string, markUnread bool, detail string) error {
@@ -967,10 +967,10 @@ func (e *Engine) archiveKnownTrainingAndMove(
 		return err
 	}
 	if err := e.Store.MarkFeedbackIntent(ctx, id, decision.Verdict); err != nil {
-		return fmt.Errorf("nie zapisano ponowionej korekty: %w", err)
+		return fmt.Errorf("retried correction not saved: %w", err)
 	}
 	if err := e.Store.SupersedeOtherCopies(ctx, record.Account, record.RawSHA256, id); err != nil {
-		return fmt.Errorf("nie uzgodniono poprzedniej kopii tej samej korekty: %w", err)
+		return fmt.Errorf("previous copy of the same correction was not reconciled: %w", err)
 	}
 	return e.movePending(ctx, id, msg, destination, finalStatus, markUnread)
 }
@@ -986,7 +986,7 @@ func (e *Engine) archiveAndMove(
 	detail string,
 ) error {
 	if dryRun {
-		e.Report("info", fmt.Sprintf("Próba: %s → %s (%s, wynik %.1f)", msg.Folder, destination, decision.Verdict, decision.Score))
+		e.Report("info", fmt.Sprintf("Dry-run: %s → %s (%s, score %.1f)", msg.Folder, destination, decision.Verdict, decision.Score))
 		return nil
 	}
 	id, _, err := e.preparePending(ctx, msg, source, decision, finalStatus, "pending_move", detail)
@@ -1018,26 +1018,26 @@ func (e *Engine) archiveLearnAndMove(
 	// learning request. In particular, a ham intent is already a permanent
 	// veto for purge even if Rspamd is unavailable or the process crashes.
 	if err := e.Store.MarkFeedbackIntent(ctx, id, feedback); err != nil {
-		return fmt.Errorf("nie zapisano intencji korekty; uczenie zostało zablokowane: %w", err)
+		return fmt.Errorf("correction intent not saved; learning blocked: %w", err)
 	}
 	record.FeedbackIntent = feedback
 	if err := e.Rspamd.Learn(ctx, msg.Raw, spam); err != nil {
 		if errors.Is(err, rspamd.ErrLearningSkipped) {
 			// Preserve the exact-content correction without pretending Bayes
 			// learned it. The intent already guards classification and ham purge.
-			return e.finishUnlearnedCorrection(ctx, id, record, msg, destination, finalStatus, markUnread, "HTTP 204: zachowano korektę użytkownika bez potwierdzenia uczenia Bayesa")
+			return e.finishUnlearnedCorrection(ctx, id, record, msg, destination, finalStatus, markUnread, "HTTP 204: user correction retained without confirmation of Bayes learning")
 		}
 		record.Status = "error"
 		record.LastError = err.Error()
 		_, _ = e.Store.UpsertMessage(ctx, &record)
 		_ = e.Store.AddEvent(ctx, id, "learn_error", err.Error())
-		return fmt.Errorf("uczenie nie powiodło się; wiadomość została w folderze uczącym: %w", err)
+		return fmt.Errorf("learning failed; message remains in training folder: %w", err)
 	}
 	if err := e.Store.MarkLearned(ctx, id, feedback); err != nil {
-		return fmt.Errorf("Rspamd przyjął korektę, ale nie zapisano jej stanu: %w", err)
+		return fmt.Errorf("Rspamd accepted the correction, but its state was not saved: %w", err)
 	}
 	if err := e.Store.SupersedeOtherCopies(ctx, record.Account, record.RawSHA256, id); err != nil {
-		return fmt.Errorf("Rspamd przyjął korektę, ale nie uzgodniono poprzedniej lokalizacji: %w", err)
+		return fmt.Errorf("Rspamd accepted the correction, but the previous location was not reconciled: %w", err)
 	}
 	return e.movePending(ctx, id, msg, destination, finalStatus, markUnread)
 }
@@ -1053,7 +1053,7 @@ func (e *Engine) preparePending(
 	now := e.Now().UTC()
 	archivePath, err := e.Archive.Save(msg.Raw, rawHash, now)
 	if err != nil {
-		return 0, store.Message{}, fmt.Errorf("nie zapisano zaszyfrowanej kopii; działanie zablokowane: %w", err)
+		return 0, store.Message{}, fmt.Errorf("encrypted backup not saved; operation blocked: %w", err)
 	}
 	archiveUntil := now.AddDate(0, 0, e.Config.Safety.ArchiveDays)
 	record := &store.Message{
@@ -1066,7 +1066,7 @@ func (e *Engine) preparePending(
 	}
 	id, err := e.Store.UpsertMessage(ctx, record)
 	if err != nil {
-		return 0, store.Message{}, fmt.Errorf("nie zapisano stanu; działanie zablokowane: %w", err)
+		return 0, store.Message{}, fmt.Errorf("state not saved; operation blocked: %w", err)
 	}
 	record.ID = id
 	return id, *record, nil
@@ -1101,9 +1101,9 @@ func (e *Engine) movePending(
 				e.Config.Safety.QuarantineDays,
 				e.Config.Safety.ArchiveDays,
 			); stateErr != nil {
-				return fmt.Errorf("wiadomość przeniesiona, ale stan wymaga naprawy: %w", stateErr)
+				return fmt.Errorf("message moved, but state needs repair: %w", stateErr)
 			}
-			_ = e.Store.AddEvent(ctx, id, "move_warning", "przeniesiono, lecz nie ustawiono wszystkich flag")
+			_ = e.Store.AddEvent(ctx, id, "move_warning", "moved, but not all flags were set")
 			return nil
 		}
 		_ = e.Store.MarkMoveUncertain(ctx, id, err.Error())
@@ -1111,9 +1111,9 @@ func (e *Engine) movePending(
 		return err
 	}
 	if move.UID == 0 || move.UIDValidity == 0 {
-		_ = e.Store.MarkMoveUncertain(ctx, id, "serwer potwierdził ruch bez jednoznacznego docelowego UID")
-		_ = e.Store.AddEvent(ctx, id, "move_uncertain", "brak docelowego UID lub UIDVALIDITY")
-		return errors.New("wiadomość została przeniesiona, ale serwer nie podał docelowego UID; stan zostanie bezpiecznie uzgodniony przy następnym przebiegu")
+		_ = e.Store.MarkMoveUncertain(ctx, id, "server confirmed move without an unambiguous destination UID")
+		_ = e.Store.AddEvent(ctx, id, "move_uncertain", "missing destination UID or UIDVALIDITY")
+		return errors.New("message moved, but server omitted destination UID; state will reconcile safely on the next run")
 	}
 	if err := e.Store.FinalizeMove(
 		ctx,
@@ -1127,7 +1127,7 @@ func (e *Engine) movePending(
 		e.Config.Safety.ArchiveDays,
 	); err != nil {
 		_ = e.Store.AddEvent(ctx, id, "state_error", err.Error())
-		return fmt.Errorf("wiadomość przeniesiona, lecz aktualizacja stanu wymaga naprawy: %w", err)
+		return fmt.Errorf("message moved, but state update needs repair: %w", err)
 	}
 	return e.Store.AddEvent(ctx, id, finalStatus, "")
 }
@@ -1175,26 +1175,26 @@ func (e *Engine) Purge(ctx context.Context, dryRun bool) (run *store.Run, retErr
 		}
 	}
 	if !dryRun && !e.Config.Safety.PurgeEnabled {
-		return run, errors.New("trwałe usuwanie jest wyłączone; włącz je świadomie w menu po okresie próbnym")
+		return run, errors.New("permanent deletion is disabled; authorize it explicitly in the menu after qualification")
 	}
 	if e.Config.Safety.Mode != "active" {
-		return run, errors.New("trwałe usuwanie wymaga trybu aktywnego")
+		return run, errors.New("permanent deletion requires active mode")
 	}
 	if err := e.requirePurgeQuality(ctx); err != nil {
 		return run, err
 	}
 	if !e.Mail.SafeDeleteSupported() {
-		return run, errors.New("serwer nie obsługuje UIDPLUS; trwałe usuwanie pozostaje zablokowane")
+		return run, errors.New("server does not support UIDPLUS; permanent deletion remains blocked")
 	}
 	// A correction can be copied to the learning folder while its original is
 	// still present in quarantine. Block all deletion until the normal run has
 	// durably recorded and learned every explicit "important" correction.
 	pendingHam, _, err := e.Mail.SearchSince(e.Config.Folders.TrainHam, time.Time{}, 1)
 	if err != nil {
-		return run, fmt.Errorf("sprawdzenie folderu korekt ważnych przed purge: %w", err)
+		return run, fmt.Errorf("checking ham corrections before purge: %w", err)
 	}
 	if len(pendingHam) != 0 {
-		return run, errors.New("trwałe usuwanie jest zablokowane, ponieważ AI-Naucz-wazne zawiera nierozliczoną korektę")
+		return run, errors.New("permanent deletion blocked by an unresolved correction in the configured ham-training folder")
 	}
 	candidates, err := e.Store.PurgeCandidates(ctx, e.Config.Account.Email, e.Now())
 	if err != nil {
@@ -1204,11 +1204,11 @@ func (e *Engine) Purge(ctx context.Context, dryRun bool) (run *store.Run, retErr
 		run.Scanned++
 		hasHamFeedback, err := e.Store.HasHamFeedback(ctx, candidate.Account, candidate.RawSHA256)
 		if err != nil {
-			return run, fmt.Errorf("sprawdzenie korekt użytkownika: %w", err)
+			return run, fmt.Errorf("checking user corrections: %w", err)
 		}
 		if hasHamFeedback {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "wiadomość ma jawną korektę ważne")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "message has an explicit ham correction")
 			continue
 		}
 		if candidate.ArchivePath == "" {
@@ -1226,28 +1226,28 @@ func (e *Engine) Purge(ctx context.Context, dryRun bool) (run *store.Run, retErr
 		if candidate.QuarantinedAt == nil ||
 			e.Now().UTC().Before(candidate.QuarantinedAt.AddDate(0, 0, e.Config.Safety.QuarantineDays)) {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "nie upłynął pełny okres od potwierdzonej kwarantanny")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "full retention period since confirmed quarantine has not elapsed")
 			continue
 		}
 		if candidate.UID == 0 || candidate.UIDValidity == 0 {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "brak jednoznacznego UID i UIDVALIDITY")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "missing unambiguous UID and UIDVALIDITY")
 			continue
 		}
 		msg, err := e.Mail.Fetch(e.Config.Folders.Quarantine, candidate.UID, true)
 		if err == nil && (msg.UIDValidity != candidate.UIDValidity ||
 			archive.SHA256(msg.Raw) != candidate.RawSHA256 ||
 			hashText(msg.MessageID) != candidate.MessageIDHash) {
-			err = errors.New("UID, UIDVALIDITY, Message-ID lub SHA-256 nie pasuje")
+			err = errors.New("UID, UIDVALIDITY, Message-ID or SHA-256 does not match")
 		}
 		if err != nil {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "niezgodność tożsamości wiadomości")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "message identity mismatch")
 			continue
 		}
 		if importantFlags(msg.Flags) {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "wiadomość jest oznaczona jako ważna")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "message is marked important")
 			continue
 		}
 		result, err := e.Rspamd.Scan(ctx, msg.Raw, e.Config.Account.Email)
@@ -1258,7 +1258,7 @@ func (e *Engine) Purge(ctx context.Context, dryRun bool) (run *store.Run, retErr
 		decision := rspamd.ClassifyPermanent(result, e.Config.Rspamd.SpamScore, e.Config.Rspamd.HamScore, e.Config.Safety.RequireAuthForRescue)
 		if decision.Verdict != "spam" {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "ponowny skan nie potwierdził spamu")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "rescan did not confirm spam")
 			continue
 		}
 		if dryRun {
@@ -1275,12 +1275,12 @@ func (e *Engine) Purge(ctx context.Context, dryRun bool) (run *store.Run, retErr
 			hashText(latest.MessageID) != candidate.MessageIDHash ||
 			importantFlags(latest.Flags) {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "tożsamość lub flagi zmieniły się podczas ponownego skanowania")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_blocked", "identity or flags changed during rescan")
 			continue
 		}
 		if err := e.Mail.DeleteUID(e.Config.Folders.Quarantine, latest.UIDValidity, latest.UID); err != nil {
 			run.Errors++
-			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_delete_uncertain", "serwer nie potwierdził bezpiecznego UID EXPUNGE")
+			_ = e.Store.AddEvent(ctx, candidate.ID, "purge_delete_uncertain", "server did not confirm safe UID EXPUNGE")
 			continue
 		}
 		if err := e.Store.MarkPurged(ctx, candidate.ID); err != nil {
@@ -1304,15 +1304,15 @@ func (e *Engine) requirePurgeQuality(ctx context.Context) error {
 	}
 	activeAt, err := parseSettingTime(activeRaw)
 	if err != nil || now.Before(activeAt.Add(30*24*time.Hour)) {
-		return errors.New("trwałe usuwanie wymaga co najmniej 30 pełnych dni trybu aktywnego")
+		return errors.New("permanent deletion requires at least 30 full days of active mode")
 	}
 	trainedSpam, trainedHam, err := e.Store.TrainingTotals(ctx, e.Config.Account.Email)
 	if err != nil {
-		return fmt.Errorf("sprawdzenie liczby korekt: %w", err)
+		return fmt.Errorf("checking correction count: %w", err)
 	}
 	if trainedSpam < e.Config.Safety.MinLearnSpam || trainedHam < e.Config.Safety.MinLearnHam {
 		return fmt.Errorf(
-			"za mało unikalnych przykładów do trwałego usuwania (spam %d/%d, ważne %d/%d)",
+			"insufficient unique examples for permanent deletion (spam %d/%d, ham %d/%d)",
 			trainedSpam,
 			e.Config.Safety.MinLearnSpam,
 			trainedHam,
@@ -1321,10 +1321,10 @@ func (e *Engine) requirePurgeQuality(ctx context.Context) error {
 	}
 	falseSpam, falseHam, err := e.Store.MisclassificationsSince(ctx, e.Config.Account.Email, now.Add(-30*24*time.Hour))
 	if err != nil {
-		return fmt.Errorf("sprawdzenie ostatnich pomyłek: %w", err)
+		return fmt.Errorf("checking recent errors: %w", err)
 	}
 	if falseSpam != 0 || falseHam != 0 {
-		return fmt.Errorf("w ostatnich 30 dniach były sprzeczne korekty (ważne: %d, spam: %d)", falseSpam, falseHam)
+		return fmt.Errorf("conflicting corrections in the last 30 days (ham: %d, spam: %d)", falseSpam, falseHam)
 	}
 	return nil
 }
@@ -1352,18 +1352,18 @@ func (e *Engine) Restore(ctx context.Context, id int64) error {
 		return err
 	}
 	if record.Account != e.Config.Account.Email {
-		return errors.New("ta kopia należy do innego konta i nie zostanie przywrócona")
+		return errors.New("this backup belongs to another account and will not be restored")
 	}
 	if record.Status == "restored" {
 		if record.CurrentFolder != e.Config.Folders.Review || record.UID == 0 || record.UIDValidity == 0 {
-			return errors.New("poprzedniego przywrócenia nie można jednoznacznie potwierdzić; nie tworzę duplikatu")
+			return errors.New("previous restore cannot be confirmed unambiguously; refusing duplicate")
 		}
 		existing, err := e.Mail.Fetch(record.CurrentFolder, record.UID, true)
 		if err != nil {
-			return fmt.Errorf("nie można potwierdzić poprzednio przywróconej kopii; nie tworzę duplikatu: %w", err)
+			return fmt.Errorf("cannot confirm previously restored copy; refusing duplicate: %w", err)
 		}
 		if existing.UIDValidity != record.UIDValidity || archive.SHA256(existing.Raw) != record.RawSHA256 {
-			return errors.New("poprzednio przywrócona lokalizacja nie pasuje; nie tworzę duplikatu")
+			return errors.New("previously restored location does not match; refusing duplicate")
 		}
 		return fmt.Errorf("%w: %s", ErrRestoreAlreadyPresent, record.CurrentFolder)
 	}
@@ -1373,14 +1373,14 @@ func (e *Engine) Restore(ctx context.Context, id int64) error {
 		record.UIDValidity != 0 {
 		existing, err := e.Mail.Fetch(record.CurrentFolder, record.UID, true)
 		if err != nil {
-			return fmt.Errorf("nie można jednoznacznie potwierdzić zapisanej lokalizacji; nie tworzę kopii przez APPEND: %w", err)
+			return fmt.Errorf("cannot unambiguously confirm recorded location; refusing APPEND: %w", err)
 		}
 		if existing.UIDValidity != record.UIDValidity ||
 			archive.SHA256(existing.Raw) != record.RawSHA256 ||
 			hashText(existing.MessageID) != record.MessageIDHash {
-			return errors.New("zapisana lokalizacja wskazuje inną wiadomość; przywracanie zablokowane")
+			return errors.New("recorded location points to another message; restore blocked")
 		}
-		_ = e.Store.AddEvent(ctx, id, "restore_skipped_existing", "wiadomość nadal istnieje w zapisanym folderze")
+		_ = e.Store.AddEvent(ctx, id, "restore_skipped_existing", "message still exists in recorded folder")
 		return fmt.Errorf("%w: %s", ErrRestoreAlreadyPresent, record.CurrentFolder)
 	}
 
@@ -1392,7 +1392,7 @@ func (e *Engine) Restore(ctx context.Context, id int64) error {
 			record.SizeBytes,
 		)
 		if err != nil {
-			return fmt.Errorf("uzgadnianie poprzedniej próby przywrócenia: %w", err)
+			return fmt.Errorf("reconciling previous restore attempt: %w", err)
 		}
 		switch len(matches) {
 		case 1:
@@ -1407,36 +1407,36 @@ func (e *Engine) Restore(ctx context.Context, id int64) error {
 			); err != nil {
 				return err
 			}
-			return e.Store.AddEvent(ctx, id, "restore_reconciled", "potwierdzono istniejącą kopię bez tworzenia duplikatu")
+			return e.Store.AddEvent(ctx, id, "restore_reconciled", "existing copy confirmed without creating a duplicate")
 		case 0:
 			// APPEND either never happened or left no copy. The encrypted archive
 			// below is still required before retrying.
 		default:
-			return errors.New("w folderze ręcznej weryfikacji istnieje wiele zgodnych kopii; nie tworzę kolejnej")
+			return errors.New("multiple matching copies exist in the review folder; refusing another")
 		}
 	}
 
 	if record.ArchivePath == "" {
-		return errors.New("ta pozycja nie ma lokalnej kopii")
+		return errors.New("this entry has no local backup")
 	}
 	raw, err := e.Archive.Read(record.ArchivePath)
 	if err != nil {
 		return err
 	}
 	if archive.SHA256(raw) != record.RawSHA256 {
-		return errors.New("suma kontrolna kopii nie pasuje; przywracanie zablokowane")
+		return errors.New("backup checksum mismatch; restore blocked")
 	}
 	if record.Status != "pending_restore" {
 		if err := e.Store.MarkRestorePending(ctx, id, e.Config.Account.Email); err != nil {
-			return fmt.Errorf("nie zapisano zamiaru przywrócenia; APPEND zablokowany: %w", err)
+			return fmt.Errorf("restore intent not saved; APPEND blocked: %w", err)
 		}
 	}
 	appended, err := e.Mail.AppendUnread(e.Config.Folders.Review, raw, record.FirstSeen)
 	if err != nil {
-		return fmt.Errorf("przywracanie nie zostało jednoznacznie potwierdzone; przed ponowieniem zostanie uzgodniony folder docelowy: %w", err)
+		return fmt.Errorf("restore not unambiguously confirmed; destination folder will be reconciled before retry: %w", err)
 	}
 	if appended.UID == 0 || appended.UIDValidity == 0 {
-		return errors.New("serwer przyjął APPEND bez jednoznacznego UID; stan zostanie uzgodniony przed ponowieniem")
+		return errors.New("server accepted APPEND without an unambiguous UID; state will be reconciled before retry")
 	}
 	if err := e.Store.FinalizeRestore(
 		ctx,
@@ -1448,7 +1448,7 @@ func (e *Engine) Restore(ctx context.Context, id int64) error {
 	); err != nil {
 		return err
 	}
-	return e.Store.AddEvent(ctx, id, "restored", "do folderu ręcznej weryfikacji")
+	return e.Store.AddEvent(ctx, id, "restored", "to the manual review folder")
 }
 
 func (e *Engine) CheckArchiveFiles(ctx context.Context) error {
@@ -1463,7 +1463,7 @@ func (e *Engine) CheckArchiveFiles(ctx context.Context) error {
 			continue
 		}
 		if err := e.Archive.Verify(item.ArchivePath, item.RawSHA256); err != nil {
-			return fmt.Errorf("nieprawidłowa kopia dla ID %d: %w", item.ID, err)
+			return fmt.Errorf("invalid backup for ID %d: %w", item.ID, err)
 		}
 	}
 	return nil

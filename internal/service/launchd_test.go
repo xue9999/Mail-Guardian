@@ -126,7 +126,7 @@ func TestServiceRunnerRecoversNotifiesAndRotatesBoundedly(t *testing.T) {
 		`"${LOG_FILE}.2"`,
 		"now - last < 86400",
 		"display notification",
-		"Zachowujemy timestamp",
+		"Retain the timestamp",
 	} {
 		if !strings.Contains(value, expected) {
 			t.Fatalf("runner missing %q:\n%s", expected, value)
@@ -135,10 +135,10 @@ func TestServiceRunnerRecoversNotifiesAndRotatesBoundedly(t *testing.T) {
 	if strings.Contains(value, "find-generic-password") {
 		t.Fatal("service runner must not read or print secrets")
 	}
-	if !strings.Contains(value, "Otwórz aplikację O2 Mail Guardian i wybierz Sprawdź i napraw") {
+	if !strings.Contains(value, "Open Mail Guardian and choose Check and repair") {
 		t.Fatal("service notification must point a nontechnical user to the GUI")
 	}
-	if strings.Contains(value, "Otwórz Guardian.command") {
+	if strings.Contains(value, "Open Guardian.command") {
 		t.Fatal("service notification must not require the emergency command script")
 	}
 }

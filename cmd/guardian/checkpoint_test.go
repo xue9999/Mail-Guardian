@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func checkpointRuntime(t *testing.T) *runtimeApp {
@@ -182,7 +182,7 @@ func TestLinuxCheckpointRejectsRegressedOrUnavailableModelBeforeMaintenance(t *t
 			a := &application{}
 			if err := a.prepareLinuxMutation(rt); err == nil || checkpointMarker(t, rt) != "1" {
 				t.Fatalf("unsafe model checkpoint accepted: %v", err)
-			} else if strings.HasPrefix(tc.name, "regressed") && !strings.Contains(fmt.Sprint(err), "cofnął") {
+			} else if strings.HasPrefix(tc.name, "regressed") && !strings.Contains(fmt.Sprint(err), "rolled back") {
 				t.Fatalf("model regression was not rejected before helper dispatch: %v", err)
 			}
 		})

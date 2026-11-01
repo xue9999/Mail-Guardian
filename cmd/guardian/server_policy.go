@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/engine"
-	"github.com/o2-mail-guardian/guardian/internal/platform"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/engine"
+	"github.com/xue9999/Mail-Guardian/internal/platform"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 	"golang.org/x/sys/unix"
 )
 

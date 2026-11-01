@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func TestProtectionProgressFailsClosedAndDistinguishesTimeFromQuality(t *testing.T) {
@@ -68,7 +68,7 @@ func TestCompletedObservationExplainsHistoricalBlockInsteadOfPromisingMoreWaitin
 		t.Fatal(err)
 	}
 	p := protectionProgress(cfg, db, now)
-	if !p.PeriodComplete || p.Ready || !strings.Contains(p.Message, "Samo czekanie ani dalsza nauka nie usuną tych blokad") {
+	if !p.PeriodComplete || p.Ready || !strings.Contains(p.Message, "Waiting or further training will not clear these blocks") {
 		t.Fatalf("misleading readiness message: %+v", p)
 	}
 }

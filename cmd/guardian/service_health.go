@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/apperror"
-	"github.com/o2-mail-guardian/guardian/internal/service"
+	"github.com/xue9999/Mail-Guardian/internal/apperror"
+	"github.com/xue9999/Mail-Guardian/internal/service"
 )
 
 // Keep the dashboard and deep diagnostics on the same freshness thresholds.
@@ -13,23 +13,23 @@ func heartbeatFreshnessError(heartbeat service.Heartbeat, now time.Time) *apperr
 	if heartbeat.LastSuccess == nil || heartbeat.LastSuccess.IsZero() {
 		return &apperror.Error{
 			Code: apperror.ServiceStale, Severity: "attention",
-			Message:  "Brakuje potwierdzenia udanego automatycznego sprawdzenia.",
-			Recovery: "Uruchom pierwsze sprawdzenie skrzynki.",
+			Message:  "No confirmed successful automatic check.",
+			Recovery: "Run the first mailbox check.",
 		}
 	}
 	age := now.Sub(*heartbeat.LastSuccess)
 	if age > 48*time.Hour {
 		return &apperror.Error{
 			Code: apperror.ServiceStale, Severity: "critical",
-			Message:  "Ostatni udany przebieg jest starszy niż 48 godzin.",
-			Recovery: "Uruchom Napraw; automat nie zakończył pracy od ponad 48 godzin.",
+			Message:  "The last successful run is over 48 hours old.",
+			Recovery: "Run Repair; automation has not completed a run for over 48 hours.",
 		}
 	}
 	if age > 4*time.Hour {
 		return &apperror.Error{
 			Code: apperror.ServiceStale, Severity: "attention",
-			Message:  "Ostatni udany przebieg jest starszy niż 4 godziny.",
-			Recovery: "Sprawdź teraz skrzynkę albo uruchom Napraw.",
+			Message:  "The last successful run is over 4 hours old.",
+			Recovery: "Check the mailbox now or run Repair.",
 		}
 	}
 	return nil

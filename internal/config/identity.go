@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/o2-mail-guardian/guardian/internal/provider"
+	"github.com/xue9999/Mail-Guardian/internal/provider"
 )
 
 // NewInstance creates identities for a new isolated installation. Default is
@@ -23,7 +23,10 @@ func NewInstance() (Config, error) {
 		}
 		*target = hex.EncodeToString(value[:])
 	}
-	c.Account.Provider, c.Account.AuthMethod = "o2", provider.Password
+	c.Account.Provider, c.Account.AuthMethod = "custom", provider.Password
+	c.Account.Host = ""
+	c.Folders = Folders{Inbox: "INBOX", Quarantine: "Guardian-Quarantine", Review: "Guardian-Review",
+		TrainSpam: "Guardian-Train-Spam", TrainHam: "Guardian-Train-Ham"}
 	return c, nil
 }
 
@@ -61,10 +64,10 @@ func (c Config) Resolve() (Config, error) {
 func (c Config) ResolveIdentity() (Config, error) {
 	if c.Version == 1 {
 		if !strings.EqualFold(c.Account.Host, "poczta.o2.pl") || c.Account.Port != 993 || !c.Account.TLS {
-			return Config{}, fmt.Errorf("konfiguracja v1 wymaga szyfrowanego połączenia o2:993")
+			return Config{}, fmt.Errorf("v1 configuration requires encrypted o2:993")
 		}
 		if c.InstanceID != "" || c.Account.ID != "" || c.Account.Provider != "" || c.Account.Username != "" || c.Account.AuthMethod != "" {
-			return Config{}, fmt.Errorf("konfiguracja v1 zawiera pola v2; jawnie wybierz wersję 2")
+			return Config{}, fmt.Errorf("v1 configuration contains v2 fields; explicitly select version 2")
 		}
 		c.InstanceID, c.Account.ID = c.legacyIDs()
 		c.Version = 2
@@ -77,7 +80,7 @@ func (c Config) ResolveIdentity() (Config, error) {
 	c.Account.Provider, c.Account.Host, c.Account.Port = connection.Provider, connection.Host, connection.Port
 	c.Account.Username, c.Account.AuthMethod = connection.Username, connection.AuthMethod
 	if c.Version != 2 || !validID(c.InstanceID) || !validID(c.Account.ID) || !c.Account.TLS {
-		return Config{}, fmt.Errorf("nieprawidłowa wersja lub tożsamość konfiguracji")
+		return Config{}, fmt.Errorf("invalid configuration version or identity")
 	}
 	return c, nil
 }

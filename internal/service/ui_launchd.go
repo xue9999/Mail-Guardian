@@ -41,14 +41,14 @@ func (m UIManager) PlistPath() (string, error) {
 
 func (m UIManager) Install() error {
 	if !filepath.IsAbs(m.AppPath) {
-		return errors.New("ścieżka aplikacji musi być bezwzględna")
+		return errors.New("application path must be absolute")
 	}
 	info, err := os.Stat(m.executable())
 	if err != nil {
-		return fmt.Errorf("aplikacja O2 Mail Guardian nie jest kompletna: %w", err)
+		return fmt.Errorf("Mail Guardian application is incomplete: %w", err)
 	}
 	if !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
-		return errors.New("aplikacja O2 Mail Guardian nie zawiera wykonywalnego programu")
+		return errors.New("Mail Guardian application contains no executable")
 	}
 	path, err := m.PlistPath()
 	if err != nil {

@@ -4,9 +4,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/keychain"
-	"github.com/o2-mail-guardian/guardian/internal/secrets"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/keychain"
+	"github.com/xue9999/Mail-Guardian/internal/secrets"
 )
 
 func runtimeSecrets(cfg config.Config) secrets.Store {

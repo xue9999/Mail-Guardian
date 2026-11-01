@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/apperror"
-	"github.com/o2-mail-guardian/guardian/internal/service"
+	"github.com/xue9999/Mail-Guardian/internal/apperror"
+	"github.com/xue9999/Mail-Guardian/internal/service"
 )
 
 func TestHeartbeatFreshnessMatchesDashboardAndDeepDiagnostics(t *testing.T) {

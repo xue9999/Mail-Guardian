@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 func dialMailbox(ctx context.Context, cfg config.Config, password string) (*imapmail.Client, error) {
@@ -42,18 +42,19 @@ func (a *application) resolveSetupConfiguration(request setupRequest) (config.Co
 	}
 	if exists {
 		if !strings.EqualFold(cfg.Account.Email, request.Email) {
-			return config.Config{}, true, errors.New("istniejące dane należą do innego konta")
+			return config.Config{}, true, errors.New("existing data belongs to another account")
 		}
 	} else {
-		cfg = config.Default()
+		if request.Provider == "" {
+			// Protocol-1 clients without connection fields retain the v1 profile.
+			cfg = config.Default()
+		} else {
+			cfg, err = config.NewInstance()
+			if err != nil {
+				return config.Config{}, false, err
+			}
+		}
 		cfg.Account.Email = request.Email
-		cfg, err = cfg.ResolveIdentity()
-		if err != nil {
-			return config.Config{}, false, err
-		}
-		if request.Provider == "custom" {
-			cfg.Account.Host, cfg.Account.Port = "", 0
-		}
 	}
 	previous := cfg
 	if request.Provider != "" {

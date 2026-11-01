@@ -9,7 +9,7 @@ import (
 )
 
 var storageFailurePattern = regexp.MustCompile(`(?i)I/O error(?:,| on)|EXT4-fs.*(?:failed to convert unwritten|Aborting journal|Remounting filesystem read-only)|EXT4-fs error`)
-var ErrStorageIO = errors.New("wirtualny dysk Colimy zgłosił błąd zapisu; ochrona modelu została zablokowana. Zachowaj kopie i sprawdź dysk offline przed ponownym uruchomieniem Colimy")
+var ErrStorageIO = errors.New("Colima virtual disk reported a write error; model protection blocked. Retain backups and check the disk offline before restarting Colima")
 
 func validateStorageLog(log string) error {
 	if storageFailurePattern.MatchString(log) {
@@ -27,13 +27,13 @@ func (m Manager) CheckStorage() error {
 	}
 	colima := commandPath("colima")
 	if colima == "" {
-		return errors.New("brakuje Colimy do kontroli dysku modelu")
+		return errors.New("Colima unavailable for model disk check")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), shortCommandTimeout)
 	defer cancel()
 	output, err := stackCommand(ctx, colima, "ssh", "--", "sudo", "dmesg", "--level=err,warn").Output()
 	if err != nil {
-		return fmt.Errorf("nie można potwierdzić sprawności dysku Colimy: %w", err)
+		return fmt.Errorf("cannot confirm Colima disk health: %w", err)
 	}
 	return validateStorageLog(string(output))
 }

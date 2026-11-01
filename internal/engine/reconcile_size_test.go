@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/imapmail"
+	"github.com/xue9999/Mail-Guardian/internal/imapmail"
 )
 
 type sizedMail struct {

@@ -46,7 +46,7 @@ func (m Manager) Up() error {
 	}
 	colima := commandPath("colima")
 	if colima == "" {
-		return errors.New("nie znaleziono Colimy; uruchom Install.command")
+		return errors.New("Colima not found; run Install.command")
 	}
 	statusCtx, statusCancel := context.WithTimeout(context.Background(), shortCommandTimeout)
 	statusErr := stackCommand(statusCtx, colima, "status").Run()
@@ -58,14 +58,14 @@ func (m Manager) Up() error {
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-				return errors.New("uruchamianie Colimy przekroczyło 3 minuty; uruchom ponownie „guardian napraw”")
+				return errors.New("starting Colima exceeded 3 minutes; run guardian repair again")
 			}
-			return fmt.Errorf("uruchamianie Colimy: %w (%s)", err, safeOutput(output))
+			return fmt.Errorf("starting Colima: %w (%s)", err, safeOutput(output))
 		}
 	}
 	docker := commandPath("docker")
 	if docker == "" {
-		return errors.New("nie znaleziono programu docker; uruchom Install.command")
+		return errors.New("docker executable not found; run Install.command")
 	}
 	if err := waitForDocker(docker, healthTimeout); err != nil {
 		return err
@@ -84,7 +84,7 @@ func (m Manager) Up() error {
 	healthCtx, healthCancel := context.WithTimeout(context.Background(), healthTimeout)
 	defer healthCancel()
 	if err := waitForRspamd(healthCtx, rspamdPingURLs, time.Second); err != nil {
-		return fmt.Errorf("kontenery zostały uruchomione, ale Rspamd nie jest jeszcze gotowy: %w", err)
+		return fmt.Errorf("containers started, but Rspamd is not ready yet: %w", err)
 	}
 	return nil
 }
@@ -123,17 +123,17 @@ func (m Manager) Status() (string, error) {
 	}
 	colima := commandPath("colima")
 	if colima == "" {
-		return "", errors.New("nie znaleziono Colimy; uruchom Install.command")
+		return "", errors.New("Colima not found; run Install.command")
 	}
 	statusCtx, statusCancel := context.WithTimeout(context.Background(), shortCommandTimeout)
 	statusErr := stackCommand(statusCtx, colima, "status").Run()
 	statusCancel()
 	if statusErr != nil {
-		return "", errors.New("lokalny silnik jest zatrzymany; wybierz „Napraw instalację” albo uruchom „guardian napraw”")
+		return "", errors.New("local engine stopped; choose Repair installation or run guardian repair")
 	}
 	docker := commandPath("docker")
 	if docker == "" {
-		return "", errors.New("nie znaleziono programu docker; uruchom Install.command")
+		return "", errors.New("docker executable not found; run Install.command")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), shortCommandTimeout)
 	defer cancel()
@@ -143,14 +143,14 @@ func (m Manager) Status() (string, error) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return "", errors.New("sprawdzanie kontenerów przekroczyło 15 sekund; wybierz „Napraw instalację”")
+			return "", errors.New("container check exceeded 15 seconds; choose Repair installation")
 		}
-		return "", fmt.Errorf("status silnika: %w (%s)", err, safeOutput(out))
+		return "", fmt.Errorf("engine status: %w (%s)", err, safeOutput(out))
 	}
 	healthCtx, healthCancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer healthCancel()
 	if err := waitForRspamd(healthCtx, rspamdPingURLs, 500*time.Millisecond); err != nil {
-		return string(out), fmt.Errorf("kontenery są widoczne, ale Rspamd nie odpowiada: %w; wybierz „Napraw instalację”", err)
+		return string(out), fmt.Errorf("containers are visible, but Rspamd is unresponsive: %w; choose Repair installation", err)
 	}
 	return string(out), nil
 }
@@ -174,8 +174,8 @@ func (m Manager) DeepCheck() error {
 		args []string
 		want string
 	}{
-		{name: "konfiguracja Compose", args: []string{"config", "--quiet"}},
-		{name: "konfiguracja Rspamd", args: []string{"exec", "-T", "rspamd", "rspamadm", "configtest"}},
+		{name: "Compose configuration", args: []string{"config", "--quiet"}},
+		{name: "Rspamd configuration", args: []string{"exec", "-T", "rspamd", "rspamadm", "configtest"}},
 		{name: "Redis", args: []string{"exec", "-T", "redis", "redis-cli", "--raw", "ping"}, want: "PONG"},
 		{name: "DNS Unbound", args: []string{"exec", "-T", "unbound", "drill-hc", "@127.0.0.1", "dnssec.works"}},
 	} {
@@ -188,7 +188,7 @@ func (m Manager) DeepCheck() error {
 			return fmt.Errorf("%s: %w (%s)", check.name, err, safeOutput(output))
 		}
 		if check.want != "" && !strings.Contains(string(output), check.want) {
-			return fmt.Errorf("%s nie zwrócił oczekiwanej odpowiedzi %q", check.name, check.want)
+			return fmt.Errorf("%s did not return expected response %q", check.name, check.want)
 		}
 	}
 	colima := commandPath("colima")
@@ -196,36 +196,36 @@ func (m Manager) DeepCheck() error {
 	output, err := stackCommand(ctx, colima, "ssh", "--", "df", "-Pk", "/").CombinedOutput()
 	cancel()
 	if err != nil {
-		return fmt.Errorf("miejsce w Colimie: %w (%s)", err, safeOutput(output))
+		return fmt.Errorf("Colima disk space: %w (%s)", err, safeOutput(output))
 	}
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	if len(lines) < 2 {
-		return errors.New("miejsce w Colimie: nierozpoznana odpowiedź df")
+		return errors.New("Colima disk space: unrecognized df response")
 	}
 	fields := strings.Fields(lines[len(lines)-1])
 	if len(fields) < 4 {
-		return errors.New("miejsce w Colimie: nierozpoznana odpowiedź df")
+		return errors.New("Colima disk space: unrecognized df response")
 	}
 	availableKiB, err := strconv.ParseUint(fields[3], 10, 64)
 	if err != nil {
-		return fmt.Errorf("miejsce w Colimie: %w", err)
+		return fmt.Errorf("Colima disk space: %w", err)
 	}
 	if availableKiB < 2*1024*1024 {
-		return fmt.Errorf("w Colimie pozostało mniej niż 2 GiB wolnego miejsca")
+		return fmt.Errorf("less than 2 GiB disk space remains in Colima")
 	}
 	return nil
 }
 
 func (m Manager) validate() error {
 	if m.RuntimeDir == "" {
-		return errors.New("brakuje katalogu runtime")
+		return errors.New("missing runtime directory")
 	}
 	info, err := os.Stat(m.ComposeFile)
 	if err != nil {
-		return fmt.Errorf("brakuje %s; uruchom Install.command", m.ComposeFile)
+		return fmt.Errorf("missing %s; run Install.command", m.ComposeFile)
 	}
 	if info.IsDir() {
-		return errors.New("ścieżka compose wskazuje katalog")
+		return errors.New("compose path points to a directory")
 	}
 	return nil
 }
@@ -233,7 +233,7 @@ func (m Manager) validate() error {
 func (m Manager) compose(ctx context.Context, args ...string) error {
 	docker := commandPath("docker")
 	if docker == "" {
-		return errors.New("nie znaleziono programu docker; uruchom Install.command")
+		return errors.New("docker executable not found; run Install.command")
 	}
 	full := m.dockerComposeArgs(args...)
 	cmd := stackCommand(ctx, docker, full...)
@@ -241,7 +241,7 @@ func (m Manager) compose(ctx context.Context, args ...string) error {
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return fmt.Errorf("docker compose %s przekroczył limit %s; spróbuj ponownie przez „guardian napraw”", strings.Join(args, " "), composeTimeout)
+			return fmt.Errorf("docker compose %s exceeded %s; retry using guardian repair", strings.Join(args, " "), composeTimeout)
 		}
 		return fmt.Errorf("docker compose %v: %w", args, err)
 	}
@@ -281,12 +281,12 @@ func waitForDocker(docker string, timeout time.Duration) error {
 		}
 		time.Sleep(time.Second)
 	}
-	return fmt.Errorf("Docker nie zgłosił gotowości w ciągu %s: %w", timeout, lastErr)
+	return fmt.Errorf("Docker did not become ready within %s: %w", timeout, lastErr)
 }
 
 func waitForRspamd(ctx context.Context, urls []string, interval time.Duration) error {
 	if len(urls) == 0 {
-		return errors.New("brakuje adresów kontroli Rspamd")
+		return errors.New("missing Rspamd health endpoints")
 	}
 	if interval <= 0 {
 		interval = 100 * time.Millisecond
@@ -319,7 +319,7 @@ func waitForRspamd(ctx context.Context, urls []string, interval time.Duration) e
 				break
 			}
 			if response.StatusCode != http.StatusOK || strings.TrimSpace(string(body)) != "pong" {
-				lastErr = fmt.Errorf("%s zwrócił HTTP %d i odpowiedź %q", url, response.StatusCode, strings.TrimSpace(string(body)))
+				lastErr = fmt.Errorf("%s returned HTTP %d and response %q", url, response.StatusCode, strings.TrimSpace(string(body)))
 				allHealthy = false
 				break
 			}
@@ -334,7 +334,7 @@ func waitForRspamd(ctx context.Context, urls []string, interval time.Duration) e
 			if lastErr == nil {
 				lastErr = ctx.Err()
 			}
-			return fmt.Errorf("brak odpowiedzi „pong” przed upływem limitu: %w", lastErr)
+			return fmt.Errorf("no pong response before deadline: %w", lastErr)
 		case <-timer.C:
 		}
 	}

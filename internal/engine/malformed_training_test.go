@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
 )
 
 func TestMalformedExplicitCorrectionsPreserveOriginalWithoutBayesLearning(t *testing.T) {

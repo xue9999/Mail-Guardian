@@ -10,7 +10,7 @@ qualification, source/binary bindings, restore proof and archived detail.
 
 Dependency/compiler maintenance uses a private, approved immutable source
 allowlist; it does not overwrite the Mac checkout or publish unfinished work.
-The [owner repository](https://github.com/xue9999/O2-Mail-Guardian) is monitored
+The [owner repository](https://github.com/xue9999/Mail-Guardian) is monitored
 for stable tags. New application code needs a reviewed Linux-compatible source
 generation: an older Mac release or unreviewed working tree is not an automatic
 server update.

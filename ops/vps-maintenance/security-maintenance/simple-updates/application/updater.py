@@ -33,7 +33,7 @@ OTHER_PENDING = (Path('/var/lib/vps-ubuntu-update/pending.json'),
                  Path('/var/lib/vps-docker-simple-update/pending.json'),
                  Path('/var/lib/mail-guardian-admin/auto-image-update/transaction.json'))
 GLOBAL_LOCK = Path('/run/mail-guardian-auto-update.lock')
-TRUSTED_REMOTE = 'https://github.com/xue9999/O2-Mail-Guardian.git'
+TRUSTED_REMOTE = 'https://github.com/xue9999/Mail-Guardian.git'
 
 
 def trusted_file(path, limit=8 << 20):

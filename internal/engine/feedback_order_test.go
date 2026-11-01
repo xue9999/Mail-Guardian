@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/archive"
-	"github.com/o2-mail-guardian/guardian/internal/rspamd"
-	"github.com/o2-mail-guardian/guardian/internal/store"
+	"github.com/xue9999/Mail-Guardian/internal/archive"
+	"github.com/xue9999/Mail-Guardian/internal/rspamd"
+	"github.com/xue9999/Mail-Guardian/internal/store"
 )
 
 type feedbackOrderScanner struct {

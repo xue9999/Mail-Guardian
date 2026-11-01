@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/o2-mail-guardian/guardian/internal/config"
+	"github.com/xue9999/Mail-Guardian/internal/config"
 )
 
-var ErrMailboxIdentity = errors.New("stan instancji należy do innej skrzynki; użyj osobnej instancji lub jawnej migracji")
+var ErrMailboxIdentity = errors.New("instance state belongs to another mailbox; use a separate instance or explicit migration")
 
 // BindConfiguration must run under the instance run lock before accessing mail.
 // Mailbox identity is immutable; folder changes revoke operational permission.
@@ -57,7 +57,7 @@ func (db *DB) BindConfiguration(ctx context.Context, cfg config.Config, now time
 		return err
 	}
 	if (mailbox == "") != (previous == "") {
-		return errors.New("zapis powiązania konfiguracji jest niepełny; operacje pozostają zablokowane")
+		return errors.New("configuration binding record is incomplete; operations remain blocked")
 	}
 	values := map[string]string{
 		"mailbox_fingerprint":       c.MailboxFingerprint(),
@@ -74,7 +74,7 @@ func (db *DB) BindConfiguration(ctx context.Context, cfg config.Config, now time
 			return err
 		}
 		if pending > 0 {
-			return errors.New("najpierw rozlicz oczekujące operacje w poprzedniej konfiguracji folderów")
+			return errors.New("reconcile pending operations under the previous folder configuration first")
 		}
 		values["first_dry_run_completed_at"] = ""
 		values["configuration_dry_run_required"] = "1"
@@ -100,7 +100,7 @@ func (db *DB) RequireOperationalAuthorization(ctx context.Context) error {
 			return err
 		}
 		if proof == "" {
-			return errors.New("konfiguracja wymaga nowego dry-run; operacje na skrzynce są zablokowane")
+			return errors.New("configuration requires a new dry-run; mailbox operations blocked")
 		}
 	}
 	return nil
@@ -162,7 +162,7 @@ func (db *DB) RequireConfiguration(ctx context.Context, cfg config.Config) error
 		return err
 	}
 	if !matches {
-		return fmt.Errorf("konfiguracja zmieniła się; wykonaj nowy dry-run przed aktywacją")
+		return fmt.Errorf("configuration changed; complete a new dry-run before activation")
 	}
 	return db.RequireOperationalAuthorization(ctx)
 }
