@@ -60,8 +60,11 @@ change Xcode selection globally or start any installed application. Shell
 fixture tests use temporary destinations and a mock backend. Some Linux-only
 system-call cases may skip on macOS; native Linux CI must cover them.
 
-The maintenance fixtures never invoke production updaters. Journal tests need
-non-world-writable ancestors, so one legacy suite creates disposable subfolders
+The maintenance fixtures never invoke production updaters. The runner supplies
+a temporary private home-directory child as TMPDIR to fixture subprocesses;
+production journal guards correctly reject ordinary world-writable /tmp.
+Explicit unsafe-parent cases still exercise real filesystem permissions.
+One legacy suite also creates disposable subfolders
 under `~/.codex/backups/vps-1`; it removes its own temporary children. Use a
 throwaway CI home when reviewing changes to those fixtures.
 
