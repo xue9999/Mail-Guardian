@@ -1,5 +1,10 @@
 # Mail Guardian changelog
 
+## Unreleased
+
+- Build with Go 1.27.4 to address GO-2026-6859. macOS release packaging and
+  installation now require Go 1.27.4 or Go 1.26.11 on their respective lines.
+
 ## 0.7.0 — 2026-11-01
 
 - Rename the displayed product to Mail Guardian and the canonical GitHub

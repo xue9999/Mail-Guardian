@@ -2,10 +2,10 @@
 set -Eeuo pipefail
 PROJECT_DIR="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
 source "$PROJECT_DIR/scripts/release-common.sh"
-for version in go1.26.10 go1.26.11 go1.27.3 go1.27.10 go1.28.0; do
+for version in go1.26.11 go1.27.4 go1.27.10 go1.28.0; do
   safe_go_version "$version" || { printf 'Odrzucono poprawione Go: %s\n' "$version" >&2; exit 1; }
 done
-for version in go1.25.13 go1.26.6 go1.26.8 go1.26.9 go1.27.0 go1.27.1 go1.27.2 go1.27.3rc1 go1.27.2garbage unknown ''; do
+for version in go1.25.13 go1.26.6 go1.26.8 go1.26.9 go1.26.10 go1.27.0 go1.27.1 go1.27.2 go1.27.3 go1.27.4rc1 go1.27.2garbage unknown ''; do
   if safe_go_version "$version"; then
     printf 'Vulnerable or unknown Go accepted: %s\n' "$version" >&2; exit 1
   fi

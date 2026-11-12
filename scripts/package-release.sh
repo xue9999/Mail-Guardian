@@ -14,7 +14,7 @@ ARCHIVE="${DIST_DIR}/Mail-Guardian-${VERSION}-macos-arm64.zip"
 source "${PROJECT_DIR}/scripts/release-common.sh"
 source "${PROJECT_DIR}/scripts/swift-common.sh"
 GO="${GO:-go}"
-safe_go_version "$(cd "$PROJECT_DIR"; "$GO" env GOVERSION)" || { release_error 'Go 1.26.10, 1.27.3 or newer required'; exit 1; }
+safe_go_version "$(cd "$PROJECT_DIR"; "$GO" env GOVERSION)" || { release_error 'Go 1.26.11, 1.27.4 or newer required'; exit 1; }
 
 cleanup() {
   case "${STAGE_ROOT}" in
