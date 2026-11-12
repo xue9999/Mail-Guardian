@@ -449,7 +449,7 @@ BUILD_TMP="$(/usr/bin/mktemp "${INSTALL_DIR}/.guardian-build.XXXXXX")"
 chmod 755 "${BUILD_TMP}"
 BUILD_GO_VERSION="$(go version -m "${BUILD_TMP}" | /usr/bin/awk 'NR==1 {print $2}')"
 safe_go_version "${BUILD_GO_VERSION}" \
-  || fail "Guardian was built with vulnerable compiler ${BUILD_GO_VERSION:-unknown}; Go 1.26.10, 1.27.3 or newer required."
+  || fail "Guardian was built with vulnerable compiler ${BUILD_GO_VERSION:-unknown}; Go 1.26.11, 1.27.4 or newer required."
 "${BUILD_TMP}" version | /usr/bin/grep -F "Mail Guardian ${GUARDIAN_VERSION}" >/dev/null \
   || fail "built program does not report expected version ${GUARDIAN_VERSION}."
 

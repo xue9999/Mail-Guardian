@@ -8,7 +8,8 @@ operator's local/remote worker.
 ## Toolchains and prerequisites
 
 - Go: follow `go.mod` and its `toolchain` directive. The reference build uses
-  Go 1.27.3. Release scripts enforce the accepted compiler security floor.
+  Go 1.27.4. The macOS release scripts require Go 1.26.11, 1.27.4, or a
+  newer stable release.
 - Python 3.11 or newer for TOML and deployment helpers; native Ubuntu 26.04
   uses Python 3.14. Python fixtures use only the standard library.
 - macOS: Apple Silicon, full Xcode/Swift 6 for the native UI, and normal Apple

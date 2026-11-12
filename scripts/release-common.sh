@@ -7,8 +7,8 @@ safe_go_version() {
   minor="${BASH_REMATCH[2]}"
   patch="${BASH_REMATCH[3]}"
   (( major > 1 || (major == 1 && minor > 27) ||
-     (major == 1 && minor == 27 && patch >= 3) ||
-     (major == 1 && minor == 26 && patch >= 10) ))
+     (major == 1 && minor == 27 && patch >= 4) ||
+     (major == 1 && minor == 26 && patch >= 11) ))
 }
 release_error() { printf 'Invalid package: %s\n' "$*" >&2; return 1; }
 release_hashes() (
